@@ -3,17 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
-<link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
-<link rel="apple-touch-icon" sizes="192x192" href="icon-192.png">
-<link rel="apple-touch-icon" sizes="512x512" href="icon-512.png">
-<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9Ijk2IiBmaWxsPSIjMjU2M2ViIi8+CiAgPHJlY3QgeD0iMTIiIHk9IjEyIiB3aWR0aD0iNDg4IiBoZWlnaHQ9IjQ4OCIgcng9Ijg2IiBmaWxsPSJub25lIiBzdHJva2U9IiMzYjdmZjUiIHN0cm9rZS13aWR0aD0iOCIvPgogIDx0ZXh0IHg9IjI1NiIgeT0iMzQwIiBmb250LWZhbWlseT0iQXJpYWwgQmxhY2ssIEltcGFjdCwgc2Fucy1zZXJpZiIgZm9udC13ZWlnaHQ9IjkwMCIgZm9udC1zaXplPSIzMDAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGxldHRlci1zcGFjaW5nPSItMTgiPgogICAgPHRzcGFuIGZpbGw9IiNmZmZmZmYiPlA8L3RzcGFuPjx0c3BhbiBmaWxsPSIjZmFjYzE1Ij5NPC90c3Bhbj4KICA8L3RleHQ+CiAgPHJlY3QgeD0iMTM2IiB5PSIzNzIiIHdpZHRoPSIyNDAiIGhlaWdodD0iMjIiIHJ4PSIxMSIgZmlsbD0iI2ZhY2MxNSIvPgo8L3N2Zz4=">
+<link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9Ijk2IiBmaWxsPSIjMjU2M2ViIi8+CiAgPHJlY3QgeD0iMTIiIHk9IjEyIiB3aWR0aD0iNDg4IiBoZWlnaHQ9IjQ4OCIgcng9Ijg2IiBmaWxsPSJub25lIiBzdHJva2U9IiMzYjdmZjUiIHN0cm9rZS13aWR0aD0iOCIvPgogIDx0ZXh0IHg9IjI1NiIgeT0iMzQwIiBmb250LWZhbWlseT0iQXJpYWwgQmxhY2ssIEltcGFjdCwgc2Fucy1zZXJpZiIgZm9udC13ZWlnaHQ9IjkwMCIgZm9udC1zaXplPSIzMDAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGxldHRlci1zcGFjaW5nPSItMTgiPgogICAgPHRzcGFuIGZpbGw9IiNmZmZmZmYiPlA8L3RzcGFuPjx0c3BhbiBmaWxsPSIjZmFjYzE1Ij5NPC90c3Bhbj4KICA8L3RleHQ+CiAgPHJlY3QgeD0iMTM2IiB5PSIzNzIiIHdpZHRoPSIyNDAiIGhlaWdodD0iMjIiIHJ4PSIxMSIgZmlsbD0iI2ZhY2MxNSIvPgo8L3N2Zz4=">
 <meta name="application-name" content="PDF Markly">
 <meta name="apple-mobile-web-app-title" content="PDF Markly">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="theme-color" content="#2563eb">
+<meta name="theme-color" content="#6c8aff">
 <title>PDF Markly</title>
 <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/legacy/build/pdf.min.js"></script>
 <script>
@@ -44,6 +39,12 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Nanum+Gothic:wght@400;700;800&family=Noto+Sans+KR:wght@300;400;500;700&family=Space+Mono:wght@400;700&display=swap');
+/* Google Fonts — 카테고리별 사전 로드 (텍스트 도구에서 사용) */
+@import url('https://fonts.googleapis.com/css2?family=Nanum+Myeongjo:wght@400;700;800&family=Nanum+Brush+Script&family=Nanum+Pen+Script&family=Black+Han+Sans&family=Do+Hyeon&family=Jua&family=Gugi&family=Gamja+Flower&family=Sunflower:wght@300;500;700&family=Poor+Story&family=Single+Day&family=Hi+Melody&family=Song+Myung&family=Hahmlet:wght@400;700&family=Gowun+Dodum&family=Gowun+Batang:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&family=Open+Sans:wght@300;400;700&family=Lato:wght@300;400;700&family=Montserrat:wght@400;700&family=Raleway:wght@400;700&family=Oswald:wght@400;700&family=Inter:wght@300;400;700&family=Poppins:wght@300;400;700&family=Nunito:wght@300;400;700&family=Source+Sans+3:wght@300;400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Merriweather:wght@300;400;700&family=Lora:wght@400;700&family=EB+Garamond:wght@400;700&family=Cormorant+Garamond:wght@400;700&family=Libre+Baskerville:wght@400;700&family=Crimson+Text:wght@400;700&family=PT+Serif:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&family=Source+Code+Pro:wght@400;700&family=JetBrains+Mono:wght@400;700&family=IBM+Plex+Mono:wght@400;700&family=Inconsolata:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Pacifico&family=Dancing+Script:wght@400;700&family=Caveat:wght@400;700&family=Indie+Flower&family=Permanent+Marker&family=Satisfy&family=Lobster&family=Great+Vibes&family=Kalam:wght@300;400;700&family=Patrick+Hand&display=swap');
 
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -446,6 +447,16 @@
     margin: 12px;
   }
   .main-area { position: relative; }
+
+  /* Font weight buttons */
+  .font-weight-btn {
+    padding: 4px 9px; border-radius: 6px; border: 1.5px solid var(--border);
+    background: var(--surface2); color: var(--text); cursor: pointer;
+    font-size: 12px; font-family: inherit; transition: all 0.12s;
+    line-height: 1.4;
+  }
+  .font-weight-btn:hover { background: var(--surface3); }
+  .font-weight-btn.selected { background: var(--accent); border-color: var(--accent); color: #fff; }
 
   /* PNG Export Dropdown */
   .export-dropdown { position: relative; }
@@ -865,6 +876,14 @@
           <select id="mobileFontFamily" class="form-input" style="font-size:12px;padding:5px 8px;cursor:pointer">
             <option value="sans-serif">기본 (Sans-serif)</option>
           </select>
+          <div style="display:flex;gap:5px;flex-wrap:wrap">
+            <button class="font-weight-btn" data-weight="300" onclick="setFontWeight('300',this)">Thin</button>
+            <button class="font-weight-btn selected" data-weight="400" onclick="setFontWeight('400',this)">Regular</button>
+            <button class="font-weight-btn" data-weight="600" onclick="setFontWeight('600',this)"><b>Semi</b></button>
+            <button class="font-weight-btn" data-weight="700" onclick="setFontWeight('700',this)"><b>Bold</b></button>
+            <button class="font-weight-btn" data-weight="900" onclick="setFontWeight('900',this)"><b>Black</b></button>
+            <button class="font-weight-btn" data-style="italic" onclick="toggleFontItalic(this)" id="fsBtnItalicMobile"><i>I</i></button>
+          </div>
           <div style="display:flex;gap:6px;align-items:center">
             <span style="font-size:11px;color:var(--text2);min-width:28px">크기</span>
             <input type="range" id="mobileFontSize" min="8" max="72" value="18" style="flex:1;accent-color:var(--accent)">
@@ -983,6 +1002,17 @@
           <select id="fontFamily" class="form-input" style="font-size:12px;padding:5px 8px;cursor:pointer">
             <option value="sans-serif">기본 (Sans-serif)</option>
           </select>
+        </div>
+        <div class="form-group">
+          <div class="form-label">굵기 / 스타일</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            <button class="font-weight-btn active" data-weight="300" onclick="setFontWeight('300',this)">Thin</button>
+            <button class="font-weight-btn active" data-weight="400" onclick="setFontWeight('400',this)" id="fwBtnDefault">Regular</button>
+            <button class="font-weight-btn" data-weight="600" onclick="setFontWeight('600',this)"><b>Semi</b></button>
+            <button class="font-weight-btn" data-weight="700" onclick="setFontWeight('700',this)"><b>Bold</b></button>
+            <button class="font-weight-btn" data-weight="900" onclick="setFontWeight('900',this)"><b>Black</b></button>
+            <button class="font-weight-btn" data-style="italic" onclick="toggleFontItalic(this)" id="fsBtnItalic"><i>I</i></button>
+          </div>
         </div>
         <div class="form-group">
           <div class="form-label">글꼴 크기</div>
@@ -1325,7 +1355,10 @@ const state = {
   dragShapeOffsetX: 0,
   dragShapeOffsetY: 0,
   fontFamily: 'Nanum Gothic',
-  pageUndoStack: [],  // 페이지 삭제 실행취소용 [{pages, undoStack, currentPage}]
+  fontWeight: '400',   // '300'|'400'|'600'|'700'|'800'|'900'
+  fontStyle: 'normal', // 'normal'|'italic'
+  pageUndoStack: [],
+  isDirty: false,      // 저장되지 않은 변경사항 여부  // 페이지 삭제 실행취소용 [{pages, undoStack, currentPage}]
 };
 
 // ---- DOM ----
@@ -1362,6 +1395,63 @@ function hexToRgb(hex) {
 }
 
 // ---- Page management ----
+async function confirmIfDirty(action) {
+  if (!state.isDirty || state.pages.length === 0) { action(); return; }
+  // 커스텀 확인 다이얼로그
+  const ok = await showDirtyDialog();
+  if (ok) { clearDirty(); action(); }
+}
+
+async function showDirtyDialog() {
+  return new Promise(resolve => {
+    // 기존 다이얼로그 제거
+    document.getElementById('dirtyDialog')?.remove();
+
+    const dlg = document.createElement('div');
+    dlg.id = 'dirtyDialog';
+    dlg.style.cssText = `
+      position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;
+      background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);
+    `;
+    dlg.innerHTML = \`
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;
+                  padding:28px 32px;max-width:340px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.5);">
+        <div style="font-size:18px;font-weight:700;margin-bottom:10px;color:var(--text)">
+          저장되지 않은 변경사항
+        </div>
+        <div style="font-size:14px;color:var(--text2);margin-bottom:24px;line-height:1.6">
+          변경사항이 있습니다.<br>계속하면 변경사항이 사라집니다.
+        </div>
+        <div style="display:flex;gap:10px;justify-content:flex-end">
+          <button id="dirtyCancel" style="padding:9px 18px;border-radius:8px;border:1px solid var(--border);
+            background:var(--surface2);color:var(--text);cursor:pointer;font-size:13px;font-weight:500">
+            취소
+          </button>
+          <button id="dirtySave" style="padding:9px 18px;border-radius:8px;border:none;
+            background:var(--accent3);color:#fff;cursor:pointer;font-size:13px;font-weight:600">
+            PDF 저장 후 계속
+          </button>
+          <button id="dirtyDiscard" style="padding:9px 18px;border-radius:8px;border:none;
+            background:var(--danger,#ef4444);color:#fff;cursor:pointer;font-size:13px;font-weight:600">
+            저장 안 함
+          </button>
+        </div>
+      </div>
+    \`;
+    document.body.appendChild(dlg);
+
+    document.getElementById('dirtyCancel').onclick  = () => { dlg.remove(); resolve(false); };
+    document.getElementById('dirtyDiscard').onclick = () => { dlg.remove(); resolve(true); };
+    document.getElementById('dirtySave').onclick    = async () => {
+      dlg.remove();
+      await exportPDF();
+      resolve(true);
+    };
+    // 배경 클릭 → 취소
+    dlg.addEventListener('click', e => { if (e.target === dlg) { dlg.remove(); resolve(false); } });
+  });
+}
+
 async function addPDFFile(file) {
   setLoading(true);
   try {
@@ -1462,6 +1552,7 @@ function deletePage(idx) {
   state.pages.splice(idx, 1);
   state.undoStack.splice(idx, 1);
   if (state.currentPage >= state.pages.length) state.currentPage = state.pages.length - 1;
+  setDirty();
   renderPageList();
   renderCurrentPage();
   toast('페이지 삭제됨 — Ctrl+Z로 되돌리기 가능');
@@ -1661,9 +1752,13 @@ async function renderCurrentPage() {
       ctx.drawImage(img, 0, 0, mainCanvas.width, mainCanvas.height);
     }
 
-    // 어노테이션에 사용된 폰트 미리 로드
+    // 어노테이션 폰트: 이미 로드된 것은 바로 사용, 미로드된 것은 로드 후 재렌더
     const fontFamilies = [...new Set(pg.annotations.map(a => a.fontFamily).filter(Boolean))];
-    await Promise.all(fontFamilies.map(ensureFontLoaded));
+    const unloaded = fontFamilies.filter(f => !_loadedFonts.has(f));
+    if (unloaded.length > 0) {
+      // 미로드 폰트는 백그라운드에서 로드 후 재렌더 (현재 렌더는 시스템 폰트로 계속)
+      Promise.all(unloaded.map(ensureFontLoaded)).then(() => renderCurrentPage());
+    }
 
     pg.annotations.forEach(ann => drawAnnotation(ctx, ann, renderScale));
     pg.drawings.forEach(d => drawStroke(ctx, d, renderScale));
@@ -1696,8 +1791,10 @@ function renderAnnotationsOnly() {
 function drawAnnotation(c, ann, scale) {
   if (ann.type === 'text') {
     const family = ann.fontFamily || 'Nanum Gothic';
+    const weight = ann.fontWeight || '400';
+    const fstyle = ann.fontStyle  || 'normal';
     c.save();
-    c.font = `${ann.fontSize * scale}px ${family}`;
+    c.font = `${fstyle} ${weight} ${ann.fontSize * scale}px "${family}"`;
     c.fillStyle = ann.color;
     c.globalAlpha = 1;
     const metrics = c.measureText(ann.text);
@@ -2043,7 +2140,7 @@ function hideTextEditBox() {
 function syncTextEditBoxStyle() {
   if (!textEditBox.classList.contains('active')) return;
   const fs = state.fontSize * state.zoom;
-  textEditInput.style.font      = `${fs}px ${state.fontFamily}`;
+  textEditInput.style.font      = `${state.fontStyle} ${state.fontWeight} ${fs}px "${state.fontFamily}"`;
   textEditInput.style.color     = state.textColor;
   textEditInput.style.minHeight = fs * 1.4 + 'px';
   textEditBox.style.top = (previewPos.y * state.zoom - fs) + 'px';
@@ -2055,6 +2152,15 @@ function syncPanelToAnn(ann) {
   state.textColor  = ann.color;
   state.fontSize   = ann.fontSize;
   state.fontFamily = ann.fontFamily || 'Nanum Gothic';
+  state.fontWeight = ann.fontWeight || '400';
+  state.fontStyle  = ann.fontStyle  || 'normal';
+  // 굵기 버튼 UI 동기화
+  document.querySelectorAll('.font-weight-btn[data-weight]').forEach(b =>
+    b.classList.toggle('selected', b.dataset.weight === state.fontWeight));
+  ['fsBtnItalic', 'fsBtnItalicMobile'].forEach(id => {
+    const btn = document.getElementById(id);
+    if (btn) btn.classList.toggle('selected', state.fontStyle === 'italic');
+  });
 
   // 데스크탑 패널
   document.getElementById('fontSize').value = ann.fontSize;
@@ -2107,6 +2213,8 @@ function applyToSelectedAnn() {
   ann.color      = state.textColor;
   ann.fontSize   = state.fontSize;
   ann.fontFamily = state.fontFamily;
+  ann.fontWeight = state.fontWeight;
+  ann.fontStyle  = state.fontStyle;
   renderCurrentPageDebounced(60);
 }
 
@@ -2121,11 +2229,14 @@ function confirmTextEdit() {
     color: state.textColor,
     fontSize: state.fontSize,
     fontFamily: state.fontFamily,
+    fontWeight: state.fontWeight,
+    fontStyle: state.fontStyle,
   };
   saveUndo();
   state.pages[state.currentPage].annotations.push(ann);
   hideTextEditBox();
-  renderCurrentPage();
+  // 폰트를 미리 로드한 뒤 렌더 — 로드 중 canvas 초기화 타이밍 문제 방지
+  ensureFontLoaded(state.fontFamily).then(() => renderCurrentPage());
   toast('텍스트 추가됨', 'success');
 }
 
@@ -2765,6 +2876,28 @@ function updateCanvasPointerEvents() {
 }
 
 // ---- Undo ----
+// ── 변경 감지 ────────────────────────────────────────────────────────────
+function setDirty() {
+  if (!state.isDirty) {
+    state.isDirty = true;
+    // 탭 제목에 * 표시
+    document.title = '* PDF Markly';
+  }
+}
+function clearDirty() {
+  state.isDirty = false;
+  document.title = 'PDF Markly';
+}
+
+// 창 닫기 / 새로고침 시 경고
+window.addEventListener('beforeunload', (e) => {
+  if (state.isDirty) {
+    e.preventDefault();
+    e.returnValue = '저장되지 않은 변경사항이 있습니다. 나가시겠습니까?';
+    return e.returnValue;
+  }
+});
+
 function saveUndo() {
   const pg = state.pages[state.currentPage];
   const snapshot = {
@@ -2774,6 +2907,7 @@ function saveUndo() {
   };
   if (!state.undoStack[state.currentPage]) state.undoStack[state.currentPage] = [];
   state.undoStack[state.currentPage].push(snapshot);
+  setDirty();
 }
 
 function undo() {
@@ -2858,6 +2992,7 @@ async function exportPDF() {
     const a = document.createElement('a');
     a.href = url; a.download = 'edited-document.pdf'; a.click();
     URL.revokeObjectURL(url);
+    clearDirty();
     toast('PDF 저장 완료!', 'success');
   } catch(e) {
     toast('PDF 저장 실패: ' + e.message, 'error');
@@ -3079,6 +3214,27 @@ document.getElementById('customDrawColor').addEventListener('input', function() 
 // Shape options
 // shapeSize/Opacity: oninput 방식으로 처리
 // 도형 색상/크기/불투명도 — window에 명시 노출 (onclick에서 전역 접근)
+// ── 굵기/기울기 전역 함수 ─────────────────────────────────────────────────
+window.setFontWeight = function(weight, el) {
+  state.fontWeight = weight;
+  // 모든 굵기 버튼 (데스크탑+모바일) 동기화
+  document.querySelectorAll('.font-weight-btn[data-weight]').forEach(b =>
+    b.classList.toggle('selected', b.dataset.weight === weight));
+  syncTextEditBoxStyle();
+  applyToSelectedAnn();
+};
+
+window.toggleFontItalic = function(el) {
+  state.fontStyle = state.fontStyle === 'italic' ? 'normal' : 'italic';
+  // 데스크탑·모바일 양쪽 버튼 동기화
+  ['fsBtnItalic', 'fsBtnItalicMobile'].forEach(id => {
+    const btn = document.getElementById(id);
+    if (btn) btn.classList.toggle('selected', state.fontStyle === 'italic');
+  });
+  syncTextEditBoxStyle();
+  applyToSelectedAnn();
+};
+
 window.setShapeColor = function(el) {
   document.querySelectorAll('#shapeColors .color-swatch').forEach(s => s.classList.remove('selected'));
   el.classList.add('selected');
@@ -3173,131 +3329,137 @@ mainAreaEl.addEventListener('drop', async (e) => {
   e.preventDefault();
   _dragCounter = 0;
   mainAreaEl.classList.remove('drag-over-main');
-  for (const file of e.dataTransfer.files) {
-    if (file.type === 'application/pdf') await addPDFFile(file);
-    else if (file.type.startsWith('image/')) await addImageFile(file);
-    else toast(`${file.name} - 지원하지 않는 형식`, 'error');
-  }
+  const files = Array.from(e.dataTransfer.files);
+  if (files.length === 0) return;
+  const doAdd = async () => {
+    for (const file of files) {
+      if (file.type === 'application/pdf') await addPDFFile(file);
+      else if (file.type.startsWith('image/')) await addImageFile(file);
+      else toast(`${file.name} - 지원하지 않는 형식`, 'error');
+    }
+  };
+  // 첫 파일 추가(pages 없을 때)는 확인 불필요, 이후 추가는 항상 허용
+  await doAdd();
 });
 
 // ---- 시스템 폰트 로드 ----
-const FALLBACK_FONTS = [
-  // 범용 영문
-  'Arial', 'Arial Black', 'Arial Narrow', 'Arial Rounded MT Bold',
-  'Comic Sans MS', 'Courier', 'Courier New',
-  'Georgia', 'Impact', 'Lucida Console', 'Lucida Grande',
-  'Lucida Sans Unicode', 'MS Serif', 'MS Sans Serif',
-  'Palatino Linotype', 'Tahoma', 'Times', 'Times New Roman',
-  'Trebuchet MS', 'Verdana', 'Helvetica', 'Helvetica Neue',
-  'Garamond', 'Bookman Old Style', 'Calibri', 'Cambria',
-  'Candara', 'Consolas', 'Constantia', 'Corbel',
-  'Franklin Gothic Medium', 'Gill Sans', 'Gill Sans MT',
-  'Century Gothic', 'Century', 'Book Antiqua',
-  'Segoe UI', 'Segoe Print', 'Segoe Script',
-  // macOS
-  'Hiragino Mincho ProN', 'Hiragino Mincho Pro',
-  'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Hiragino Kaku Gothic Pro',
-  'Apple SD Gothic Neo', 'Apple Gothic', 'AppleGothic',
-  'PingFang SC', 'PingFang TC', 'PingFang HK',
-  'Osaka', 'Osaka-Mono',
-  // Windows 한국어
-  'Malgun Gothic', '맑은 고딕',
-  'Gulim', '굴림', 'GulimChe', '굴림체',
-  'Dotum', '돋움', 'DotumChe', '돋움체',
-  'Batang', '바탕', 'BatangChe', '바탕체',
-  'Gungsuh', '궁서', 'GungsuhChe', '궁서체',
-  'HY헤드라인M', 'HY견고딕', 'HY목각파임B', 'HY바다M', 'HY얕은샘물M',
-  // Windows 일본어/중국어
-  'Microsoft YaHei', 'Microsoft YaHei UI',
-  'Microsoft JhengHei', 'Microsoft JhengHei UI',
-  'Yu Gothic', 'Yu Gothic UI', 'Yu Mincho',
-  'Meiryo', 'Meiryo UI', 'MS Gothic', 'MS Mincho',
-  'MS PGothic', 'MS PMincho', 'MS UI Gothic',
-  'SimSun', 'SimHei', 'FangSong', 'KaiTi', 'DengXian',
-  // 웹폰트 / 오픈소스 설치형
-  'Noto Sans', 'Noto Sans KR', 'Noto Serif KR', 'Noto Mono',
-  'Nanum Gothic', 'NanumGothic', 'Nanum Myeongjo', 'NanumMyeongjo',
-  'Nanum Barun Gothic', 'Nanum Gothic Coding',
-  'Nanum Pen Script', 'NanumPen',
-  'Black Han Sans', 'Do Hyeon', 'Jua', 'Gugi',
-  'Gamja Flower', 'Song Myung', 'Sunflower', 'Poor Story',
-  'Cute Font', 'Hi Melody', 'Single Day',
-  // Linux
-  'DejaVu Sans', 'DejaVu Serif', 'DejaVu Sans Mono',
-  'Liberation Sans', 'Liberation Serif', 'Liberation Mono',
-  'Ubuntu', 'Ubuntu Mono', 'Cantarell',
-  'Droid Sans', 'Droid Serif', 'Droid Sans Mono',
-  'FreeSans', 'FreeSerif', 'FreeMono',
-  'Lato', 'Open Sans', 'Roboto', 'Roboto Mono',
-  'Source Sans Pro', 'Source Serif Pro', 'Source Code Pro',
-  'Fira Sans', 'Fira Mono', 'Fira Code',
-  'Montserrat', 'Raleway', 'Oswald', 'Merriweather',
-];
+// ── Google Fonts 카테고리별 목록 ─────────────────────────────────────────
+const GOOGLE_FONTS = {
+  '한국어 고딕': [
+    'Nanum Gothic', 'Noto Sans KR', 'Black Han Sans',
+    'Do Hyeon', 'Jua', 'Gugi', 'Sunflower', 'Gowun Dodum',
+  ],
+  '한국어 명조': [
+    'Nanum Myeongjo', 'Noto Serif KR', 'Song Myung',
+    'Hahmlet', 'Gowun Batang',
+  ],
+  '한국어 손글씨': [
+    'Nanum Brush Script', 'Nanum Pen Script',
+    'Gamja Flower', 'Poor Story', 'Single Day', 'Hi Melody',
+  ],
+  '영문 산세리프': [
+    'Inter', 'Roboto', 'Open Sans', 'Lato', 'Poppins',
+    'Nunito', 'Montserrat', 'Raleway', 'Oswald',
+    'Source Sans 3',
+  ],
+  '영문 세리프': [
+    'Playfair Display', 'Merriweather', 'Lora',
+    'EB Garamond', 'Cormorant Garamond', 'Libre Baskerville',
+    'Crimson Text', 'PT Serif',
+  ],
+  '영문 손글씨': [
+    'Pacifico', 'Dancing Script', 'Caveat', 'Indie Flower',
+    'Permanent Marker', 'Satisfy', 'Lobster', 'Great Vibes',
+    'Kalam', 'Patrick Hand',
+  ],
+  '코드/모노': [
+    'Fira Code', 'Source Code Pro', 'JetBrains Mono',
+    'IBM Plex Mono', 'Inconsolata', 'Space Mono',
+  ],
+  '시스템': [
+    'sans-serif', 'serif', 'monospace',
+    'Arial', 'Georgia', 'Times New Roman', 'Courier New',
+    'Helvetica Neue', 'Verdana', 'Tahoma', 'Trebuchet MS',
+    'Malgun Gothic', 'Apple SD Gothic Neo',
+  ],
+};
 
-// 여러 기준 폰트와 비교해서 하나라도 다르면 설치된 것으로 판단
-function isFontAvailable(fontName) {
-  const canvas = document.createElement('canvas');
-  canvas.width = 400; canvas.height = 50;
-  const ctx = canvas.getContext('2d');
-  const testStr = 'abcdefghijklmnopqrstuvwxyz가나다라마바사아자차카타파하0123456789';
-  const refs = ['monospace', 'serif', 'sans-serif'];
-  for (const ref of refs) {
-    ctx.font = `20px ${ref}`;
-    const baseW = ctx.measureText(testStr).width;
-    ctx.font = `20px "${fontName}", ${ref}`;
-    const testW = ctx.measureText(testStr).width;
-    if (testW !== baseW) return true;
-  }
-  return false;
-}
+// isFontAvailable: Google Fonts 방식으로 전환하여 제거
 
 async function loadSystemFonts() {
   const selects = ['fontFamily', 'mobileFontFamily']
     .map(id => document.getElementById(id)).filter(Boolean);
-  let fonts = [];
 
-  try {
-    if ('queryLocalFonts' in window) {
-      const available = await window.queryLocalFonts();
-      const seen = new Set();
-      fonts = available
-        .map(f => f.family)
-        .filter(f => { if (seen.has(f)) return false; seen.add(f); return true; })
-        .sort((a, b) => a.localeCompare(b));
-    }
-  } catch(e) { /* 권한 거부 */ }
-
-  // queryLocalFonts 없으면 캔버스 기반 탐지
-  if (fonts.length === 0) {
-    fonts = FALLBACK_FONTS.filter(isFontAvailable);
-    // 탐지 못해도 목록 자체는 다 보여줌 (브라우저가 대체 폰트 사용)
-    if (fonts.length < 5) fonts = FALLBACK_FONTS;
-  }
-
+  // Google Fonts 카테고리별로 <optgroup> 구성
   selects.forEach(sel => {
-    const prev = sel.value;
-    sel.innerHTML =
-      `<option value="sans-serif">기본 (Sans-serif)</option>
-       <option value="serif">Serif</option>
-       <option value="monospace">Monospace</option>
-       <option disabled>──────────</option>`;
-    fonts.forEach(name => {
-      const opt = document.createElement('option');
-      opt.value = name;
-      opt.textContent = name;
-      sel.appendChild(opt);
-    });
-    sel.value = fonts.includes(prev) ? prev : (fonts.includes('Nanum Gothic') ? 'Nanum Gothic' : 'sans-serif');
-  });
+    const prev = sel.value || 'Nanum Gothic';
+    sel.innerHTML = '';
 
-  console.log(`폰트 ${fonts.length}개 로드됨`);
+    Object.entries(GOOGLE_FONTS).forEach(([category, fonts]) => {
+      const group = document.createElement('optgroup');
+      group.label = category;
+      fonts.forEach(name => {
+        const opt = document.createElement('option');
+        opt.value = name;
+        opt.textContent = name;
+        // 시스템 폰트 카테고리는 style 미적용
+        if (category !== '시스템') {
+          opt.style.fontFamily = name;
+        }
+        group.appendChild(opt);
+      });
+      sel.appendChild(group);
+    });
+
+    // 이전 선택값 복원
+    const allFonts = Object.values(GOOGLE_FONTS).flat();
+    sel.value = allFonts.includes(prev) ? prev : 'Nanum Gothic';
+  });
 }
 
-loadSystemFonts();
+loadSystemFonts().then(() => {
+  // 초기 선택 폰트 미리보기
+  ['fontFamily', 'mobileFontFamily'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.fontFamily = el.value;
+  });
+  // 초기 굵기 버튼 selected 표시
+  document.querySelectorAll('.font-weight-btn[data-weight]').forEach(b =>
+    b.classList.toggle('selected', b.dataset.weight === state.fontWeight));
+});
 
-// 폰트를 실제로 브라우저에 로드한 뒤 렌더
+// Google Fonts 동적 로드 (아직 로드 안 된 폰트를 <link>로 추가)
+const _loadedFonts = new Set(['sans-serif', 'serif', 'monospace',
+  'Nanum Gothic', 'Noto Sans KR', 'Space Mono', 'Nanum Myeongjo',
+  'Nanum Brush Script', 'Nanum Pen Script', 'Black Han Sans',
+  'Do Hyeon', 'Jua', 'Gugi', 'Gamja Flower', 'Sunflower',
+  'Poor Story', 'Single Day', 'Hi Melody', 'Song Myung',
+  'Hahmlet', 'Gowun Dodum', 'Gowun Batang',
+  'Roboto', 'Open Sans', 'Lato', 'Montserrat', 'Raleway',
+  'Oswald', 'Inter', 'Poppins', 'Nunito', 'Source Sans 3',
+  'Playfair Display', 'Merriweather', 'Lora', 'EB Garamond',
+  'Cormorant Garamond', 'Libre Baskerville', 'Crimson Text', 'PT Serif',
+  'Fira Code', 'Source Code Pro', 'JetBrains Mono', 'IBM Plex Mono',
+  'Inconsolata', 'Pacifico', 'Dancing Script', 'Caveat',
+  'Indie Flower', 'Permanent Marker', 'Satisfy', 'Lobster',
+  'Great Vibes', 'Kalam', 'Patrick Hand',
+]);
+
+async function loadGoogleFont(family) {
+  if (_loadedFonts.has(family)) return;
+  _loadedFonts.add(family);
+  const encoded = encodeURIComponent(family);
+  const link = document.createElement('link');
+  link.rel = 'stylesheet';
+  link.href = `https://fonts.googleapis.com/css2?family=${encoded}:wght@400;700&display=swap`;
+  document.head.appendChild(link);
+  // 로드 대기
+  await new Promise(r => { link.onload = r; link.onerror = r; setTimeout(r, 2000); });
+}
+
 async function ensureFontLoaded(family) {
   if (!family || family === 'sans-serif' || family === 'serif' || family === 'monospace') return;
+  await loadGoogleFont(family);
   try {
     await document.fonts.load(`16px "${family}"`);
   } catch(e) { /* 로드 실패 무시 */ }
@@ -3307,9 +3469,13 @@ function onFontFamilyChange(val) {
   state.fontFamily = val;
   ['fontFamily', 'mobileFontFamily'].forEach(id => {
     const el = document.getElementById(id);
-    if (el && el.value !== val) el.value = val;
+    if (el) {
+      if (el.value !== val) el.value = val;
+      // select 자체에 선택 폰트 미리보기
+      el.style.fontFamily = val;
+    }
   });
-  // 폰트 로드 후 스타일 적용
+  // Google Fonts 로드 후 스타일 적용
   ensureFontLoaded(val).then(() => {
     syncTextEditBoxStyle();
     applyToSelectedAnn();
@@ -3522,20 +3688,6 @@ document.querySelector('.right-panel .panel-body').addEventListener('input', fun
   }
 });
 
-</script>
-<script>
-// ---- Service Worker 등록 (PWA) ----
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', function() {
-    navigator.serviceWorker.register('./sw.js')
-      .then(function(reg) {
-        console.log('SW 등록 완료:', reg.scope);
-      })
-      .catch(function(err) {
-        console.log('SW 등록 실패:', err);
-      });
-  });
-}
 </script>
 </body>
 </html>
