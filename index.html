@@ -1703,7 +1703,6 @@ let _renderPending = false;
 
 async function renderCurrentPage() {
   if (_renderLock) {
-    // 이미 렌더 중이면 "대기" 플래그만 세우고 반환
     _renderPending = true;
     return;
   }
@@ -1725,48 +1724,78 @@ async function renderCurrentPage() {
     const dpr = window.devicePixelRatio || 1;
     const renderScale = scale * dpr;
 
+    // ── 오프스크린 캔버스에 먼저 렌더 → 완료 후 한 번에 교체 ──────────────
+    // mainCanvas.width 변경 시 즉시 흰색이 되는 문제 방지
+    const offscreen = document.createElement('canvas');
+    const offCtx = offscreen.getContext('2d');
+
     if (pg.type === 'pdf') {
       const page = await pg.pdfDoc.getPage(pg.pageIndex);
       const vp = page.getViewport({ scale: renderScale });
+      offscreen.width = vp.width;
+      offscreen.height = vp.height;
+      await page.render({ canvasContext: offCtx, viewport: vp }).promise;
+
+      // 어노테이션 폰트 사전 확인 (미로드 시 백그라운드 로드 후 재렌더)
+      const fontFamilies = [...new Set(pg.annotations.map(a => a.fontFamily).filter(Boolean))];
+      const unloaded = fontFamilies.filter(f => !_loadedFonts.has(f));
+      if (unloaded.length > 0) {
+        Promise.all(unloaded.map(ensureFontLoaded)).then(() => renderCurrentPage());
+      }
+
+      pg.annotations.forEach(ann => drawAnnotation(offCtx, ann, renderScale));
+      pg.drawings.forEach(d => drawStroke(offCtx, d, renderScale));
+      pg.shapes.forEach(sh => drawShape(offCtx, sh, renderScale));
+
+      // ── 렌더 완료 → 메인 캔버스에 한 번에 적용 (흰색 깜빡임 없음) ────────
       const cssW = vp.width / dpr;
       const cssH = vp.height / dpr;
       mainCanvas.width = vp.width;
       mainCanvas.height = vp.height;
       mainCanvas.style.width  = cssW + 'px';
       mainCanvas.style.height = cssH + 'px';
+      ctx.drawImage(offscreen, 0, 0);
+
       overlayCanvas.width = vp.width;
       overlayCanvas.height = vp.height;
       overlayCanvas.style.width  = cssW + 'px';
       overlayCanvas.style.height = cssH + 'px';
-      await page.render({ canvasContext: ctx, viewport: vp }).promise;
+
     } else {
       const img = await loadImage(pg.imageData);
-      mainCanvas.width = img.width * renderScale;
-      mainCanvas.height = img.height * renderScale;
+      const w = img.width * renderScale;
+      const h = img.height * renderScale;
+      offscreen.width = w;
+      offscreen.height = h;
+      offCtx.drawImage(img, 0, 0, w, h);
+
+      const fontFamilies = [...new Set(pg.annotations.map(a => a.fontFamily).filter(Boolean))];
+      const unloaded = fontFamilies.filter(f => !_loadedFonts.has(f));
+      if (unloaded.length > 0) {
+        Promise.all(unloaded.map(ensureFontLoaded)).then(() => renderCurrentPage());
+      }
+
+      pg.annotations.forEach(ann => drawAnnotation(offCtx, ann, renderScale));
+      pg.drawings.forEach(d => drawStroke(offCtx, d, renderScale));
+      pg.shapes.forEach(sh => drawShape(offCtx, sh, renderScale));
+
+      // ── 렌더 완료 → 메인 캔버스에 한 번에 적용 ──────────────────────────
+      mainCanvas.width = w;
+      mainCanvas.height = h;
       mainCanvas.style.width  = (img.width * scale) + 'px';
       mainCanvas.style.height = (img.height * scale) + 'px';
-      overlayCanvas.width = mainCanvas.width;
-      overlayCanvas.height = mainCanvas.height;
+      ctx.drawImage(offscreen, 0, 0);
+
+      overlayCanvas.width = w;
+      overlayCanvas.height = h;
       overlayCanvas.style.width  = mainCanvas.style.width;
       overlayCanvas.style.height = mainCanvas.style.height;
-      ctx.drawImage(img, 0, 0, mainCanvas.width, mainCanvas.height);
     }
 
-    // 어노테이션 폰트: 이미 로드된 것은 바로 사용, 미로드된 것은 로드 후 재렌더
-    const fontFamilies = [...new Set(pg.annotations.map(a => a.fontFamily).filter(Boolean))];
-    const unloaded = fontFamilies.filter(f => !_loadedFonts.has(f));
-    if (unloaded.length > 0) {
-      // 미로드 폰트는 백그라운드에서 로드 후 재렌더 (현재 렌더는 시스템 폰트로 계속)
-      Promise.all(unloaded.map(ensureFontLoaded)).then(() => renderCurrentPage());
-    }
-
-    pg.annotations.forEach(ann => drawAnnotation(ctx, ann, renderScale));
-    pg.drawings.forEach(d => drawStroke(ctx, d, renderScale));
-    pg.shapes.forEach(sh => drawShape(ctx, sh, renderScale));
     drawSelectionOverlay();
+
   } finally {
     _renderLock = false;
-    // 대기 중인 렌더 요청이 있으면 한 번 더 실행
     if (_renderPending) renderCurrentPage();
   }
 }
