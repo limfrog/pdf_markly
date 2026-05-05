@@ -1322,7 +1322,7 @@
 
 <script>
 // ---- PDF.js setup ----
-const pdfjsLib = window.pdfjsLib || window.PDFLib || window['pdfjs-dist/build/pdf'];
+const pdfjsLib = window.pdfjsLib || window['pdfjs-dist/build/pdf'];
 if (!pdfjsLib) console.error('pdfjsLib를 찾을 수 없습니다.');
 
 // ---- State ----
@@ -1413,7 +1413,7 @@ async function showDirtyDialog() {
       position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;
       background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);
     `;
-    dlg.innerHTML = \`
+    dlg.innerHTML = `
       <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;
                   padding:28px 32px;max-width:340px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.5);">
         <div style="font-size:18px;font-weight:700;margin-bottom:10px;color:var(--text)">
@@ -1437,7 +1437,7 @@ async function showDirtyDialog() {
           </button>
         </div>
       </div>
-    \`;
+    `;
     document.body.appendChild(dlg);
 
     document.getElementById('dirtyCancel').onclick  = () => { dlg.remove(); resolve(false); };
@@ -3275,12 +3275,14 @@ document.getElementById('btnDeleteSelectedShape').addEventListener('click', () =
 document.getElementById('btnAddPdf').addEventListener('click', () => document.getElementById('pdfInput').click());
 document.getElementById('btnAddImage').addEventListener('click', () => document.getElementById('imageInput').click());
 document.getElementById('pdfInput').addEventListener('change', async (e) => {
-  for (const file of e.target.files) await addPDFFile(file);
+  const files = Array.from(e.target.files);
   e.target.value = '';
+  for (const file of files) await addPDFFile(file);
 });
 document.getElementById('imageInput').addEventListener('change', async (e) => {
-  for (const file of e.target.files) await addImageFile(file);
+  const files = Array.from(e.target.files);
   e.target.value = '';
+  for (const file of files) await addImageFile(file);
 });
 
 // Drop zone (sidebar)
@@ -3290,7 +3292,8 @@ document.getElementById('emptyState').addEventListener('click', () => {
   const inp = document.createElement('input');
   inp.type = 'file'; inp.accept = '.pdf,image/*'; inp.multiple = true;
   inp.onchange = async (e) => {
-    for (const file of e.target.files) {
+    const files = Array.from(e.target.files);
+    for (const file of files) {
       if (file.type === 'application/pdf') await addPDFFile(file);
       else if (file.type.startsWith('image/')) await addImageFile(file);
     }
