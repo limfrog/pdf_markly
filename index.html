@@ -491,7 +491,7 @@ input[type=range]{flex:1;accent-color:var(--accent)}
   <div class="title-actions">
     <button class="tbtn" id="btnAddPdf" style="flex-direction:column;gap:1px;padding:5px 10px;line-height:1.2"><span style="font-size:9px;color:var(--muted)">불러오기</span><span>PDF</span></button>
     <button class="tbtn" id="btnAddImage" style="flex-direction:column;gap:1px;padding:5px 10px;line-height:1.2"><span style="font-size:9px;color:var(--muted)">불러오기</span><span>이미지</span></button>
-    <button class="tbtn" id="btnUndo2" onclick="undo()" style="flex-direction:column;gap:1px;padding:5px 10px;line-height:1.2"><span style="font-size:9px;color:var(--muted)">편집</span><span>실행취소</span></button>
+    <button class="tbtn" id="btnUndoMobile" onclick="undo()" style="flex-direction:column;gap:1px;padding:5px 10px;line-height:1.2"><span style="font-size:9px;color:var(--muted)">편집</span><span>실행취소</span></button>
     <button class="tbtn save" id="btnExport" style="flex-direction:column;gap:1px;padding:5px 10px;line-height:1.2"><span style="font-size:9px;opacity:0.7">저장</span><span>PDF</span></button>
     <div class="exp-wrap" id="exportDropdownWrap">
       <button class="tbtn" id="btnExportPng" style="flex-direction:column;gap:1px;padding:5px 10px;line-height:1.2"><span style="font-size:9px;color:var(--muted)">저장</span><span>PNG <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:8px;height:8px"><polyline points="6,9 12,15 18,9"/></svg></span></button>
@@ -4194,7 +4194,6 @@ function mShapeColorDirect(val) {
 updateStatusBar();
 
 </script>
-      <div id="drawOptions"></div>
       <div id="shapeOptions_hidden"></div>
       <div id="selectedShapeOptions_hidden"></div>
       <div id="shapeColors_hidden" class="color-row"></div>
