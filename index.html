@@ -2933,36 +2933,31 @@ function undo() {
 // ── 저장 함수 ─────────────────────────────────────────────
 async function mobileSaveBlob(blob, filename, mimeType) {
   const isMobile = /Mobi|Android|iPad|iPhone|iPod/i.test(navigator.userAgent);
-  const url = URL.createObjectURL(blob);
 
   if (!isMobile) {
     // 데스크탑: 바로 다운로드
+    const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
     setTimeout(() => URL.revokeObjectURL(url), 1000);
     return;
   }
 
-  // 모바일: Web Share API 시도
-  if (navigator.share && navigator.canShare) {
+  // iOS/Android: Web Share API (파일 공유 시트)
+  const file = new File([blob], filename, { type: mimeType });
+  if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
     try {
-      const file = new File([blob], filename, { type: mimeType });
-      if (navigator.canShare({ files: [file] })) {
-        await navigator.share({ files: [file], title: filename });
-        URL.revokeObjectURL(url);
-        return;
-      }
+      await navigator.share({ files: [file], title: filename });
+      return;
     } catch(e) {
-      if (e.name === 'AbortError') { URL.revokeObjectURL(url); return; }
+      if (e.name === 'AbortError') return; // 사용자가 취소
+      // 다른 에러는 폴백으로 진행
     }
   }
 
-  // 모바일 폴백: 화면에 다운로드 링크 표시
-  showDownloadLink(url, filename);
+  // 폴백: 공유 시트 수동 오버레이
+  showDownloadLink(URL.createObjectURL(blob), filename);
 }
 
 function showDownloadLink(url, filename) {
@@ -2986,14 +2981,22 @@ function showDownloadLink(url, filename) {
   title.textContent = '파일 저장';
 
   const fname = document.createElement('div');
-  fname.style.cssText = 'font-size:11px;color:var(--muted);margin-bottom:18px;word-break:break-all';
+  fname.style.cssText = 'font-size:11px;color:var(--muted);margin-bottom:6px;word-break:break-all';
   fname.textContent = filename;
+
+  const hint = document.createElement('div');
+  const isIOSdev = /iPad|iPhone|iPod/i.test(navigator.userAgent);
+  hint.style.cssText = 'font-size:10px;color:var(--muted);margin-bottom:14px;line-height:1.5;background:var(--surface2);padding:6px 10px;border-radius:6px';
+  hint.textContent = isIOSdev
+    ? '공유하기를 탭한 후 "파일에 저장" 또는 원하는 앱을 선택하세요.'
+    : '버튼을 탭해서 파일을 저장하세요.';
 
   const link = document.createElement('a');
   link.href = url;
   link.download = filename;
   link.style.cssText = 'display:block;background:var(--accent);color:#fff;border-radius:8px;padding:12px 16px;font-size:14px;font-weight:600;text-decoration:none;margin-bottom:10px';
-  link.textContent = '저장하기';
+  const isIOS = /iPad|iPhone|iPod/i.test(navigator.userAgent);
+  link.textContent = isIOS ? '공유하기 (파일 저장)' : '저장하기';
   link.addEventListener('click', () => {
     setTimeout(() => { overlay.remove(); URL.revokeObjectURL(url); }, 1500);
   });
@@ -3003,7 +3006,7 @@ function showDownloadLink(url, filename) {
   cancel.textContent = '취소';
   cancel.addEventListener('click', () => { overlay.remove(); URL.revokeObjectURL(url); });
 
-  card.append(icon, title, fname, link, cancel);
+  card.append(icon, title, fname, hint, link, cancel);
   overlay.appendChild(card);
 
   overlay.addEventListener('click', e => {
