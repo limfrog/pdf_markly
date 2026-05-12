@@ -1,0 +1,4442 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.json">
+<meta name="application-name" content="PDF Markly">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="PDF Markly">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#2563eb">
+<title>PDF Markly</title>
+<script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/legacy/build/pdf.min.js"></script>
+<script>
+(function(){
+  var lib=window.pdfjsLib; if(!lib)return;
+
+  // CDN worker 설정 (데스크탑) — 모바일에서 실패해도 fake worker로 자동 폴백
+  lib.GlobalWorkerOptions.workerSrc =
+    'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/legacy/build/pdf.worker.min.js';
+
+  // console 억제: worker/PDF 관련 warn·error·log 모두 숨김
+  var _w=console.warn.bind(console);
+  var _e=console.error.bind(console);
+  var _suppress=function(m){
+    var s=String(m==null?'':m);
+    return s.indexOf('worker')>-1||s.indexOf('Worker')>-1||
+           s.indexOf('fake')>-1||s.indexOf('Fake')>-1||
+           s.indexOf('Setting up')>-1||s.indexOf('workerSrc')>-1||
+           s.indexOf('blob')>-1||s.indexOf('Cannot load script')>-1||
+           s.indexOf('blob-request')>-1;
+  };
+  console.warn=function(){if(_suppress(arguments[0]))return;_w.apply(console,arguments);};
+  console.error=function(){if(_suppress(arguments[0]))return;_e.apply(console,arguments);};
+})();
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Nanum+Gothic:wght@400;700;800&family=Noto+Sans+KR:wght@300;400;500;700&family=Space+Mono:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Nanum+Myeongjo:wght@400;700;800&family=Nanum+Brush+Script&family=Nanum+Pen+Script&family=Black+Han+Sans&family=Do+Hyeon&family=Jua&family=Gugi&family=Gamja+Flower&family=Sunflower:wght@300;500;700&family=Poor+Story&family=Single+Day&family=Hi+Melody&family=Song+Myung&family=Hahmlet:wght@400;700&family=Gowun+Dodum&family=Gowun+Batang:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&family=Open+Sans:wght@300;400;700&family=Lato:wght@300;400;700&family=Montserrat:wght@400;700&family=Raleway:wght@400;700&family=Oswald:wght@400;700&family=Inter:wght@300;400;700&family=Poppins:wght@300;400;700&family=Nunito:wght@300;400;700&family=Source+Sans+3:wght@300;400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Merriweather:wght@300;400;700&family=Lora:wght@400;700&family=EB+Garamond:wght@400;700&family=Cormorant+Garamond:wght@400;700&family=Libre+Baskerville:wght@400;700&family=Crimson+Text:wght@400;700&family=PT+Serif:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&family=Source+Code+Pro:wght@400;700&family=JetBrains+Mono:wght@400;700&family=IBM+Plex+Mono:wght@400;700&family=Inconsolata:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Pacifico&family=Dancing+Script:wght@400;700&family=Caveat:wght@400;700&family=Indie+Flower&family=Permanent+Marker&family=Satisfy&family=Lobster&family=Great+Vibes&family=Kalam:wght@300;400;700&family=Patrick+Hand&display=swap');
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+/* ━━━━━━━━━━━━━━ TOKENS ━━━━━━━━━━━━━━ */
+:root{
+  --bg:#f0f0f0; --bar:#ffffff; --ribbon:#f8f8f8;
+  --border:#d0d0d0; --borderl:#e6e6e6;
+  --accent:#2563eb; --accent2:#db2777; --accent3:#0d9488;
+  --hover:#e8eef8; --active:#dbeafe;
+  --text:#1a1a1a; --muted:#6b7280;
+  --danger:#dc2626; --success:#16a34a;
+  --cbg:#94a3b8;
+  --surface:#ffffff; --surface2:#f3f4f6;
+}
+[data-theme="dark"]{
+  --bg:#0e0f14; --bar:#16181f; --ribbon:#13151c;
+  --border:#2a2d3a; --borderl:#232636;
+  --accent:#6c8aff; --accent2:#ff6b9d; --accent3:#4ecdc4;
+  --hover:#1e2235; --active:#1a2550;
+  --text:#e8eaf6; --muted:#8b90a7;
+  --danger:#ff5252; --success:#69f0ae;
+  --cbg:#0a0b10;
+  --surface:#16181f; --surface2:#1e2029;
+}
+
+body{
+  font-family:'Noto Sans KR',-apple-system,BlinkMacSystemFont,sans-serif;
+  background:var(--bg); color:var(--text);
+  height:100dvh; overflow:hidden;
+  display:flex; flex-direction:column;
+  font-size:12px; user-select:none;
+}
+
+/* ━━━━━━━━━━━━━━ TITLE BAR ━━━━━━━━━━━━━━ */
+.title-bar{
+  background:var(--bar); height:48px;
+  display:flex; align-items:center; padding:0 8px;
+  border-bottom:1px solid var(--border); flex-shrink:0; gap:4px; z-index:100;
+}
+.logo{
+  font-family:'Space Mono',monospace; font-size:14px; font-weight:700; letter-spacing:-.5px;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  -webkit-background-clip:text; -webkit-text-fill-color:transparent; flex-shrink:0;
+}
+.title-name{flex:1;text-align:center;font-size:12px;font-weight:500;color:var(--muted);pointer-events:none}
+.title-actions{display:flex;gap:4px;align-items:center;flex-shrink:0}
+
+/* ━━━━━━━━━━━━━━ TAB BAR ━━━━━━━━━━━━━━ */
+.tab-bar{
+  background:var(--bar); display:flex; align-items:flex-end;
+  padding:0 6px; border-bottom:1px solid var(--border);
+  flex-shrink:0; gap:1px; height:28px;
+}
+.tab-btn{
+  padding:0 13px; height:100%; display:flex; align-items:center;
+  font-size:11px; font-weight:500; color:var(--muted); cursor:pointer;
+  border:1px solid transparent; border-bottom:none; border-radius:4px 4px 0 0;
+  background:transparent; font-family:inherit;
+  transition:color .12s,background .12s; position:relative; bottom:-1px;
+}
+.tab-btn:hover{color:var(--text);background:var(--hover)}
+.tab-btn.active{color:var(--accent);background:var(--ribbon);border-color:var(--border);border-bottom-color:var(--ribbon)}
+
+/* ━━━━━━━━━━━━━━ RIBBON PANELS ━━━━━━━━━━━━━━ */
+.ribbon-panel{
+  background:var(--ribbon); border-bottom:1px solid var(--border);
+  flex-shrink:0; height:80px; display:none; align-items:stretch;
+  padding:0 4px; overflow-x:auto; overflow-y:hidden;
+}
+.ribbon-panel.active{display:flex}
+.ribbon-panel::-webkit-scrollbar{height:0}
+
+/* Section */
+.rs{
+  display:flex; align-items:stretch;
+  border-right:1px solid var(--borderl);
+  padding:4px 5px 2px; gap:3px;
+  min-width:fit-content; position:relative; flex-shrink:0;
+}
+.rs:last-child{border-right:none}
+.rs-label{
+  position:absolute; bottom:2px; left:0; right:0;
+  text-align:center; font-size:9px; color:var(--muted); pointer-events:none;
+}
+.rs-body{display:flex;align-items:flex-start;gap:3px;padding-bottom:14px;flex:1}
+
+/* Large icon button */
+.ib{
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:2px; padding:3px 5px; border-radius:5px; cursor:pointer;
+  border:1px solid transparent; background:transparent; font-family:inherit;
+  font-size:9px; color:var(--text); min-width:42px; height:60px;
+  transition:background .1s,border-color .1s; flex-shrink:0; white-space:nowrap;
+}
+.ib:hover{background:var(--hover);border-color:var(--border)}
+.ib.active{background:var(--active);border-color:var(--accent);color:var(--accent)}
+.ib svg{pointer-events:none;flex-shrink:0}
+
+/* Small button */
+.sb{
+  display:flex; align-items:center; justify-content:center;
+  width:30px; height:26px; border-radius:4px; cursor:pointer;
+  border:1px solid transparent; background:transparent;
+  font-family:inherit; font-size:10px; color:var(--text);
+  transition:background .1s,border-color .1s; flex-shrink:0;
+}
+.sb:hover{background:var(--hover);border-color:var(--border)}
+.sb.active{background:var(--active);border-color:var(--accent);color:var(--accent)}
+
+.btn-col{display:flex;flex-direction:column;gap:2px}
+.btn-row{display:flex;gap:2px}
+.vdiv{width:1px;background:var(--borderl);align-self:stretch;margin:0 2px}
+
+/* Slider */
+.op-wrap{display:flex;flex-direction:column;gap:1px;width:95px}
+.op-row{display:flex;justify-content:space-between;align-items:center}
+.op-lbl{font-size:9px;color:var(--muted)}
+.op-val{font-size:9px;font-weight:600;color:var(--accent);min-width:26px;text-align:right}
+input[type=range].oslider{
+  -webkit-appearance:none;width:100%;height:4px;border-radius:3px;
+  outline:none;cursor:pointer;border:none;background:var(--border);
+}
+input[type=range].oslider::-webkit-slider-thumb{
+  -webkit-appearance:none;width:10px;height:10px;border-radius:50%;
+  background:#fff;border:2px solid var(--accent);cursor:pointer;
+}
+
+/* Color palette */
+.palette-grid{display:grid;grid-template-columns:repeat(6,18px);gap:2px;align-content:center}
+.swatch{
+  width:18px;height:18px;border-radius:3px;cursor:pointer;
+  border:1.5px solid transparent;transition:transform .1s,border-color .1s;flex-shrink:0;
+}
+.swatch:hover{transform:scale(1.18);border-color:rgba(0,0,0,.35)}
+.swatch.sel{border-color:var(--accent)!important;outline:2px solid var(--accent);outline-offset:1px;transform:scale(1.1)}
+
+/* cpbox — color picker trigger */
+.cpbox{
+  width:22px;height:18px;border:1.5px solid #999;border-radius:3px;
+  position:relative;overflow:hidden;cursor:pointer;flex-shrink:0;
+}
+.cpbox input[type=color]{
+  position:absolute;inset:-3px;width:calc(100%+6px);height:calc(100%+6px);
+  border:none;padding:0;cursor:pointer;opacity:0;
+}
+.cpbox-face{position:absolute;inset:0;pointer-events:none;border-radius:2px}
+
+/* Font controls */
+select.sel-font{
+  border:1px solid var(--border);border-radius:4px;padding:0 4px;
+  font-size:11px;font-family:inherit;background:var(--surface);
+  color:var(--text);cursor:pointer;height:22px;outline:none;
+}
+select.sel-font:focus{border-color:var(--accent)}
+[data-theme="dark"] select.sel-font option{background:#1e2029;color:var(--text)}
+
+.fspinner{display:flex;align-items:center}
+.fspinner input{
+  width:32px;height:22px;border:1px solid var(--border);
+  border-radius:3px 0 0 3px;text-align:center;
+  font-size:11px;font-family:inherit;background:var(--surface);color:var(--text);
+  outline:none;border-right:none;
+}
+.spin-col{display:flex;flex-direction:column}
+.spbtn{
+  width:13px;height:11px;border:1px solid var(--border);
+  background:var(--surface2);cursor:pointer;
+  display:flex;align-items:center;justify-content:center;font-size:7px;padding:0;color:var(--text);
+}
+.spbtn:first-child{border-radius:0 3px 0 0;border-bottom:none}
+.spbtn:last-child{border-radius:0 0 3px 0}
+.spbtn:hover{background:var(--hover)}
+
+.tsb{
+  width:22px;height:22px;border:1px solid transparent;border-radius:3px;
+  background:transparent;cursor:pointer;font-family:inherit;font-size:12px;
+  display:flex;align-items:center;justify-content:center;color:var(--text);
+}
+.tsb:hover{background:var(--hover);border-color:var(--border)}
+.tsb.active{background:var(--active);border-color:var(--accent);color:var(--accent)}
+
+/* ━━━━━━━━━━━━━━ TITLE BUTTONS ━━━━━━━━━━━━━━ */
+.tbtn{
+  display:inline-flex;align-items:center;gap:3px;
+  padding:4px 6px;border-radius:5px;border:1px solid var(--border);
+  font-size:10px;font-family:inherit;font-weight:500;
+  cursor:pointer;transition:all .14s;white-space:nowrap;
+  background:transparent;color:var(--text);
+}
+.tbtn:hover{background:var(--hover);border-color:var(--accent)}
+.tbtn.save{background:var(--accent);color:#fff;border-color:var(--accent)}
+.tbtn.save:hover{filter:brightness(1.1)}
+.tbtn.theme-active{background:var(--active);border-color:var(--accent);color:var(--accent)}
+.tbtn svg{width:13px;height:13px;flex-shrink:0}
+
+/* PNG dropdown */
+.exp-wrap{position:relative}
+.exp-menu{
+  display:none;position:absolute;top:calc(100%+4px);right:0;
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:8px;padding:5px;min-width:190px;z-index:400;
+  box-shadow:0 8px 28px rgba(0,0,0,.25);flex-direction:column;gap:3px;
+}
+.exp-menu.open{display:flex}
+.exp-item{
+  display:flex;align-items:center;gap:8px;padding:7px 10px;
+  border-radius:5px;border:none;font-size:11px;font-family:inherit;
+  color:var(--text);background:transparent;cursor:pointer;transition:background .12s;
+}
+.exp-item:hover{background:var(--surface2)}
+.exp-item svg{width:13px;height:13px;flex-shrink:0;color:var(--accent3)}
+
+/* ━━━━━━━━━━━━━━ APP LAYOUT ━━━━━━━━━━━━━━ */
+.app-body{display:flex;flex:1;overflow:hidden;min-height:0}
+
+/* ━━━━━━━━━━━━━━ SIDEBAR ━━━━━━━━━━━━━━ */
+.sidebar{
+  width:192px;background:var(--surface);border-right:1px solid var(--border);
+  display:flex;flex-direction:column;flex-shrink:0;
+}
+.sb-tabs{display:flex;border-bottom:1px solid var(--border);flex-shrink:0}
+.sb-tab{
+  flex:1;padding:7px 4px;font-size:11px;font-weight:500;
+  text-align:center;cursor:pointer;color:var(--muted);
+  border-bottom:2px solid transparent;transition:all .14s;
+}
+.sb-tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.tab-panel{display:none;flex:1;flex-direction:column;overflow:hidden}
+.tab-panel.active{display:flex}
+
+/* Drop zone */
+.drop-zone{
+  margin:8px;border:2px dashed var(--border);border-radius:8px;
+  padding:13px 10px;text-align:center;cursor:pointer;transition:all .2s;flex-shrink:0;
+}
+.drop-zone:hover,.drop-zone.dragover{border-color:var(--accent);background:var(--hover)}
+.drop-zone svg{width:20px;height:20px;color:var(--accent);margin-bottom:4px}
+.drop-zone p{font-size:10px;color:var(--muted);line-height:1.5}
+.drop-zone span{color:var(--accent);font-weight:500}
+
+/* Page list */
+.page-list-wrap{flex:1;overflow-y:auto;padding:0 5px 5px}
+.pl-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:6px 2px 4px;font-size:10px;color:var(--muted);
+  font-weight:500;text-transform:uppercase;letter-spacing:.5px;
+}
+.pl-badge{
+  background:var(--surface2);padding:1px 6px;border-radius:10px;
+  font-size:10px;color:var(--accent);font-weight:600;
+}
+.page-item{
+  display:flex;align-items:center;gap:5px;padding:5px;
+  border-radius:6px;cursor:grab;margin-bottom:2px;
+  border:1px solid transparent;transition:all .14s;background:var(--surface2);
+}
+.page-item:hover{border-color:var(--border)}
+.page-item.selected{border-color:var(--accent);background:var(--active)}
+.page-item.dragging{opacity:.4}
+.page-item.drag-over{border-color:var(--accent2);border-style:dashed}
+.page-thumb{
+  width:34px;height:46px;background:#fff;border-radius:3px;
+  flex-shrink:0;overflow:hidden;display:flex;align-items:center;justify-content:center;
+  font-size:8px;color:#aaa;
+}
+.page-thumb canvas{width:100%;height:100%;display:block}
+.page-info{flex:1;min-width:0}
+.page-num{font-size:11px;font-weight:500}
+.page-size{font-size:9px;color:var(--muted)}
+.page-actions{display:flex;gap:2px;opacity:0;transition:opacity .14s}
+.page-item:hover .page-actions{opacity:1}
+.ic-btn{
+  width:19px;height:19px;border-radius:3px;border:none;
+  background:var(--surface);color:var(--muted);cursor:pointer;
+  display:flex;align-items:center;justify-content:center;transition:all .14s;
+}
+.ic-btn:hover{background:var(--bg);color:var(--text)}
+.ic-btn.del:hover{color:var(--danger)}
+.ic-btn svg{width:10px;height:10px}
+
+/* Files tab */
+.file-item{
+  background:var(--surface2);padding:7px 8px;border-radius:5px;
+  font-size:11px;margin-bottom:3px;
+}
+.file-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text)}
+.file-pages{color:var(--muted);margin-top:1px;font-size:10px}
+
+/* ━━━━━━━━━━━━━━ MAIN CANVAS AREA ━━━━━━━━━━━━━━ */
+.main-area{flex:1;display:flex;flex-direction:column;overflow:hidden;min-height:0;position:relative}
+
+.canvas-wrap{
+  flex:1;overflow:auto;
+  display:flex;align-items:flex-start;justify-content:center;
+  padding:28px;background:var(--cbg);min-height:0;
+}
+.canvas-container{position:relative;display:inline-block;box-shadow:0 8px 40px rgba(0,0,0,.5)}
+#mainCanvas{display:block;background:#fff}
+.overlay-canvas{position:absolute;top:0;left:0;cursor:crosshair}
+
+/* Text edit box */
+.text-edit-box{position:absolute;display:none;z-index:10;touch-action:none}
+.text-edit-box.active{display:block}
+.text-edit-input{
+  display:block;min-width:40px;min-height:1.2em;outline:none;
+  border:2px dashed var(--accent);border-radius:4px;padding:2px 6px;
+  background:rgba(255,255,255,.88);white-space:pre;word-break:keep-all;cursor:text;
+}
+.text-edit-input:empty::before{content:attr(data-placeholder);color:#aaa;pointer-events:none}
+.text-edit-actions{position:absolute;top:-34px;left:0;display:flex;gap:4px;white-space:nowrap;}
+.teb-btn{padding:4px 10px;border-radius:5px;border:none;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit}
+.teb-btn.ok{background:var(--accent);color:#fff}
+.teb-btn.cancel{background:var(--surface2);color:var(--muted);border:1px solid var(--border)}
+
+/* Empty state */
+.empty-state{
+  flex:1;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:12px;color:var(--muted);
+}
+.empty-state svg{width:52px;height:52px;opacity:.18}
+.empty-state p{font-size:14px}
+.empty-state small{font-size:11px;opacity:.6}
+
+/* Drag-over highlight */
+.main-area.drag-over-main::after{
+  content:'PDF 또는 이미지를 놓으세요';
+  position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  font-size:18px;font-weight:600;color:var(--accent);
+  background:rgba(108,138,255,.08);border:3px dashed var(--accent);
+  border-radius:12px;pointer-events:none;z-index:50;margin:10px;
+}
+
+/* Status bar */
+.status-bar{
+  background:var(--surface);border-top:1px solid var(--border);
+  height:22px;display:flex;align-items:center;padding:0 12px;gap:16px;flex-shrink:0;
+}
+.stat{font-size:10px;color:var(--muted);display:flex;align-items:center;gap:3px}
+.stat b{color:var(--accent);font-weight:600;font-family:'Space Mono',monospace}
+
+/* ━━━━━━━━━━━━━━ TOAST / LOADING ━━━━━━━━━━━━━━ */
+.toast-wrap{position:fixed;bottom:26px;right:18px;display:flex;flex-direction:column;gap:5px;z-index:1000;pointer-events:none}
+.toast{
+  padding:8px 14px;border-radius:7px;font-size:12px;font-weight:500;
+  animation:toastIn .2s ease;max-width:250px;
+  background:var(--surface);border:1px solid var(--border);box-shadow:0 4px 16px rgba(0,0,0,.2);
+}
+.toast.info{color:var(--accent)}.toast.success{color:var(--success)}.toast.error{color:var(--danger)}
+@keyframes toastIn{from{transform:translateX(18px);opacity:0}to{transform:none;opacity:1}}
+
+.loading-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:300;backdrop-filter:blur(4px)}
+.loading-overlay.hidden{display:none}
+.spinner{width:34px;height:34px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ━━━━━━━━━━━━━━ UTILS ━━━━━━━━━━━━━━ */
+.hidden{display:none!important}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+
+/* JS-compat legacy classes */
+.color-swatch{width:20px;height:20px;border-radius:3px;cursor:pointer;border:2px solid transparent;transition:all .14s;flex-shrink:0}
+.color-swatch.selected,.color-swatch:hover{border-color:#fff;transform:scale(1.1)}
+.color-row{display:flex;gap:5px;align-items:center;flex-wrap:wrap}
+.form-input{background:var(--bg);border:1px solid var(--border);border-radius:5px;padding:6px 9px;font-size:12px;color:var(--text);font-family:inherit;width:100%;outline:none}
+.form-input:focus{border-color:var(--accent)}
+.range-row{display:flex;align-items:center;gap:8px}
+input[type=range]{flex:1;accent-color:var(--accent)}
+.range-val{font-size:11px;color:var(--muted);min-width:28px;text-align:right}
+.font-weight-btn{padding:3px 7px;border-radius:4px;border:1px solid var(--border);background:var(--surface2);color:var(--text);cursor:pointer;font-size:10px;font-family:inherit;transition:all .12s}
+.font-weight-btn:hover{background:var(--hover)}
+.font-weight-btn.selected{background:var(--accent);border-color:var(--accent);color:#fff}
+.section-divider{height:1px;background:var(--border);margin:4px 0}
+.form-group{display:flex;flex-direction:column;gap:5px}
+.form-label{font-size:11px;color:var(--muted);font-weight:500}
+
+/* selectedShapeOptions JS-compat */
+#shapeOptions,#selectedShapeOptions{pointer-events:auto!important}
+#shapeOptions *,#selectedShapeOptions *{pointer-events:auto!important}
+
+
+/* ━━━━━━━━━━━━━━ MOBILE ICON TOOL BUTTONS ━━━━━━━━━━━━━━ */
+.micon-btn{
+  width:36px;height:36px;border-radius:6px;border:1.5px solid var(--border);
+  background:transparent;cursor:pointer;color:var(--text);
+  display:flex;align-items:center;justify-content:center;
+  transition:background .12s,border-color .12s,color .12s;flex-shrink:0;
+}
+.micon-btn:hover{background:var(--hover)}
+.micon-btn.active{background:var(--active);border-color:var(--accent);color:var(--accent)}
+
+/* ━━━━━━━━━━━━━━ MOBILE CUSTOM SLIDER ━━━━━━━━━━━━━━ */
+.mslider-wrap{flex:1;padding:8px 0;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.mslider-track{position:relative;height:4px;background:var(--border);border-radius:2px;width:100%}
+.mslider-fill{position:absolute;left:0;top:0;height:4px;background:var(--accent);border-radius:2px;pointer-events:none}
+.mslider-thumb{position:absolute;top:50%;width:20px;height:20px;background:#fff;border:2px solid var(--accent);border-radius:50%;transform:translate(-50%,-50%);box-shadow:0 1px 4px rgba(0,0,0,.25);pointer-events:none}
+
+/* ━━━━━━━━━━━━━━ MOBILE ━━━━━━━━━━━━━━ */
+@media(max-width:768px){
+  .sidebar{display:none}.tab-bar{display:none}
+  .ribbon-panel{display:none!important}.status-bar{display:none}
+  .app-body{flex-direction:column;flex:1;overflow:hidden;min-height:0}
+  .canvas-wrap{flex:1;overflow:scroll;-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y pinch-zoom;min-height:0;min-width:0}
+  .mobile-edit-panel{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border);display:flex;flex-direction:column;max-height:220px;overflow:hidden}
+  .mobile-edit-tabs{display:flex;border-bottom:1px solid var(--border);flex-shrink:0;height:36px;min-height:36px}
+  .mobile-edit-tab{flex:1;padding:0 3px;font-size:10px;font-weight:500;text-align:center;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;transition:all .14s;font-family:inherit;background:none;border-left:none;border-right:none;border-top:none;display:flex;align-items:center;justify-content:center}
+  .mobile-edit-tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+  .mobile-edit-content{padding:8px 12px;overflow-y:auto;max-height:174px}
+  .mobile-thumb-row{display:flex;gap:6px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:3px;height:90px;align-items:center;flex-shrink:0}
+  .mobile-thumb-item{flex-shrink:0;width:46px;cursor:pointer}
+  .mobile-thumb-item-inner{width:46px;height:62px;background:#fff;border-radius:3px;border:2px solid transparent;overflow:hidden;display:flex;align-items:center;justify-content:center;transition:border-color .14s}
+  .mobile-thumb-item-inner.selected{border-color:var(--accent)}
+  .mobile-thumb-item-inner canvas{width:100%;height:100%;display:block}
+  .mobile-thumb-label{font-size:9px;color:var(--muted);text-align:center;margin-top:2px}
+  .tool-btn{padding:4px 7px;font-size:10px;white-space:nowrap;border:1px solid var(--border);border-radius:4px;background:transparent;color:var(--text);cursor:pointer}
+  .tool-btn.active{background:var(--active);border-color:var(--accent);color:var(--accent)}
+}
+  /* iOS 홈 인디케이터 여백 */
+  .safe-area-bottom{height:env(safe-area-inset-bottom,0px);flex-shrink:0;background:var(--surface)}
+@media(min-width:769px){
+  .mobile-edit-panel{display:none!important}
+  .mobile-drawer{display:none!important}
+  .drawer-backdrop{display:none!important}
+}
+
+/* Mobile drawers */
+.mobile-drawer{position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:1px solid var(--border);border-radius:14px 14px 0 0;z-index:200;transform:translateY(100%);transition:transform .3s cubic-bezier(.32,.72,0,1);max-height:72vh;display:flex;flex-direction:column}
+.mobile-drawer.open{transform:translateY(0)}
+.drawer-handle{width:30px;height:3px;background:var(--border);border-radius:2px;margin:8px auto 3px;flex-shrink:0;cursor:grab}
+.drawer-title{font-size:13px;font-weight:600;color:var(--text);padding:5px 14px 8px;flex-shrink:0;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.drawer-close{width:25px;height:25px;border-radius:50%;border:none;background:var(--surface2);color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center}
+.drawer-close svg{width:12px;height:12px}
+.drawer-body{overflow-y:auto;flex:1;padding:12px}
+.drawer-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:199}
+.drawer-backdrop.open{display:block}
+.mobile-page-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.mobile-page-card{background:var(--surface2);border-radius:6px;border:2px solid transparent;overflow:hidden;cursor:pointer;transition:border-color .14s;aspect-ratio:3/4;display:flex;flex-direction:column}
+.mobile-page-card.selected{border-color:var(--accent)}
+.mobile-page-card-thumb{flex:1;background:#fff;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.mobile-page-card-thumb canvas{width:100%;height:100%;object-fit:contain;display:block}
+.mobile-page-card-label{font-size:10px;color:var(--muted);text-align:center;padding:3px;background:var(--surface2)}
+
+/* ── 페이지 번호 다이얼로그 ── */
+.pn-pos-btn{padding:5px 4px;border:1px solid var(--border);border-radius:5px;background:var(--surface2);color:var(--muted);cursor:pointer;font-size:10px;font-family:inherit;transition:all .12s}
+.pn-pos-btn:hover{border-color:var(--accent);color:var(--accent)}
+.pn-pos-btn.active{background:var(--active);border-color:var(--accent);color:var(--accent);font-weight:600}
+.pn-fmt-btn{padding:5px 10px;border:1px solid var(--border);border-radius:5px;background:var(--surface2);color:var(--muted);cursor:pointer;font-size:11px;font-family:inherit;transition:all .12s}
+.pn-fmt-btn:hover{border-color:var(--accent);color:var(--accent)}
+.pn-fmt-btn.active{background:var(--active);border-color:var(--accent);color:var(--accent);font-weight:600}
+.pn-range-btn{padding:5px 12px;border:1px solid var(--border);border-radius:5px;background:var(--surface2);color:var(--muted);cursor:pointer;font-size:11px;font-family:inherit;transition:all .12s}
+.pn-range-btn:hover{border-color:var(--accent);color:var(--accent)}
+.pn-range-btn.active{background:var(--active);border-color:var(--accent);color:var(--accent);font-weight:600}
+</style>
+</head>
+<body>
+
+<!-- ══════════════ TITLE BAR ══════════════ -->
+<div class="title-bar">
+  <div class="logo">PDF Markly</div>
+  <div class="title-actions">
+    <button class="tbtn" id="btnAddPdf" style="flex-direction:column;gap:1px;padding:5px 10px;line-height:1.2"><span style="font-size:9px;color:var(--muted)">불러오기</span><span>PDF</span></button>
+    <button class="tbtn" id="btnAddImage" style="flex-direction:column;gap:1px;padding:5px 10px;line-height:1.2"><span style="font-size:9px;color:var(--muted)">불러오기</span><span>이미지</span></button>
+    <button class="tbtn" id="btnUndoMobile" onclick="undo()" style="flex-direction:column;gap:1px;padding:5px 10px;line-height:1.2"><span style="font-size:9px;color:var(--muted)">편집</span><span>실행취소</span></button>
+    <button class="tbtn save" id="btnExport" style="flex-direction:column;gap:1px;padding:5px 10px;line-height:1.2"><span style="font-size:9px;opacity:0.7">저장</span><span>PDF</span></button>
+    <div class="exp-wrap" id="exportDropdownWrap">
+      <button class="tbtn" id="btnExportPng" style="flex-direction:column;gap:1px;padding:5px 10px;line-height:1.2"><span style="font-size:9px;color:var(--muted)">저장</span><span>PNG <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:8px;height:8px"><polyline points="6,9 12,15 18,9"/></svg></span></button>
+      <div class="exp-menu" id="exportDropdownMenu">
+        <button class="exp-item" id="btnExportPngOne">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21,15 16,10 5,21"/></svg>
+          현재 페이지 PNG
+        </button>
+        <button class="exp-item" id="btnExportPngAll">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="14" height="14" rx="2"/><rect x="8" y="8" width="14" height="14" rx="2"/></svg>
+          전체 페이지 PNG (ZIP)
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ RIBBON TAB BAR ══════════════ -->
+<div class="tab-bar">
+  <button class="tab-btn active" data-rb="input">입력</button>
+  <button class="tab-btn" data-rb="page">페이지</button>
+  <button class="tab-btn" data-rb="view">보기</button>
+</div>
+
+<!-- ══════════════ RIBBON: 입력 ══════════════ -->
+<div class="ribbon-panel active" id="ribbon-input">
+
+  <!-- 선택 + 실행취소 -->
+  <div class="rs">
+    <div class="rs-body">
+      <button class="ib active" id="toolSelect">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22"><path d="M5 3l14 9-7 1-3 7z"/></svg>
+        선택
+      </button>
+      <button class="ib" id="btnUndo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22"><polyline points="9,14 4,9 9,4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></svg>
+        실행취소
+      </button>
+    </div>
+    <div class="rs-label">편집</div>
+  </div>
+
+  <!-- 텍스트 도구 + 글꼴 -->
+  <div class="rs">
+    <div class="rs-body">
+      <button class="ib" id="toolText">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22"><polyline points="4,7 4,4 20,4 20,7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>
+        텍스트
+      </button>
+    </div>
+    <div class="rs-label">텍스트</div>
+  </div>
+
+  <!-- 글꼴 -->
+  <div class="rs">
+    <div class="rs-body" style="flex-direction:column;justify-content:center;gap:4px">
+      <div>
+        <div style="font-size:9px;color:var(--muted);margin-bottom:2px">글꼴</div>
+        <select id="fontFamily" class="sel-font" style="width:140px"></select>
+      </div>
+      <div style="display:flex;align-items:center;gap:3px">
+        <div class="fspinner">
+          <input type="number" id="fontSizeNum" min="8" max="200" value="18">
+          <div class="spin-col">
+            <button class="spbtn" onclick="adjFontSize(1)">▲</button>
+            <button class="spbtn" onclick="adjFontSize(-1)">▼</button>
+          </div>
+        </div>
+        <div class="vdiv"></div>
+        <button class="tsb active" id="fwBtnDefault" data-weight="400" onclick="setFontWeight('400',this)" title="보통">R</button>
+        <button class="tsb" id="fwBtn300" data-weight="300" onclick="setFontWeight('300',this)" title="얇게" style="font-weight:200">T</button>
+        <button class="tsb" id="fwBtn600" data-weight="600" onclick="setFontWeight('600',this)" title="반굵게"><span style="font-weight:600">S</span></button>
+        <button class="tsb" id="fwBtn700" data-weight="700" onclick="setFontWeight('700',this)" title="굵게"><b>B</b></button>
+        <button class="tsb" id="fwBtn900" data-weight="900" onclick="setFontWeight('900',this)" title="검정"><b style="font-weight:900">Bk</b></button>
+        <button class="tsb" id="fsBtnItalic" data-style="italic" onclick="toggleFontItalic(this)" title="기울임"><i>I</i></button>
+      </div>
+    </div>
+    <div class="rs-label">글꼴</div>
+  </div>
+
+  <!-- 크기 슬라이더 -->
+  <div class="rs">
+    <div class="rs-body" style="align-items:center">
+      <div class="op-wrap" style="padding-bottom:14px">
+        <div class="op-row"><span class="op-lbl">글자 크기</span><span class="op-val" id="fontSizeVal">18</span></div>
+        <input type="range" class="oslider" id="fontSize" min="8" max="72" value="18">
+      </div>
+    </div>
+    <div class="rs-label">크기</div>
+  </div>
+
+  <!-- 그리기 도구 -->
+  <div class="rs">
+    <div class="rs-body">
+      <button class="ib" id="toolDraw">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><circle cx="9" cy="9" r="2"/></svg>
+        그리기
+      </button>
+      <button class="ib" id="btnClearDrawings" style="color:var(--danger)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22"><polyline points="3,6 5,6 21,6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+        초기화
+      </button>
+    </div>
+    <div class="rs-label">그리기</div>
+  </div>
+
+  <!-- 두께 / 불투명도 (그리기+도형 공통) -->
+  <div class="rs">
+    <div class="rs-body" style="flex-direction:column;justify-content:center;gap:4px">
+      <div class="op-wrap">
+        <div class="op-row"><span class="op-lbl" id="ribbonSizeLbl">두께</span><span class="op-val" id="ribbonSizeVal">3</span></div>
+        <input type="range" class="oslider" id="ribbonSizeSlider" min="1" max="30" value="3">
+      </div>
+      <div class="op-wrap">
+        <div class="op-row"><span class="op-lbl">불투명도</span><span class="op-val" id="ribbonOpacityVal">100%</span></div>
+        <input type="range" class="oslider" id="ribbonOpacitySlider" min="10" max="100" value="100">
+      </div>
+      <!-- hidden inputs for JS compat -->
+      <input type="range" id="brushSize" min="1" max="30" value="3" style="display:none">
+      <input type="range" id="brushOpacity" min="10" max="100" value="100" style="display:none">
+      <div id="shapeOptions" style="display:none">
+        <input type="range" id="shapeSize" min="1" max="20" value="2">
+        <input type="range" id="shapeOpacity" min="10" max="100" value="100">
+      </div>
+    </div>
+    <div class="rs-label">두께 / 투명도</div>
+  </div>
+  <!-- JS compat: hidden value spans -->
+  <div style="display:none">
+    <span id="brushSizeVal"></span>
+    <span id="brushOpacityVal"></span>
+    <span id="shapeSizeVal"></span>
+    <span id="shapeOpacityVal"></span>
+  </div>
+
+  <!-- 도형 도구 -->
+  <div class="rs">
+    <div class="rs-body">
+      <button class="ib" id="toolLine">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22"><line x1="3" y1="21" x2="21" y2="3"/></svg>
+        직선
+      </button>
+      <button class="ib" id="toolStaff">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22"><line x1="2" y1="5" x2="22" y2="5"/><line x1="2" y1="9" x2="22" y2="9"/><line x1="2" y1="13" x2="22" y2="13"/><line x1="2" y1="17" x2="22" y2="17"/><line x1="2" y1="21" x2="22" y2="21"/></svg>
+        오선
+      </button>
+      <button class="ib" id="toolCircle">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22"><circle cx="12" cy="12" r="9"/></svg>
+        원
+      </button>
+      <button class="ib" id="toolRect">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
+        사각형
+      </button>
+      <button class="ib" id="toolRectFill">
+        <svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1" width="22" height="22"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
+        채운사각
+      </button>
+    </div>
+    <div class="rs-label">도형</div>
+  </div>
+
+
+
+  <!-- 통합 색상 팔레트 -->
+  <div class="rs">
+    <div class="rs-body" style="flex-direction:column;justify-content:center;gap:3px">
+      <span style="font-size:9px;color:var(--muted)">색상</span>
+      <div class="palette-grid" id="unifiedColors">
+        <div class="swatch sel" style="background:#000000" data-color="#000000"></div>
+        <div class="swatch" style="background:#ffffff;border:1px solid #bbb" data-color="#ffffff"></div>
+        <div class="swatch" style="background:#e53935" data-color="#e53935"></div>
+        <div class="swatch" style="background:#ff6b00" data-color="#ff6b00"></div>
+        <div class="swatch" style="background:#f9c800" data-color="#f9c800"></div>
+        <div class="swatch" style="background:#2e7d32" data-color="#2e7d32"></div>
+        <div class="swatch" style="background:#1565c0" data-color="#1565c0"></div>
+        <div class="swatch" style="background:#6a1b9a" data-color="#6a1b9a"></div>
+        <div class="swatch" style="background:#ad1457" data-color="#ad1457"></div>
+        <div class="swatch" style="background:#607d8b" data-color="#607d8b"></div>
+        <div class="swatch" style="background:#795548" data-color="#795548"></div>
+        <div class="swatch" style="background:#ff5722" data-color="#ff5722"></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:4px;margin-top:1px">
+        <div class="cpbox">
+          <div class="cpbox-face" id="unifiedColorFace" style="background:#000"></div>
+          <input type="color" id="customUnifiedColor" value="#000000">
+        </div>
+        <span style="font-size:9px;color:var(--muted)">직접 선택</span>
+      </div>
+    </div>
+    <div class="rs-label">색상</div>
+  </div>
+
+  <!-- 선택된 도형/텍스트 편집 -->
+  <div class="rs" id="selectedShapeOptions" style="display:none!important">
+    <div class="rs-body" style="flex-direction:column;justify-content:center;gap:4px">
+      <span style="font-size:9px;color:var(--accent);font-weight:600">● 선택됨</span>
+      <div class="palette-grid" id="selectedShapeColors">
+        <div class="swatch" style="background:#000000" data-color="#000000"></div>
+        <div class="swatch" style="background:#ffffff;border:1px solid #bbb" data-color="#ffffff"></div>
+        <div class="swatch" style="background:#e53935" data-color="#e53935"></div>
+        <div class="swatch" style="background:#ff6b00" data-color="#ff6b00"></div>
+        <div class="swatch" style="background:#f9c800" data-color="#f9c800"></div>
+        <div class="swatch" style="background:#2e7d32" data-color="#2e7d32"></div>
+        <div class="swatch" style="background:#1565c0" data-color="#1565c0"></div>
+        <div class="swatch" style="background:#6a1b9a" data-color="#6a1b9a"></div>
+        <div class="swatch" style="background:#ad1457" data-color="#ad1457"></div>
+        <div class="swatch" style="background:#607d8b" data-color="#607d8b"></div>
+        <div class="swatch" style="background:#795548" data-color="#795548"></div>
+        <div class="swatch" style="background:#ff5722" data-color="#ff5722"></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:5px;margin-top:1px">
+        <div class="cpbox"><input type="color" id="customSelectedShapeColor" value="#000000"></div>
+        <button class="tbtn" id="btnDeleteSelectedShape" style="padding:2px 8px;font-size:10px;color:var(--danger);border-color:var(--danger)">삭제</button>
+      </div>
+    </div>
+    <div class="rs-label">선택 편집</div>
+  </div>
+
+
+
+  <!-- 하위 호환: textColors, drawColors, shapeColors 팔레트는 JS가 참조하므로 숨겨서 유지 -->
+  <div style="display:none">
+    <div id="textColors"></div>
+    <div id="drawColors"></div>
+    <div id="shapeColors"></div>
+    <input type="color" id="customTextColor" value="#000000" style="display:none">
+    <input type="color" id="customDrawColor" value="#000000" style="display:none">
+    <input type="color" id="customShapeColor" value="#000000" style="display:none">
+    <div id="textColorFace"></div>
+    <div id="drawColorFace"></div>
+    <div id="shapeColorFace"></div>
+  </div>
+</div>
+
+
+<!-- ══════════════ RIBBON: 페이지 ══════════════ -->
+<div class="ribbon-panel" id="ribbon-page">
+  <!-- 페이지 번호 -->
+  <div class="rs">
+    <div class="rs-body">
+      <button class="ib" onclick="openPageNumDialog()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22"><rect x="3" y="3" width="18" height="18" rx="2"/><text x="12" y="16" font-size="10" text-anchor="middle" fill="currentColor" stroke="none" font-family="monospace">1</text></svg>
+        페이지 번호
+      </button>
+    </div>
+    <div class="rs-label">번호 삽입</div>
+  </div>
+
+  <div class="rs">
+    <div class="rs-body">
+      <button class="ib" id="btnMoveUp">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22"><polyline points="18,15 12,9 6,15"/></svg>
+        위로 이동
+      </button>
+      <button class="ib" id="btnMoveDown">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22"><polyline points="6,9 12,15 18,9"/></svg>
+        아래로 이동
+      </button>
+      <button class="ib" id="btnDeletePage" style="color:var(--danger)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22"><polyline points="3,6 5,6 21,6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+        페이지 삭제
+      </button>
+    </div>
+    <div class="rs-label">페이지 관리</div>
+  </div>
+  <div class="rs">
+    <div class="rs-body">
+      <button class="ib" onclick="document.getElementById('pdfInput').click()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+        PDF 추가
+      </button>
+      <button class="ib" onclick="document.getElementById('imageInput').click()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21,15 16,10 5,21"/></svg>
+        이미지 추가
+      </button>
+    </div>
+    <div class="rs-label">파일 추가</div>
+  </div>
+
+  <!-- 페이지 이동 -->
+  <div class="rs">
+    <div class="rs-body" style="align-items:center">
+      <div style="display:flex;flex-direction:column;gap:4px;padding-bottom:14px">
+        <span style="font-size:9px;color:var(--muted)">페이지 이동</span>
+        <div style="display:flex;align-items:center;gap:4px">
+          <select id="pageNav" class="sel-font" style="width:50px"></select>
+          <span id="totalPages" style="font-size:10px;color:var(--muted)">/0</span>
+        </div>
+      </div>
+    </div>
+    <div class="rs-label">탐색</div>
+  </div>
+
+  <!-- 확대/축소 -->
+  <div class="rs">
+    <div class="rs-body" style="align-items:center">
+      <div style="display:flex;flex-direction:column;gap:4px;padding-bottom:14px">
+        <span style="font-size:9px;color:var(--muted)">확대/축소</span>
+        <div style="display:flex;align-items:center;gap:2px">
+          <button class="sb" id="btnZoomOut">−</button>
+          <span id="zoomLevel" style="font-size:11px;color:var(--accent);font-family:'Space Mono',monospace;min-width:38px;text-align:center">100%</span>
+          <button class="sb" id="btnZoomIn">+</button>
+        </div>
+      </div>
+    </div>
+    <div class="rs-label">확대/축소</div>
+  </div>
+  <div class="rs">
+    <div class="rs-body">
+      <button class="ib" id="btnUndo2" onclick="undo()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22"><polyline points="9,14 4,9 9,4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></svg>
+        실행취소
+      </button>
+    </div>
+    <div class="rs-label">편집</div>
+  </div>
+</div>
+
+<!-- ══════════════ RIBBON: 보기 ══════════════ -->
+<div class="ribbon-panel" id="ribbon-view">
+  <div class="rs">
+    <div class="rs-body">
+      <button class="ib" onclick="document.getElementById('btnZoomOut').click()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+        축소
+      </button>
+      <button class="ib" onclick="document.getElementById('btnZoomIn').click()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+        확대
+      </button>
+    </div>
+    <div class="rs-label">줌</div>
+  </div>
+  <div class="rs">
+    <div class="rs-body">
+      <button class="ib" id="viewLight">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+        라이트 모드
+      </button>
+      <button class="ib active" id="viewDark">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        다크 모드
+      </button>
+    </div>
+    <div class="rs-label">테마</div>
+  </div>
+</div>
+
+<!-- ══════════════ APP BODY ══════════════ -->
+<div class="app-body">
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="sb-tabs">
+      <div class="sb-tab active" data-tab="pages">페이지</div>
+      <div class="sb-tab" data-tab="files">파일</div>
+    </div>
+
+    <div class="tab-panel active" id="tab-pages">
+
+      <div class="page-list-wrap">
+        <div class="pl-header">
+          <span>페이지 목록</span>
+          <span class="pl-badge" id="pageCount">0</span>
+        </div>
+        <div id="pageList"></div>
+      </div>
+    </div>
+
+    <div class="tab-panel" id="tab-files">
+      <div style="padding:10px">
+        <div style="font-size:10px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">로드된 파일</div>
+        <div id="fileList" style="display:none;flex-direction:column;gap:3px"></div>
+        <div id="noFiles" style="font-size:11px;color:var(--muted);text-align:center;padding:18px 0">로드된 파일 없음</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main -->
+  <div class="main-area" id="mainArea">
+    <div id="emptyState" class="empty-state">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>
+      <p>PDF 또는 이미지를 추가하세요</p>
+      <small>사이드바에 드롭하거나 상단 버튼을 클릭하세요</small>
+    </div>
+
+    <div class="canvas-wrap hidden" id="canvasWrap">
+      <div class="canvas-container" id="canvasContainer">
+        <canvas id="mainCanvas"></canvas>
+        <canvas id="overlayCanvas" class="overlay-canvas"></canvas>
+        <div class="text-edit-box" id="textEditBox">
+          <div class="text-edit-actions">
+            <button class="teb-btn cancel" id="textEditCancel">✕ 취소</button>
+          </div>
+          <div class="text-edit-input" id="textEditInput" contenteditable="true" data-placeholder="여기에 입력하세요" spellcheck="false"></div>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- Mobile edit panel -->
+    <div class="mobile-edit-panel" id="mobileEditPanel">
+      <div class="mobile-edit-tabs">
+        <button class="mobile-edit-tab active" data-panel="pages" onclick="switchMobilePanel('pages',this)">📄 페이지</button>
+        <button class="mobile-edit-tab" data-panel="edit" onclick="switchMobilePanel('edit',this)">✏️ 편집</button>
+        <button class="mobile-edit-tab" data-panel="actions" onclick="switchMobilePanel('actions',this)">⚙️ 동작</button>
+      </div>
+
+      <!-- ── 페이지 탭 ── -->
+      <div class="mobile-edit-content" id="mpanel-pages">
+        <div class="mobile-thumb-row" id="mobileThumbRow">
+          <div style="font-size:11px;color:var(--muted);padding:14px 0;text-align:center;width:100%">PDF를 추가하세요</div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;margin-top:6px;flex-shrink:0">
+          <button class="tbtn" style="justify-content:center;font-size:10px" onclick="if(state.currentPage>0)movePage(state.currentPage,state.currentPage-1)">↑ 앞으로</button>
+          <button class="tbtn" style="justify-content:center;font-size:10px" onclick="if(state.currentPage<state.pages.length-1)movePage(state.currentPage,state.currentPage+1)">↓ 뒤로</button>
+          <button class="tbtn" style="justify-content:center;font-size:10px;color:var(--danger);border-color:var(--danger)" onclick="if(state.currentPage>=0)deletePage(state.currentPage)">🗑 삭제</button>
+        </div>
+      </div>
+
+      <!-- ── 편집 탭 ── -->
+      <div class="mobile-edit-content hidden" id="mpanel-edit">
+        <div style="display:flex;flex-direction:column;gap:6px">
+
+          <!-- ── 도구 아이콘 행 ── -->
+          <div style="display:flex;gap:3px;align-items:center">
+            <button class="micon-btn active" id="mIconSelect" onclick="mIconAll('select',this)" title="선택">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M5 3l14 9-7 1-3 7z"/></svg>
+            </button>
+            <button class="micon-btn" id="mIconText" onclick="mIconAll('text',this)" title="텍스트">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><polyline points="4,7 4,4 20,4 20,7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>
+            </button>
+            <div style="width:1px;background:var(--borderl);height:24px;flex-shrink:0"></div>
+            <button class="micon-btn" id="mIconDraw" onclick="mIconAll('draw',this)" title="자유 그리기">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><circle cx="9" cy="9" r="1.5" fill="currentColor" stroke="none"/></svg>
+            </button>
+            <button class="micon-btn" id="mIconLine" onclick="mIconAll('line',this)" title="직선">
+              <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" width="18" height="18"><line x1="4" y1="20" x2="20" y2="4"/></svg>
+            </button>
+            <button class="micon-btn" id="mIconStaff" onclick="mIconAll('staff',this)" title="오선">
+              <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" width="18" height="18"><line x1="2" y1="6" x2="22" y2="6"/><line x1="2" y1="10" x2="22" y2="10"/><line x1="2" y1="14" x2="22" y2="14"/><line x1="2" y1="18" x2="22" y2="18"/></svg>
+            </button>
+            <button class="micon-btn" id="mIconCircle" onclick="mIconAll('circle',this)" title="원">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><circle cx="12" cy="12" r="8"/></svg>
+            </button>
+            <button class="micon-btn" id="mIconRect" onclick="mIconAll('rect',this)" title="사각형">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
+            </button>
+            <button class="micon-btn" id="mIconRectFill" onclick="mIconAll('rectFill',this)" title="채운사각">
+              <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
+            </button>
+          </div>
+
+          <!-- ── 텍스트 전용: 글꼴/굵기/크기 (텍스트 도구일 때만) ── -->
+          <div id="mOptText" style="display:none;flex-direction:column;gap:4px">
+            <select id="mobileFontFamily" class="sel-font" style="width:100%"><option value="sans-serif">기본 (Sans-serif)</option></select>
+            <div style="display:flex;gap:3px;flex-wrap:wrap;align-items:center">
+              <button class="font-weight-btn selected" data-weight="400" onclick="setFontWeight('400',this)">R</button>
+              <button class="font-weight-btn" data-weight="700" onclick="setFontWeight('700',this)"><b>B</b></button>
+              <button class="font-weight-btn" data-style="italic" onclick="toggleFontItalic(this)" id="fsBtnItalicMobile"><i>I</i></button>
+              <span style="font-size:10px;color:var(--muted);margin-left:4px">크기</span>
+              <div class="mslider-wrap" data-input="mobileFontSize" data-min="8" data-max="72" data-val="18" style="width:80px">
+                <div class="mslider-track"><div class="mslider-fill"></div><div class="mslider-thumb"></div></div>
+              </div>
+              <span id="mobileFontSizeVal" style="font-size:10px;color:var(--accent);width:20px;text-align:right;font-weight:600">18</span>
+            </div>
+            <input type="range" id="mobileFontSize" min="8" max="72" value="18" style="display:none">
+          </div>
+
+          <!-- ── 두께/투명도 (그리기·도형일 때만) ── -->
+          <div id="mOptDraw" style="display:flex;align-items:center;gap:5px">
+            <span style="font-size:9px;color:var(--muted);width:26px;flex-shrink:0">두께</span>
+            <div class="mslider-wrap" id="mDrawSizeSlider" data-input="mobileBrushSize" data-min="1" data-max="30" data-val="3" style="width:72px">
+              <div class="mslider-track"><div class="mslider-fill"></div><div class="mslider-thumb"></div></div>
+            </div>
+            <span id="mDrawSizeVal" style="font-size:9px;color:var(--accent);width:16px;text-align:right;font-weight:600;flex-shrink:0">3</span>
+            <span style="font-size:9px;color:var(--muted);width:26px;flex-shrink:0;margin-left:4px">투명</span>
+            <div class="mslider-wrap" id="mDrawOpacitySlider" data-input="mobileBrushOpacity" data-min="10" data-max="100" data-val="100" style="width:72px">
+              <div class="mslider-track"><div class="mslider-fill"></div><div class="mslider-thumb"></div></div>
+            </div>
+            <span id="mDrawOpacityVal" style="font-size:9px;color:var(--accent);width:26px;text-align:right;font-weight:600;flex-shrink:0">100%</span>
+            <input type="range" id="mobileBrushSize" min="1" max="30" value="3" style="display:none">
+            <input type="range" id="mobileBrushOpacity" min="10" max="100" value="100" style="display:none">
+            <input type="range" id="mobileShapeSize" min="1" max="20" value="2" style="display:none">
+            <input type="range" id="mobileShapeOpacity" min="10" max="100" value="100" style="display:none">
+          </div>
+
+          <!-- ── 공통 색상 팔레트 (항상 표시) ── -->
+          <div style="display:flex;gap:4px;flex-wrap:wrap;align-items:center" id="mDrawShapeColors">
+            <div class="color-swatch selected" style="background:#000" data-color="#000000"></div>
+            <div class="color-swatch" style="background:#ffffff;border:1px solid #bbb" data-color="#ffffff"></div>
+            <div class="color-swatch" style="background:#e53935" data-color="#e53935"></div>
+            <div class="color-swatch" style="background:#ff6b00" data-color="#ff6b00"></div>
+            <div class="color-swatch" style="background:#f9c800" data-color="#f9c800"></div>
+            <div class="color-swatch" style="background:#2e7d32" data-color="#2e7d32"></div>
+            <div class="color-swatch" style="background:#1565c0" data-color="#1565c0"></div>
+            <div class="color-swatch" style="background:#6a1b9a" data-color="#6a1b9a"></div>
+            <div class="color-swatch" style="background:#ad1457" data-color="#ad1457"></div>
+            <div class="color-swatch" style="background:#607d8b" data-color="#607d8b"></div>
+            <input type="color" id="mobileDrawShapeColor" value="#000000" style="width:22px;height:22px;border:1px solid var(--border);border-radius:3px;cursor:pointer;padding:1px;background:none">
+          </div>
+
+          <!-- legacy compat -->
+          <div id="mOptSelect" style="display:none"></div>
+          <div id="mOptShape" style="display:none"></div>
+
+        </div>
+      </div>
+
+      <!-- ── 동작 탭 ── -->
+      <div class="mobile-edit-content hidden" id="mpanel-actions">
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px">
+            <button class="tbtn save" style="justify-content:center;font-size:10px;grid-column:1/-1" onclick="exportPDF()">⬇ PDF저장</button>
+            <button class="tbtn" style="justify-content:center;font-size:10px;grid-column:1/-1" onclick="openPageNumDialog()">📄 페이지 번호 삽입</button>
+          </div>
+          <div style="height:1px;background:var(--borderl)"></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px">
+            <button class="tbtn" id="mThemeLight" style="justify-content:center;font-size:10px" onclick="setTheme('light')">☀️ 라이트 모드</button>
+            <button class="tbtn" id="mThemeDark" style="justify-content:center;font-size:10px" onclick="setTheme('dark')">🌙 다크 모드</button>
+          </div>
+        </div>
+      </div>
+
+        </div>
+    <div class="safe-area-bottom"></div>
+
+    <!-- Status bar -->
+    <div class="status-bar">
+      <div class="stat">페이지 <b id="statPage">-</b></div>
+      <div class="stat">줌 <b id="statZoom">100%</b></div>
+      <div class="stat">도구 <b id="statTool">선택</b></div>
+      <div style="margin-left:auto" class="stat" id="statDirty" style="color:var(--accent2)"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Mobile drawers -->
+<div class="drawer-backdrop" id="drawerBackdrop" onclick="closeDrawer()"></div>
+<div class="mobile-drawer" id="drawerPages">
+  <div class="drawer-handle"></div>
+  <div class="drawer-title"><span>페이지 목록 <span id="mobilePageCount" style="color:var(--accent);font-size:10px;margin-left:4px"></span></span><button class="drawer-close" onclick="closeDrawer()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+  <div class="drawer-body"><div class="mobile-page-grid" id="mobilePageGrid"></div><div id="mobileNoPages" style="text-align:center;padding:24px 0;color:var(--muted);font-size:12px">아직 페이지가 없습니다</div></div>
+</div>
+<div class="mobile-drawer" id="drawerAdd">
+  <div class="drawer-handle"></div>
+  <div class="drawer-title"><span>파일 추가</span><button class="drawer-close" onclick="closeDrawer()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+  <div class="drawer-body" style="display:flex;flex-direction:column;gap:8px">
+    <button class="tbtn" style="width:100%;justify-content:center;padding:12px" onclick="document.getElementById('pdfInput').click();closeDrawer()">PDF 파일 추가</button>
+    <button class="tbtn" style="width:100%;justify-content:center;padding:12px" onclick="document.getElementById('imageInput').click();closeDrawer()">이미지 추가</button>
+  </div>
+</div>
+<div class="mobile-drawer" id="drawerEdit">
+  <div class="drawer-handle"></div>
+  <div class="drawer-title"><span>편집 도구</span><button class="drawer-close" onclick="closeDrawer()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+  <div class="drawer-body" style="display:flex;flex-direction:column;gap:8px">
+    <div style="display:flex;gap:5px">
+      <button class="tbtn" style="flex:1;justify-content:center" onclick="setTool('select');closeDrawer()">선택</button>
+      <button class="tbtn" style="flex:1;justify-content:center" onclick="setTool('text');closeDrawer()">텍스트</button>
+      <button class="tbtn" style="flex:1;justify-content:center" onclick="setTool('draw');closeDrawer()">그리기</button>
+    </div>
+  </div>
+</div>
+
+<!-- JS compat: textOptions/drawOptions referenced by original setTool() -->
+<div id="textOptions" style="display:none" aria-hidden="true"></div>
+<div id="drawOptions" style="display:none" aria-hidden="true"></div>
+
+
+<!-- ══ 페이지 번호 다이얼로그 ══════════════════════════════ -->
+<div id="pageNumDialog" style="display:none;position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.5);backdrop-filter:blur(4px);align-items:center;justify-content:center">
+  <div style="background:var(--surface);border-radius:14px;padding:24px;width:320px;max-width:90vw;box-shadow:0 8px 40px rgba(0,0,0,.4)">
+    <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:18px">📄 페이지 번호 삽입</div>
+
+    <!-- 위치 선택 (3x3 그리드) -->
+    <div style="font-size:11px;color:var(--muted);margin-bottom:8px">위치 선택</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:16px" id="pnPosGrid">
+      <button class="pn-pos-btn" data-pos="top-left">↖ 좌상</button>
+      <button class="pn-pos-btn" data-pos="top-center">↑ 상단 중앙</button>
+      <button class="pn-pos-btn" data-pos="top-right">↗ 우상</button>
+      <button class="pn-pos-btn" data-pos="mid-left">← 좌중</button>
+      <button class="pn-pos-btn" data-pos="mid-center">· 중앙</button>
+      <button class="pn-pos-btn" data-pos="mid-right">→ 우중</button>
+      <button class="pn-pos-btn" data-pos="bot-left">↙ 좌하</button>
+      <button class="pn-pos-btn active" data-pos="bot-center">↓ 하단 중앙</button>
+      <button class="pn-pos-btn" data-pos="bot-right">↘ 우하</button>
+    </div>
+
+    <!-- 스타일 설정 -->
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px">
+      <div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:4px">글자 크기</div>
+        <input type="number" id="pnFontSize" value="12" min="6" max="36"
+          style="width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--surface2);color:var(--text);font-size:12px;outline:none">
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:4px">두께</div>
+        <select id="pnFontWeight" style="width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--surface2);color:var(--text);font-size:12px;outline:none;cursor:pointer">
+          <option value="300">얇게</option>
+          <option value="400" selected>보통</option>
+          <option value="600">중간</option>
+          <option value="700">굵게</option>
+          <option value="900">매우 굵게</option>
+        </select>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:4px">색상</div>
+        <div style="display:flex;gap:5px;align-items:center">
+          <input type="color" id="pnColor" value="#333333"
+            style="width:36px;height:30px;border:1px solid var(--border);border-radius:6px;cursor:pointer;padding:2px;background:none">
+          <input type="text" id="pnColorHex" value="#333333"
+            style="flex:1;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--surface2);color:var(--text);font-size:11px;outline:none">
+        </div>
+      </div>
+    </div>
+
+    <!-- 형식 -->
+    <div style="margin-bottom:16px">
+      <div style="font-size:11px;color:var(--muted);margin-bottom:4px">형식</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <button class="pn-fmt-btn active" data-fmt="{n}">1</button>
+        <button class="pn-fmt-btn" data-fmt="- {n} -">- 1 -</button>
+        <button class="pn-fmt-btn" data-fmt="{n} / {total}"">1 / 5</button>
+        <button class="pn-fmt-btn" data-fmt="페이지 {n}">페이지 1</button>
+      </div>
+    </div>
+
+    <!-- 적용 범위 -->
+    <div style="margin-bottom:20px">
+      <div style="font-size:11px;color:var(--muted);margin-bottom:4px">적용 범위</div>
+      <div style="display:flex;gap:6px">
+        <button class="pn-range-btn active" data-range="all">전체 페이지</button>
+        <button class="pn-range-btn" data-range="current">현재 페이지</button>
+      </div>
+    </div>
+
+    <!-- 버튼 -->
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button onclick="closePageNumDialog()" style="padding:8px 16px;border-radius:7px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;font-family:inherit;font-size:12px">취소</button>
+      <button onclick="applyPageNumbers()" style="padding:8px 18px;border-radius:7px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-family:inherit;font-size:12px;font-weight:600">삽입</button>
+    </div>
+  </div>
+</div>
+
+<!-- Loading / Toast -->
+<div class="loading-overlay hidden" id="loadingOverlay"><div class="spinner"></div></div>
+<div class="toast-wrap" id="toastWrap"></div>
+
+<!-- Hidden inputs -->
+<input type="file" id="pdfInput" accept=".pdf" multiple style="display:none">
+<input type="file" id="imageInput" accept="image/*" multiple style="display:none">
+
+
+<script>
+// ---- PDF.js setup ----
+const pdfjsLib = window.pdfjsLib || window['pdfjs-dist/build/pdf'];
+if (!pdfjsLib) console.error('pdfjsLib를 찾을 수 없습니다.');
+
+// ---- State ----
+const state = {
+  pages: [],          // { type:'pdf'|'image', pdfDoc, pageIndex, imageData, width, height, annotations:[], drawings:[], shapes:[] }
+  currentPage: -1,
+  tool: 'select',
+  textColor: '#000000',
+  drawColor: '#000000',
+  shapeColor: '#000000',
+  shapeSize: 2,
+  shapeOpacity: 100,
+  fontSize: 18,
+  brushSize: 3,
+  brushOpacity: 100,
+  zoom: 1.0,
+  isDrawing: false,
+  drawPath: [],
+  isDrawingShape: false,
+  shapeStart: null,
+  undoStack: [],      // per-page undo stacks
+  placingText: false,
+  files: [],          // { name, pageCount }
+  selectedAnn: null,  // { pageIdx, annIdx } | null
+  selectedShape: null,// { pageIdx, shapeIdx } | null
+  draggingAnn: false,
+  draggingShape: false,
+  dragAnnOffsetX: 0,
+  dragAnnOffsetY: 0,
+  dragShapeOffsetX: 0,
+  dragShapeOffsetY: 0,
+  fontFamily: 'Nanum Gothic',
+  fontWeight: '400',   // '300'|'400'|'600'|'700'|'800'|'900'
+  fontStyle: 'normal', // 'normal'|'italic'
+  pageUndoStack: [],
+  isDirty: false,      // 저장되지 않은 변경사항 여부  // 페이지 삭제 실행취소용 [{pages, undoStack, currentPage}]
+};
+
+// ---- DOM ----
+const mainCanvas = document.getElementById('mainCanvas');
+const overlayCanvas = document.getElementById('overlayCanvas');
+const ctx = mainCanvas.getContext('2d');
+const octx = overlayCanvas.getContext('2d');
+const pageList = document.getElementById('pageList');
+const pageCount = document.getElementById('pageCount');
+const pageNav = document.getElementById('pageNav');
+const totalPages = document.getElementById('totalPages');
+const zoomLevel = document.getElementById('zoomLevel');
+const emptyState = document.getElementById('emptyState');
+const canvasWrap = document.getElementById('canvasWrap');
+const loadingOverlay = document.getElementById('loadingOverlay');
+
+// ---- Utils ----
+function toast(msg, type='info', duration=2800) {
+  const wrap = document.getElementById('toastWrap');
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.textContent = msg;
+  wrap.appendChild(el);
+  setTimeout(() => el.remove(), duration);
+}
+
+function setLoading(v) { loadingOverlay.classList.toggle('hidden', !v); }
+
+function hexToRgb(hex) {
+  const r = parseInt(hex.slice(1,3),16)/255;
+  const g = parseInt(hex.slice(3,5),16)/255;
+  const b = parseInt(hex.slice(5,7),16)/255;
+  return {r,g,b};
+}
+
+// ---- Page management ----
+async function confirmIfDirty(action) {
+  if (!state.isDirty || state.pages.length === 0) { action(); return; }
+  // 커스텀 확인 다이얼로그
+  const ok = await showDirtyDialog();
+  if (ok) { clearDirty(); action(); }
+}
+
+async function showDirtyDialog() {
+  return new Promise(resolve => {
+    // 기존 다이얼로그 제거
+    document.getElementById('dirtyDialog')?.remove();
+
+    const dlg = document.createElement('div');
+    dlg.id = 'dirtyDialog';
+    dlg.style.cssText = `
+      position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;
+      background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);
+    `;
+    dlg.innerHTML = `
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;
+                  padding:28px 32px;max-width:340px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.5);">
+        <div style="font-size:18px;font-weight:700;margin-bottom:10px;color:var(--text)">
+          저장되지 않은 변경사항
+        </div>
+        <div style="font-size:14px;color:var(--text2);margin-bottom:24px;line-height:1.6">
+          변경사항이 있습니다.<br>계속하면 변경사항이 사라집니다.
+        </div>
+        <div style="display:flex;gap:10px;justify-content:flex-end">
+          <button id="dirtyCancel" style="padding:9px 18px;border-radius:8px;border:1px solid var(--border);
+            background:var(--surface2);color:var(--text);cursor:pointer;font-size:13px;font-weight:500">
+            취소
+          </button>
+          <button id="dirtySave" style="padding:9px 18px;border-radius:8px;border:none;
+            background:var(--accent3);color:#fff;cursor:pointer;font-size:13px;font-weight:600">
+            PDF 저장 후 계속
+          </button>
+          <button id="dirtyDiscard" style="padding:9px 18px;border-radius:8px;border:none;
+            background:var(--danger,#ef4444);color:#fff;cursor:pointer;font-size:13px;font-weight:600">
+            저장 안 함
+          </button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(dlg);
+
+    document.getElementById('dirtyCancel').onclick  = () => { dlg.remove(); resolve(false); };
+    document.getElementById('dirtyDiscard').onclick = () => { dlg.remove(); resolve(true); };
+    document.getElementById('dirtySave').onclick    = async () => {
+      dlg.remove();
+      await exportPDF();
+      resolve(true);
+    };
+    // 배경 클릭 → 취소
+    dlg.addEventListener('click', e => { if (e.target === dlg) { dlg.remove(); resolve(false); } });
+  });
+}
+
+async function addPDFFile(file) {
+  setLoading(true);
+  try {
+    const arrayBuffer = await file.arrayBuffer();
+    const uint8Array = new Uint8Array(arrayBuffer);
+    const loadingTask = pdfjsLib.getDocument({
+      data: uint8Array,
+      cMapUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/cmaps/',
+      cMapPacked: true,
+      useWorkerFetch: false,
+      enableXfa: false,
+      disableRange: false,
+      disableStream: false,
+    });
+    const pdfDoc = await loadingTask.promise;
+    const numPages = pdfDoc.numPages;
+    state.files.push({ name: file.name, pageCount: numPages });
+    for (let i = 1; i <= numPages; i++) {
+      const page = await pdfDoc.getPage(i);
+      const vp = page.getViewport({ scale: 1 });
+      state.pages.push({
+        type: 'pdf', pdfDoc, pageIndex: i,
+        width: vp.width, height: vp.height,
+        annotations: [], drawings: [], shapes: []
+      });
+      state.undoStack.push([]);
+    }
+    renderPageList();
+    if (state.currentPage === -1) selectPage(0);
+    updateFileList();
+    toast(`${file.name} — ${numPages}페이지 추가됨`, 'success');
+  } catch(e) {
+    const msg = String(e.message || e);
+    // worker 관련 에러는 무시 (fake worker로 자동 폴백되어 기능은 정상)
+    const isWorkerErr = msg.indexOf('worker')>-1||msg.indexOf('Worker')>-1||
+                        msg.indexOf('fake')>-1||msg.indexOf('blob')>-1||
+                        msg.indexOf('Cannot load script')>-1;
+    if (!isWorkerErr) {
+      toast('PDF 로드 실패: ' + msg, 'error');
+    }
+  }
+  setLoading(false);
+}
+
+async function addImageFile(file) {
+  setLoading(true);
+  try {
+    const src = await readFileAsDataURL(file);
+    const img = await loadImage(src);
+    state.pages.push({
+      type: 'image', imageData: src,
+      width: img.width, height: img.height,
+      annotations: [], drawings: [], shapes: []
+    });
+    state.undoStack.push([]);
+    renderPageList();
+    if (state.currentPage === -1) selectPage(0);
+    state.files.push({ name: file.name, pageCount: 1 });
+    updateFileList();
+    toast(`${file.name} — 이미지 페이지 추가됨`, 'success');
+  } catch(e) {
+    toast('이미지 로드 실패', 'error');
+  }
+  setLoading(false);
+}
+
+function readFileAsDataURL(file) {
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = e => res(e.target.result);
+    r.onerror = rej;
+    r.readAsDataURL(file);
+  });
+}
+
+function loadImage(src) {
+  return new Promise((res, rej) => {
+    const img = new Image();
+    img.onload = () => res(img);
+    img.onerror = rej;
+    img.src = src;
+  });
+}
+
+function deletePage(idx) {
+  if (state.pages.length <= 1) { toast('마지막 페이지는 삭제할 수 없습니다', 'error'); return; }
+  // 삭제 전 전체 페이지 상태 스냅샷
+  // pdfDoc은 직렬화 불가 → 참조 배열을 별도로 보존
+  const pdfDocRefs = state.pages.map(p => p.pdfDoc);
+  const pagesSnap = state.pages.map(p => ({
+    type: p.type, pageIndex: p.pageIndex,
+    imageData: p.imageData || null,
+    width: p.width, height: p.height,
+    annotations: JSON.parse(JSON.stringify(p.annotations)),
+    drawings: JSON.parse(JSON.stringify(p.drawings)),
+    shapes: JSON.parse(JSON.stringify(p.shapes || [])),
+  }));
+  state.pageUndoStack.push({
+    pagesSnap, pdfDocRefs,
+    undoStack: JSON.parse(JSON.stringify(state.undoStack)),
+    currentPage: state.currentPage,
+    deletedIdx: idx,
+  });
+  state.pages.splice(idx, 1);
+  state.undoStack.splice(idx, 1);
+  if (state.currentPage >= state.pages.length) state.currentPage = state.pages.length - 1;
+  setDirty();
+  renderPageList();
+  renderCurrentPage();
+  toast('페이지 삭제됨 — Ctrl+Z로 되돌리기 가능');
+}
+
+function undoDeletePage() {
+  const snap = state.pageUndoStack.pop();
+  if (!snap) return false;
+  // pdfDoc 참조는 원본 pages에서 복원
+  // pdfDoc 참조를 다시 결합해서 pages 복원
+  const restored = snap.pagesSnap.map((sp, i) => ({
+    ...sp,
+    pdfDoc: snap.pdfDocRefs[i] || null,
+  }));
+  state.pages = restored;
+  state.undoStack = snap.undoStack;
+  state.currentPage = snap.deletedIdx < state.pages.length ? snap.deletedIdx : state.pages.length - 1;
+  renderPageList();
+  renderCurrentPage();
+  toast('페이지 삭제 취소됨');
+  return true;
+}
+
+function movePage(from, to) {
+  if (to < 0 || to >= state.pages.length) return;
+  const [pg] = state.pages.splice(from, 1);
+  const [us] = state.undoStack.splice(from, 1);
+  state.pages.splice(to, 0, pg);
+  state.undoStack.splice(to, 0, us);
+  state.currentPage = to;
+  renderPageList();
+  renderCurrentPage();
+}
+
+function selectPage(idx) {
+  state.currentPage = idx;
+  renderPageList();
+  renderCurrentPage();
+  pageNav.value = idx + 1;
+}
+
+// ---- Render page list ----
+// selected annotation state
+// state.selectedAnn = { pageIdx, annIdx } | null
+function renderPageList() {
+  pageList.innerHTML = '';
+  pageCount.textContent = state.pages.length;
+  totalPages.textContent = '/ ' + state.pages.length;
+  pageNav.innerHTML = '';
+
+  state.pages.forEach((pg, i) => {
+    const opt = document.createElement('option');
+    opt.value = i + 1; opt.textContent = i + 1;
+    pageNav.appendChild(opt);
+
+    const item = document.createElement('div');
+    item.className = 'page-item' + (i === state.currentPage ? ' selected' : '');
+    item.draggable = true;
+    item.dataset.idx = i;
+
+    item.innerHTML = `
+      <div class="page-thumb" id="thumb-${i}">
+        <span style="font-size:10px;color:#aaa">${i+1}</span>
+      </div>
+      <div class="page-info">
+        <div class="page-num">페이지 ${i+1}</div>
+        <div class="page-size">${pg.type === 'image' ? '이미지' : 'PDF'}</div>
+      </div>
+      <div class="page-actions">
+        <button class="icon-btn" title="위로" onclick="movePage(${i},${i-1});event.stopPropagation()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="18,15 12,9 6,15"/></svg>
+        </button>
+        <button class="icon-btn" title="아래로" onclick="movePage(${i},${i+1});event.stopPropagation()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6,9 12,15 18,9"/></svg>
+        </button>
+        <button class="icon-btn danger" title="삭제" onclick="deletePage(${i});event.stopPropagation()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+    `;
+
+    item.addEventListener('click', () => selectPage(i));
+
+    // Drag & drop
+    item.addEventListener('dragstart', e => {
+      e.dataTransfer.setData('text/plain', i);
+      item.classList.add('dragging');
+    });
+    item.addEventListener('dragend', () => item.classList.remove('dragging'));
+    item.addEventListener('dragover', e => { e.preventDefault(); item.classList.add('drag-over'); });
+    item.addEventListener('dragleave', () => item.classList.remove('drag-over'));
+    item.addEventListener('drop', e => {
+      e.preventDefault();
+      item.classList.remove('drag-over');
+      const from = parseInt(e.dataTransfer.getData('text/plain'));
+      if (from !== i) movePage(from, i);
+    });
+
+    pageList.appendChild(item);
+    renderThumb(pg, i);
+  });
+
+  if (pageNav.value !== String(state.currentPage + 1)) {
+    pageNav.value = state.currentPage + 1;
+  }
+
+  // 모바일 페이지 그리드도 열려있으면 갱신
+  if (document.getElementById('drawerPages')?.classList.contains('open')) {
+    renderMobilePageGrid();
+  }
+  // 모바일 썸네일 행 갱신
+  renderMobileThumbRow();
+}
+
+async function renderThumb(pg, idx) {
+  const thumbEl = document.getElementById(`thumb-${idx}`);
+  if (!thumbEl) return;
+  const thumbCanvas = document.createElement('canvas');
+  thumbCanvas.width = 42; thumbCanvas.height = 56;
+  const tc = thumbCanvas.getContext('2d');
+
+  if (pg.type === 'pdf') {
+    const page = await pg.pdfDoc.getPage(pg.pageIndex);
+    const vp = page.getViewport({ scale: 42 / pg.width });
+    thumbCanvas.width = 42; thumbCanvas.height = vp.height;
+    await page.render({ canvasContext: tc, viewport: vp }).promise;
+  } else {
+    const img = await loadImage(pg.imageData);
+    const scale = Math.min(42/img.width, 56/img.height);
+    thumbCanvas.width = img.width * scale; thumbCanvas.height = img.height * scale;
+    tc.drawImage(img, 0, 0, thumbCanvas.width, thumbCanvas.height);
+  }
+  thumbEl.innerHTML = '';
+  thumbEl.appendChild(thumbCanvas);
+}
+
+// ---- Render main canvas ----
+// 슬라이더 등 연속 입력용 debounce 렌더
+let _renderDebounceTimer = null;
+function renderCurrentPageDebounced(ms = 80) {
+  clearTimeout(_renderDebounceTimer);
+  _renderDebounceTimer = setTimeout(() => renderCurrentPage(), ms);
+}
+
+// 렌더링 중복 방지: 동시에 하나의 렌더만 실행, 대기 중인 요청은 마지막 것만 실행
+let _renderLock = false;
+let _renderPending = false;
+
+async function renderCurrentPage() {
+  if (_renderLock) {
+    _renderPending = true;
+    return;
+  }
+  _renderLock = true;
+  _renderPending = false;
+
+  try {
+    if (state.currentPage === -1 || state.pages.length === 0) {
+      emptyState.classList.remove('hidden');
+      canvasWrap.classList.add('hidden');
+      return;
+    }
+
+    emptyState.classList.add('hidden');
+    canvasWrap.classList.remove('hidden');
+
+    const pg = state.pages[state.currentPage];
+    const scale = state.zoom;
+    const dpr = window.devicePixelRatio || 1;
+    const renderScale = scale * dpr;
+
+    // ── 오프스크린 캔버스에 먼저 렌더 → 완료 후 한 번에 교체 ──────────────
+    // mainCanvas.width 변경 시 즉시 흰색이 되는 문제 방지
+    const offscreen = document.createElement('canvas');
+    const offCtx = offscreen.getContext('2d');
+
+    if (pg.type === 'pdf') {
+      const page = await pg.pdfDoc.getPage(pg.pageIndex);
+      const vp = page.getViewport({ scale: renderScale });
+      offscreen.width = vp.width;
+      offscreen.height = vp.height;
+      await page.render({ canvasContext: offCtx, viewport: vp }).promise;
+
+      // 어노테이션 폰트 사전 확인 (미로드 시 백그라운드 로드 후 재렌더)
+      const fontFamilies = [...new Set(pg.annotations.map(a => a.fontFamily).filter(Boolean))];
+      const unloaded = fontFamilies.filter(f => !_loadedFonts.has(f));
+      if (unloaded.length > 0) {
+        Promise.all(unloaded.map(ensureFontLoaded)).then(() => renderCurrentPage());
+      }
+
+      pg.annotations.forEach(ann => drawAnnotation(offCtx, ann, renderScale));
+      pg.drawings.forEach(d => drawStroke(offCtx, d, renderScale));
+      pg.shapes.forEach(sh => drawShape(offCtx, sh, renderScale));
+
+      // ── 렌더 완료 → 메인 캔버스에 한 번에 적용 (흰색 깜빡임 없음) ────────
+      const cssW = vp.width / dpr;
+      const cssH = vp.height / dpr;
+      mainCanvas.width = vp.width;
+      mainCanvas.height = vp.height;
+      mainCanvas.style.width  = cssW + 'px';
+      mainCanvas.style.height = cssH + 'px';
+      ctx.drawImage(offscreen, 0, 0);
+
+      overlayCanvas.width = vp.width;
+      overlayCanvas.height = vp.height;
+      overlayCanvas.style.width  = cssW + 'px';
+      overlayCanvas.style.height = cssH + 'px';
+
+    } else {
+      const img = await loadImage(pg.imageData);
+      const w = img.width * renderScale;
+      const h = img.height * renderScale;
+      offscreen.width = w;
+      offscreen.height = h;
+      offCtx.drawImage(img, 0, 0, w, h);
+
+      const fontFamilies = [...new Set(pg.annotations.map(a => a.fontFamily).filter(Boolean))];
+      const unloaded = fontFamilies.filter(f => !_loadedFonts.has(f));
+      if (unloaded.length > 0) {
+        Promise.all(unloaded.map(ensureFontLoaded)).then(() => renderCurrentPage());
+      }
+
+      pg.annotations.forEach(ann => drawAnnotation(offCtx, ann, renderScale));
+      pg.drawings.forEach(d => drawStroke(offCtx, d, renderScale));
+      pg.shapes.forEach(sh => drawShape(offCtx, sh, renderScale));
+
+      // ── 렌더 완료 → 메인 캔버스에 한 번에 적용 ──────────────────────────
+      mainCanvas.width = w;
+      mainCanvas.height = h;
+      mainCanvas.style.width  = (img.width * scale) + 'px';
+      mainCanvas.style.height = (img.height * scale) + 'px';
+      ctx.drawImage(offscreen, 0, 0);
+
+      overlayCanvas.width = w;
+      overlayCanvas.height = h;
+      overlayCanvas.style.width  = mainCanvas.style.width;
+      overlayCanvas.style.height = mainCanvas.style.height;
+    }
+
+    drawSelectionOverlay();
+
+  } finally {
+    _renderLock = false;
+    if (_renderPending) renderCurrentPage();
+  }
+}
+
+// 어노테이션만 overlay에 다시 그리기 (드래그 중 PDF 재렌더 방지)
+// renderScale = zoom * devicePixelRatio (캔버스 실제 픽셀 기준)
+function getRenderScale() { return state.zoom * (window.devicePixelRatio || 1); }
+function renderAnnotationsOnly() {
+  if (state.currentPage === -1) return;
+  const pg = state.pages[state.currentPage];
+  const rs = getRenderScale();
+  octx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+  pg.annotations.forEach((ann, i) => {
+    const isMoving = state.draggingAnn &&
+                     state.selectedAnn?.annIdx === i &&
+                     state.selectedAnn?.pageIdx === state.currentPage;
+    if (isMoving) drawAnnotation(octx, ann, rs);
+  });
+  drawSelectionOverlay();
+}
+
+function drawAnnotation(c, ann, scale) {
+  if (!ann.type || ann.type === 'text') {
+    const family = ann.fontFamily || 'Nanum Gothic';
+    const weight = ann.fontWeight || '400';
+    const fstyle = ann.fontStyle  || 'normal';
+    const align  = ann.align || 'left';
+    c.save();
+    c.font = `${fstyle} ${weight} ${ann.fontSize * scale}px "${family}"`;
+    c.textAlign = align;
+    c.globalAlpha = 1;
+    const metrics = c.measureText(ann.text);
+    const tw = metrics.width;
+    // 배경 박스 (align에 따라 x 조정)
+    let bx = ann.x * scale - 2;
+    if (align === 'center') bx = ann.x * scale - tw / 2 - 2;
+    else if (align === 'right') bx = ann.x * scale - tw - 2;
+    c.fillStyle = 'rgba(255,255,255,0.7)';
+    c.fillRect(bx, ann.y * scale - ann.fontSize * scale, tw + 4, ann.fontSize * scale + 4);
+    c.fillStyle = ann.color;
+    c.fillText(ann.text, ann.x * scale, ann.y * scale);
+    c.restore();
+  }
+}
+
+// 텍스트 어노테이션의 bounding box 반환 (원본 좌표계)
+function getAnnBBox(ann) {
+  const tmpC = document.createElement('canvas').getContext('2d');
+  tmpC.font = `${ann.fontSize}px ${ann.fontFamily || 'Nanum Gothic'}`;
+  const w = tmpC.measureText(ann.text).width;
+  const h = ann.fontSize * 1.4;
+  const align = ann.align || 'left';
+  let bx = ann.x - 2;
+  if (align === 'center') bx = ann.x - w / 2 - 2;
+  else if (align === 'right') bx = ann.x - w - 2;
+  return { x: bx, y: ann.y - ann.fontSize, w: w + 4, h };
+}
+
+function hitTestAnnotations(px, py) {
+  // px, py: 원본 좌표계
+  if (state.currentPage === -1) return null;
+  const anns = state.pages[state.currentPage].annotations;
+  for (let i = anns.length - 1; i >= 0; i--) {
+    const b = getAnnBBox(anns[i]);
+    if (px >= b.x && px <= b.x + b.w && py >= b.y && py <= b.y + b.h) return i;
+  }
+  return null;
+}
+
+function drawSelectionOverlay() {
+  octx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+
+  // Annotation selection
+  if (state.selectedAnn) {
+    const { pageIdx, annIdx } = state.selectedAnn;
+    if (pageIdx === state.currentPage) {
+      const ann = state.pages[pageIdx]?.annotations[annIdx];
+      if (ann) {
+        const b = getAnnBBox(ann);
+        const s = getRenderScale();
+        const x = b.x * s, y = b.y * s, w = b.w * s, h = b.h * s;
+        octx.save();
+        octx.strokeStyle = '#6c8aff';
+        octx.lineWidth = 2;
+        octx.setLineDash([5, 3]);
+        octx.strokeRect(x - 3, y - 3, w + 6, h + 6);
+        octx.setLineDash([]);
+        const hs = 8;
+        const corners = [
+          [x - 3, y - 3], [x - 3 + w + 6, y - 3],
+          [x - 3, y - 3 + h + 6], [x - 3 + w + 6, y - 3 + h + 6]
+        ];
+        octx.fillStyle = '#6c8aff';
+        corners.forEach(([cx, cy]) => octx.fillRect(cx - hs/2, cy - hs/2, hs, hs));
+        const delX = x + w + 12, delY = y - 14;
+        octx.fillStyle = '#ff4444';
+        octx.beginPath();
+        octx.arc(delX, delY, 9, 0, Math.PI * 2);
+        octx.fill();
+        octx.fillStyle = 'white';
+        octx.font = 'bold 13px sans-serif';
+        octx.textAlign = 'center';
+        octx.textBaseline = 'middle';
+        octx.fillText('×', delX, delY);
+        octx.textAlign = 'left';
+        octx.textBaseline = 'alphabetic';
+        octx.restore();
+        const _dpr2 = window.devicePixelRatio || 1;
+        state._delBtnPos = { x: delX / _dpr2, y: delY / _dpr2, r: 9 };
+      }
+    }
+  }
+
+  // Shape selection
+  if (state.selectedShape) {
+    const { pageIdx, shapeIdx } = state.selectedShape;
+    if (pageIdx === state.currentPage) {
+      const sh = state.pages[pageIdx]?.shapes?.[shapeIdx];
+      if (sh) drawShapeSelection(sh);
+    }
+  }
+}
+
+function drawStroke(c, stroke, scale) {
+  if (stroke.path.length < 2) return;
+  c.save();
+  c.strokeStyle = stroke.color;
+  c.lineWidth = stroke.size * scale;
+  c.lineCap = 'round';
+  c.lineJoin = 'round';
+  c.globalAlpha = stroke.opacity / 100;
+  c.beginPath();
+  c.moveTo(stroke.path[0].x * scale, stroke.path[0].y * scale);
+  for (let i = 1; i < stroke.path.length; i++) {
+    c.lineTo(stroke.path[i].x * scale, stroke.path[i].y * scale);
+  }
+  c.stroke();
+  c.restore();
+}
+
+// ---- Shape drawing ----
+function drawShape(c, sh, scale) {
+  c.save();
+  c.strokeStyle = sh.color;
+  c.fillStyle = sh.color;
+  c.globalAlpha = sh.opacity / 100;
+  const lw = sh.size * scale;
+
+  if (sh.type === 'staff') {
+    // 오선: 선 두께는 다른 도형의 50%
+    c.lineWidth = lw * 0.5;
+  } else {
+    c.lineWidth = lw;
+  }
+  c.lineCap = 'round';
+
+  const x1 = sh.x1 * scale, y1 = sh.y1 * scale;
+  const x2 = sh.x2 * scale, y2 = sh.y2 * scale;
+
+  if (sh.type === 'line') {
+    c.beginPath();
+    c.moveTo(x1, y1);
+    c.lineTo(x2, y2);
+    c.stroke();
+  } else if (sh.type === 'staff') {
+    const gap = (y2 - y1) / 4;
+    for (let i = 0; i < 5; i++) {
+      const ly = y1 + gap * i;
+      c.beginPath();
+      c.moveTo(x1, ly);
+      c.lineTo(x2, ly);
+      c.stroke();
+    }
+  } else if (sh.type === 'circle') {
+    const rx = Math.abs(x2 - x1) / 2;
+    const ry = Math.abs(y2 - y1) / 2;
+    const cx = (x1 + x2) / 2;
+    const cy = (y1 + y2) / 2;
+    c.beginPath();
+    c.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
+    c.stroke();
+  } else if (sh.type === 'rect') {
+    c.beginPath();
+    c.strokeRect(x1, y1, x2 - x1, y2 - y1);
+  } else if (sh.type === 'rectFill') {
+    c.fillRect(x1, y1, x2 - x1, y2 - y1);
+  }
+  c.restore();
+}
+
+function getShapeBBox(sh) {
+  // Returns bounding box in original coords
+  const x = Math.min(sh.x1, sh.x2);
+  const y = Math.min(sh.y1, sh.y2);
+  const w = Math.abs(sh.x2 - sh.x1);
+  const h = Math.abs(sh.y2 - sh.y1);
+  if (sh.type === 'line') {
+    // Bounding box for line with some padding
+    return { x: x - 5, y: y - 5, w: w + 10, h: h + 10 };
+  }
+  if (sh.type === 'staff') {
+    return { x, y: Math.min(sh.y1, sh.y2) - 5, w, h: Math.abs(sh.y2 - sh.y1) + 10 };
+  }
+  return { x: x - 3, y: y - 3, w: w + 6, h: h + 6 };
+}
+
+function hitTestShapes(px, py) {
+  if (state.currentPage === -1) return null;
+  const shapes = state.pages[state.currentPage].shapes || [];
+  for (let i = shapes.length - 1; i >= 0; i--) {
+    const sh = shapes[i];
+    if (hitTestShape(sh, px, py)) return i;
+  }
+  return null;
+}
+
+function hitTestShape(sh, px, py) {
+  const x = Math.min(sh.x1, sh.x2);
+  const y = Math.min(sh.y1, sh.y2);
+  const w = Math.abs(sh.x2 - sh.x1);
+  const h = Math.abs(sh.y2 - sh.y1);
+
+  if (sh.type === 'line') {
+    // Distance from point to line segment
+    const dx = sh.x2 - sh.x1, dy = sh.y2 - sh.y1;
+    const len2 = dx*dx + dy*dy;
+    if (len2 === 0) return Math.hypot(px - sh.x1, py - sh.y1) < 8;
+    const t = Math.max(0, Math.min(1, ((px - sh.x1)*dx + (py - sh.y1)*dy) / len2));
+    const cx = sh.x1 + t*dx, cy = sh.y1 + t*dy;
+    return Math.hypot(px - cx, py - cy) < 8;
+  }
+  if (sh.type === 'staff') {
+    const yMin = Math.min(sh.y1, sh.y2), yMax = Math.max(sh.y1, sh.y2);
+    return px >= x - 5 && px <= x + w + 5 && py >= yMin - 6 && py <= yMax + 6;
+  }
+  if (sh.type === 'circle') {
+    const rx = w / 2, ry = h / 2;
+    const cx = x + rx, cy = y + ry;
+    if (rx < 1 || ry < 1) return false;
+    const nx = (px - cx) / rx, ny = (py - cy) / ry;
+    const d = nx*nx + ny*ny;
+    return d >= 0.7 && d <= 1.5; // ring hit area
+  }
+  if (sh.type === 'rectFill') {
+    return px >= x && px <= x + w && py >= y && py <= y + h;
+  }
+  // rect stroke: hit edge area
+  const pad = 6;
+  return px >= x - pad && px <= x + w + pad && py >= y - pad && py <= y + h + pad &&
+    !(px >= x + pad && px <= x + w - pad && py >= y + pad && py <= y + h - pad);
+}
+
+function drawShapeSelection(sh) {
+  const b = getShapeBBox(sh);
+  const s = getRenderScale();
+  const x = b.x * s, y = b.y * s, w = b.w * s, h = b.h * s;
+
+  octx.save();
+  octx.strokeStyle = '#6c8aff';
+  octx.lineWidth = 2;
+  octx.setLineDash([5, 3]);
+  octx.strokeRect(x, y, w, h);
+  octx.setLineDash([]);
+
+  const hs = 8;
+  const corners = [[x, y], [x + w, y], [x, y + h], [x + w, y + h]];
+  octx.fillStyle = '#6c8aff';
+  corners.forEach(([cx, cy]) => octx.fillRect(cx - hs/2, cy - hs/2, hs, hs));
+
+  // Delete button
+  const delX = x + w + 10, delY = y - 10;
+  octx.fillStyle = '#ff4444';
+  octx.beginPath();
+  octx.arc(delX, delY, 9, 0, Math.PI * 2);
+  octx.fill();
+  octx.fillStyle = 'white';
+  octx.font = 'bold 13px sans-serif';
+  octx.textAlign = 'center';
+  octx.textBaseline = 'middle';
+  octx.fillText('×', delX, delY);
+  octx.textAlign = 'left';
+  octx.textBaseline = 'alphabetic';
+  octx.restore();
+
+  // hit-test는 CSS 픽셀(getBoundingClientRect 기준)로 하므로 dpr로 나눠 저장
+  const _dpr = window.devicePixelRatio || 1;
+  state._shapeDelBtnPos = { x: delX / _dpr, y: delY / _dpr, r: 9 };
+}
+
+function deleteSelectedShape() {
+  if (!state.selectedShape) return;
+  const { pageIdx, shapeIdx } = state.selectedShape;
+  saveUndo();
+  state.pages[pageIdx].shapes.splice(shapeIdx, 1);
+  state.selectedShape = null;
+  renderCurrentPage();
+  toast('도형 삭제됨');
+}
+
+// ---- Preview shape on overlay ----
+function previewShape(x1, y1, x2, y2) {
+  octx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+  const tmpSh = {
+    type: state.tool === 'line' ? 'line' :
+          state.tool === 'staff' ? 'staff' :
+          state.tool === 'circle' ? 'circle' :
+          state.tool === 'rect' ? 'rect' : 'rectFill',
+    x1, y1, x2, y2,
+    color: state.shapeColor,
+    size: state.shapeSize,
+    opacity: state.shapeOpacity
+  };
+  drawShape(octx, tmpSh, getRenderScale());
+}
+
+// ---- Tools ----
+const SHAPE_TOOLS = ['line', 'staff', 'circle', 'rect', 'rectFill'];
+
+function setTool(tool) {
+  state.tool = tool;
+  state.placingText = tool === 'text';
+  if (typeof hideTextEditBox === 'function') hideTextEditBox();
+  document.querySelectorAll('.tool-btn[id^="tool"]').forEach(b => b.classList.remove('active'));
+  document.getElementById('tool' + tool.charAt(0).toUpperCase() + tool.slice(1))?.classList.add('active');
+
+  const isShape = SHAPE_TOOLS.includes(tool);
+  overlayCanvas.style.cursor = tool === 'text' ? 'text' : (tool === 'draw' || isShape) ? 'crosshair' : 'default';
+
+  document.getElementById('textOptions').classList.toggle('hidden', tool !== 'text' && tool !== 'select');
+  document.getElementById('drawOptions').classList.toggle('hidden', tool !== 'draw');
+  document.getElementById('shapeOptions').classList.toggle('hidden', !isShape);
+  document.getElementById('selectedShapeOptions').classList.add('hidden');
+  updateCanvasPointerEvents();
+}
+
+// ---- 인라인 텍스트 편집 박스 ----
+const textEditBox     = document.getElementById('textEditBox');
+const textEditInput   = document.getElementById('textEditInput');
+const textEditCancel  = document.getElementById('textEditCancel');
+
+let previewPos = { x: 0, y: 0 };
+let isDraggingPreview = false, dragStartX = 0, dragStartY = 0, dragStartLeft = 0, dragStartTop = 0;
+
+function showTextEditBox(canvasX, canvasY, initText = '', initColor = null, initFontSize = null, initFontFamily = null) {
+  // 도형 선택 해제 — 텍스트 편집 중 selectedShapeOptions 패널이 나타나지 않도록
+  state.selectedShape = null;
+  const selPanel = document.getElementById('selectedShapeOptions');
+  if (selPanel) selPanel.style.display = 'none';
+
+  previewPos = { x: canvasX, y: canvasY };
+
+  const fs     = (initFontSize   || state.fontSize)   * state.zoom;
+  const color  =  initColor      || state.textColor;
+  const family =  initFontFamily || state.fontFamily;
+  textEditInput.style.font      = `${fs}px ${family}`;
+  textEditInput.style.color     = color;
+  textEditInput.style.lineHeight  = '1.2';
+  textEditInput.style.minWidth    = '60px';
+  textEditInput.style.minHeight   = fs * 1.4 + 'px';
+
+  textEditBox.style.left = (canvasX * state.zoom) + 'px';
+  textEditBox.style.top  = (canvasY * state.zoom - fs) + 'px';
+  textEditBox.classList.add('active');
+
+  textEditInput.textContent = initText;
+  // focus()는 setTimeout 없이 즉시 호출해야 모바일에서 키보드가 올라옴
+  // (setTimeout 안에서 호출하면 브라우저가 사용자 제스처로 인식하지 않음)
+  textEditInput.focus();
+  try {
+    const range = document.createRange();
+    range.selectNodeContents(textEditInput);
+    range.collapse(false);
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+  } catch(_) {}
+}
+
+function hideTextEditBox() {
+  textEditBox.classList.remove('active');
+  textEditInput.textContent = '';
+}
+
+// 텍스트 입력박스 포커스는 캔버스 click/touchend에서 처리
+
+// 편집 박스가 열려있을 때 폰트·색상을 즉시 반영
+function syncTextEditBoxStyle() {
+  if (!textEditBox.classList.contains('active')) return;
+  const fs = state.fontSize * state.zoom;
+  textEditInput.style.font      = `${state.fontStyle} ${state.fontWeight} ${fs}px "${state.fontFamily}"`;
+  textEditInput.style.color     = state.textColor;
+  textEditInput.style.minHeight = fs * 1.4 + 'px';
+  textEditBox.style.top = (previewPos.y * state.zoom - fs) + 'px';
+}
+
+// 선택된 어노테이션의 속성을 패널 UI에 반영
+function syncPanelToAnn(ann) {
+  if (!ann) return;
+  state.textColor  = ann.color;
+  state.fontSize   = ann.fontSize;
+  state.fontFamily = ann.fontFamily || 'Nanum Gothic';
+  state.fontWeight = ann.fontWeight || '400';
+  state.fontStyle  = ann.fontStyle  || 'normal';
+  // 굵기 버튼 UI 동기화
+  document.querySelectorAll('.font-weight-btn[data-weight]').forEach(b =>
+    b.classList.toggle('selected', b.dataset.weight === state.fontWeight));
+  ['fsBtnItalic', 'fsBtnItalicMobile'].forEach(id => {
+    const btn = document.getElementById(id);
+    if (btn) btn.classList.toggle('selected', state.fontStyle === 'italic');
+  });
+
+  // 데스크탑 패널
+  document.getElementById('fontSize').value = ann.fontSize;
+  document.getElementById('fontSizeVal').textContent = ann.fontSize;
+  document.getElementById('customTextColor').value = ann.color;
+  document.querySelectorAll('#textColors .color-swatch').forEach(s =>
+    s.classList.toggle('selected', s.dataset.color === ann.color));
+  const ff = document.getElementById('fontFamily');
+  if (ff) ff.value = state.fontFamily;
+
+  // 모바일 패널
+  const mfs = document.getElementById('mobileFontSize');
+  if (mfs) { mfs.value = ann.fontSize; document.getElementById('mobileFontSizeVal').textContent = ann.fontSize; }
+  document.querySelectorAll('#mpanel-text .color-swatch').forEach(s =>
+    s.classList.toggle('selected', s.dataset.color === ann.color));
+  const mcp = document.getElementById('mobileTextColorPicker');
+  if (mcp) mcp.value = ann.color;
+  const mff = document.getElementById('mobileFontFamily');
+  if (mff) mff.value = state.fontFamily;
+
+  // 모바일 통합 팔레트 동기화
+  document.querySelectorAll('#mDrawShapeColors .color-swatch').forEach(s =>
+    s.classList.toggle('selected', s.dataset.color === ann.color));
+  const mdc = document.getElementById('mobileDrawShapeColor');
+  if (mdc) mdc.value = ann.color;
+
+  // 모바일 폰트 크기 슬라이더 동기화
+  if (typeof updateMSlider === 'function') updateMSlider('mobileFontSize', ann.fontSize);
+
+  // 모바일: UI 아이콘/패널만 업데이트 (setTool은 호출하지 않음 — 현재 tool 유지)
+  if (typeof _mAllIcons !== 'undefined') {
+    _mAllIcons.forEach(id => document.getElementById(id)?.classList.remove('active'));
+    document.getElementById('mIconText')?.classList.add('active');
+    if (typeof _mIconTool !== 'undefined') _mIconTool = 'text';
+  }
+  const mOptText = document.getElementById('mOptText');
+  const mOptDraw = document.getElementById('mOptDraw');
+  if (mOptText) mOptText.style.display = 'flex';
+  if (mOptDraw) mOptDraw.style.display = 'none';
+}
+
+// 선택된 도형 패널 UI 동기화
+function syncPanelToShape(sh) {
+  if (!sh) return;
+  const panel = document.getElementById('selectedShapeOptions');
+  panel.classList.remove('hidden');
+  // 현재 도형 색상을 패널에 반영
+  document.querySelectorAll('#selectedShapeColors .color-swatch').forEach(s =>
+    s.classList.toggle('selected', s.dataset.color === sh.color));
+  document.getElementById('customSelectedShapeColor').value = sh.color;
+}
+
+// 선택된 도형에 색상 즉시 적용
+function applyColorToSelectedShape(color) {
+  if (!state.selectedShape) return;
+  const { pageIdx, shapeIdx } = state.selectedShape;
+  const sh = state.pages[pageIdx]?.shapes?.[shapeIdx];
+  if (!sh) return;
+  saveUndo();
+  sh.color = color;
+  renderCurrentPage();
+}
+
+function applySizeToSelectedShape(size) {
+  if (!state.selectedShape) return;
+  const { pageIdx, shapeIdx } = state.selectedShape;
+  const sh = state.pages[pageIdx]?.shapes?.[shapeIdx];
+  if (!sh) return;
+  sh.size = size;
+  renderCurrentPage();
+}
+
+function applyOpacityToSelectedShape(opacity) {
+  if (!state.selectedShape) return;
+  const { pageIdx, shapeIdx } = state.selectedShape;
+  const sh = state.pages[pageIdx]?.shapes?.[shapeIdx];
+  if (!sh) return;
+  sh.opacity = opacity;
+  renderCurrentPage();
+}
+
+// 선택된 어노테이션에 현재 color/fontSize/fontFamily 즉시 적용
+function applyToSelectedAnn() {
+  if (!state.selectedAnn) return;
+  const { pageIdx, annIdx } = state.selectedAnn;
+  const ann = state.pages[pageIdx]?.annotations[annIdx];
+  if (!ann) return;
+  ann.color      = state.textColor;
+  ann.fontSize   = state.fontSize;
+  ann.fontFamily = state.fontFamily;
+  ann.fontWeight = state.fontWeight;
+  ann.fontStyle  = state.fontStyle;
+  renderCurrentPageDebounced(60);
+}
+
+function confirmTextEdit() {
+  const text = textEditInput.textContent.trim();
+  if (!text || state.currentPage === -1) { hideTextEditBox(); return; }
+  const ann = {
+    type: 'text',
+    x: previewPos.x,
+    y: previewPos.y,
+    text,
+    color: state.textColor,
+    fontSize: state.fontSize,
+    fontFamily: state.fontFamily,
+    fontWeight: state.fontWeight,
+    fontStyle: state.fontStyle,
+  };
+  saveUndo();
+  state.pages[state.currentPage].annotations.push(ann);
+  hideTextEditBox();
+  // 폰트를 미리 로드한 뒤 렌더 — 로드 중 canvas 초기화 타이밍 문제 방지
+  ensureFontLoaded(state.fontFamily).then(() => renderCurrentPage());
+  toast('텍스트 추가됨', 'success');
+}
+
+// Enter(단독) → 확정, Shift+Enter → 줄바꿈
+textEditInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && e.shiftKey) {
+    // Shift+Enter: 줄바꿈 삽입
+    e.preventDefault();
+    const sel = window.getSelection();
+    if (!sel.rangeCount) return;
+    const range = sel.getRangeAt(0);
+    range.deleteContents();
+    const br = document.createElement('br');
+    range.insertNode(br);
+    // 커서를 br 다음으로 이동
+    range.setStartAfter(br);
+    range.setEndAfter(br);
+    sel.removeAllRanges();
+    sel.addRange(range);
+    return;
+  }
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); confirmTextEdit(); }
+  if (e.key === 'Escape') { e.preventDefault(); hideTextEditBox(); }
+});
+
+// 포커스를 잃으면 자동 확정 (취소 버튼 클릭은 제외)
+textEditInput.addEventListener('blur', (e) => {
+  // relatedTarget이 취소 버튼이면 확정하지 않음
+  if (e.relatedTarget && e.relatedTarget.id === 'textEditCancel') return;
+  // 박스가 열려있을 때만
+  if (textEditBox.classList.contains('active')) {
+    setTimeout(() => {
+      // blur 후 다른 요소가 포커스를 가져갔어도 박스가 열려있으면 확정
+      if (textEditBox.classList.contains('active')) {
+        confirmTextEdit();
+      }
+    }, 150);
+  }
+});
+
+textEditCancel.addEventListener('click',  (e) => { e.stopPropagation(); hideTextEditBox(); });
+
+// 박스 드래그 — input 위에선 드래그 대신 커서 이동이 우선
+// actions 바나 border 영역만 드래그 허용
+textEditBox.addEventListener('mousedown', (e) => {
+  if (e.target === textEditInput || e.target.closest('.text-edit-actions')) return;
+  isDraggingPreview = true;
+  dragStartX = e.clientX; dragStartY = e.clientY;
+  dragStartLeft = parseInt(textEditBox.style.left) || 0;
+  dragStartTop  = parseInt(textEditBox.style.top)  || 0;
+  e.preventDefault();
+});
+document.addEventListener('mousemove', (e) => {
+  if (!isDraggingPreview) return;
+  const newLeft = dragStartLeft + (e.clientX - dragStartX);
+  const newTop  = dragStartTop  + (e.clientY - dragStartY);
+  textEditBox.style.left = newLeft + 'px';
+  textEditBox.style.top  = newTop  + 'px';
+  previewPos = { x: newLeft / state.zoom, y: newTop / state.zoom + state.fontSize };
+});
+document.addEventListener('mouseup', () => { isDraggingPreview = false; });
+
+// 터치 드래그 (actions 바)
+textEditBox.querySelector('.text-edit-actions').addEventListener('touchstart', (e) => {
+  const t = e.touches[0];
+  isDraggingPreview = true;
+  dragStartX = t.clientX; dragStartY = t.clientY;
+  dragStartLeft = parseInt(textEditBox.style.left) || 0;
+  dragStartTop  = parseInt(textEditBox.style.top)  || 0;
+  e.stopPropagation();
+}, { passive: true });
+document.addEventListener('touchmove', (e) => {
+  if (!isDraggingPreview) return;
+  const t = e.touches[0];
+  const newLeft = dragStartLeft + (t.clientX - dragStartX);
+  const newTop  = dragStartTop  + (t.clientY - dragStartY);
+  textEditBox.style.left = newLeft + 'px';
+  textEditBox.style.top  = newTop  + 'px';
+  previewPos = { x: newLeft / state.zoom, y: newTop / state.zoom + state.fontSize };
+}, { passive: true });
+document.addEventListener('touchend', () => { isDraggingPreview = false; });
+
+// 캔버스 클릭 → 인라인 편집 박스 열기
+overlayCanvas.addEventListener('click', (e) => {
+  if (state.currentPage === -1 || state.tool !== 'text') return;
+  // 텍스트 박스가 이미 열려있으면 포커스만 복원
+  if (textEditBox.classList.contains('active')) {
+    textEditInput.focus();
+    return;
+  }
+  const rect = overlayCanvas.getBoundingClientRect();
+  const x = (e.clientX - rect.left) / state.zoom;
+  const y = (e.clientY - rect.top)  / state.zoom;
+  showTextEditBox(x, y);
+});
+
+// ---- Select 모드: 어노테이션 클릭·이동·삭제 ----
+function getCanvasXY(e, isTouch = false) {
+  const rect = overlayCanvas.getBoundingClientRect();
+  const src = isTouch ? e.touches[0] : e;
+  return {
+    x: (src.clientX - rect.left) / state.zoom,
+    y: (src.clientY - rect.top)  / state.zoom,
+    px: src.clientX - rect.left,   // 화면 픽셀 (삭제 버튼 판별)
+    py: src.clientY - rect.top,
+  };
+}
+
+function tryDeleteBtnHit(px, py) {
+  if (!state._delBtnPos) return false;
+  const d = state._delBtnPos;
+  return Math.hypot(px - d.x, py - d.y) <= d.r + 4;
+}
+
+function deleteSelectedAnn() {
+  if (!state.selectedAnn) return;
+  const { pageIdx, annIdx } = state.selectedAnn;
+  saveUndo();
+  state.pages[pageIdx].annotations.splice(annIdx, 1);
+  state.selectedAnn = null;
+  renderCurrentPage();
+  toast('텍스트 삭제됨');
+}
+
+// 더블클릭 → 텍스트 편집 재오픈
+overlayCanvas.addEventListener('dblclick', (e) => {
+  if (state.tool !== 'select' || state.currentPage === -1) return;
+  const { x, y } = getCanvasXY(e);
+  const idx = hitTestAnnotations(x, y);
+  if (idx === null) return;
+  const ann = state.pages[state.currentPage].annotations[idx];
+  // 기존 어노테이션 제거 후 편집 박스 오픈
+  saveUndo();
+  state.pages[state.currentPage].annotations.splice(idx, 1);
+  state.selectedAnn = null;
+  // 임시로 text 모드 전환 없이 편집 박스만 열기
+  const oldTool = state.tool;
+  state.tool = 'text';
+  updateCanvasPointerEvents();
+  showTextEditBox(ann.x, ann.y, ann.text, ann.color, ann.fontSize, ann.fontFamily);
+  state.tool = oldTool;
+  updateCanvasPointerEvents();
+  renderCurrentPage();
+});
+
+overlayCanvas.addEventListener('mousedown', (e) => {
+  if (state.tool === 'select' && state.currentPage !== -1) {
+    const { x, y, px, py } = getCanvasXY(e);
+
+    // Shape delete button hit
+    if (state.selectedShape && state._shapeDelBtnPos) {
+      const d = state._shapeDelBtnPos;
+      if (Math.hypot(px - d.x, py - d.y) <= d.r) {
+        deleteSelectedShape(); return;
+      }
+    }
+
+    // Annotation delete button hit
+    if (state.selectedAnn && tryDeleteBtnHit(px, py)) {
+      deleteSelectedAnn(); return;
+    }
+
+    // Hit test annotations
+    const idx = hitTestAnnotations(x, y);
+    if (idx !== null) {
+      state.selectedAnn = { pageIdx: state.currentPage, annIdx: idx };
+      state.selectedShape = null;
+      const ann = state.pages[state.currentPage].annotations[idx];
+      state.draggingAnn = true;
+      state.dragAnnOffsetX = x - ann.x;
+      state.dragAnnOffsetY = y - ann.y;
+      syncPanelToAnn(ann);
+      drawSelectionOverlay();
+      e.preventDefault();
+      return;
+    }
+
+    // Hit test shapes
+    const shIdx = hitTestShapes(x, y);
+    if (shIdx !== null) {
+      state.selectedShape = { pageIdx: state.currentPage, shapeIdx: shIdx };
+      state.selectedAnn = null;
+      const sh = state.pages[state.currentPage].shapes[shIdx];
+      state.draggingShape = true;
+      state.dragShapeOffsetX = x - sh.x1;
+      state.dragShapeOffsetY = y - sh.y1;
+      syncPanelToShape(sh);
+      drawSelectionOverlay();
+      e.preventDefault();
+      return;
+    }
+
+    // Empty click → deselect all
+    state.selectedAnn = null;
+    state.selectedShape = null;
+    document.getElementById('selectedShapeOptions').classList.add('hidden');
+    octx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+    return;
+  }
+
+  if (state.tool !== 'draw' && !SHAPE_TOOLS.includes(state.tool) || state.currentPage === -1) return;
+
+  if (state.tool === 'draw') {
+    state.isDrawing = true;
+    const rect = overlayCanvas.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / state.zoom;
+    const y = (e.clientY - rect.top) / state.zoom;
+    state.drawPath = [{ x, y }];
+    saveUndo();
+    return;
+  }
+
+  // Shape tools
+  if (SHAPE_TOOLS.includes(state.tool)) {
+    const rect = overlayCanvas.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / state.zoom;
+    const y = (e.clientY - rect.top) / state.zoom;
+    state.isDrawingShape = true;
+    state.shapeStart = { x, y };
+    saveUndo();
+  }
+});
+
+overlayCanvas.addEventListener('mousemove', (e) => {
+  // select 모드: 도형/어노테이션 위에서 커서 변경
+  if (state.tool === 'select' && !state.draggingAnn && !state.draggingShape) {
+    const { x, y } = getCanvasXY(e);
+    const onAnn = hitTestAnnotations(x, y) !== null;
+    const onShape = hitTestShapes(x, y) !== null;
+    overlayCanvas.style.cursor = (onAnn || onShape) ? 'move' : 'default';
+  }
+
+  // Annotation drag
+  if (state.draggingAnn && state.selectedAnn) {
+    const { x, y } = getCanvasXY(e);
+    const ann = state.pages[state.selectedAnn.pageIdx].annotations[state.selectedAnn.annIdx];
+    ann.x = x - state.dragAnnOffsetX;
+    ann.y = y - state.dragAnnOffsetY;
+    renderAnnotationsOnly();
+    return;
+  }
+
+  // Shape drag
+  if (state.draggingShape && state.selectedShape) {
+    const { x, y } = getCanvasXY(e);
+    const sh = state.pages[state.selectedShape.pageIdx].shapes[state.selectedShape.shapeIdx];
+    const dx = x - state.dragShapeOffsetX - sh.x1;
+    const dy = y - state.dragShapeOffsetY - sh.y1;
+    sh.x1 += dx; sh.y1 += dy; sh.x2 += dx; sh.y2 += dy;
+    state.dragShapeOffsetX = x - sh.x1;
+    state.dragShapeOffsetY = y - sh.y1;
+    octx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+    drawShape(octx, sh, getRenderScale());
+    drawShapeSelection(sh);
+    return;
+  }
+
+  if (!state.isDrawing && !state.isDrawingShape) return;
+
+  const rect = overlayCanvas.getBoundingClientRect();
+  const x = (e.clientX - rect.left) / state.zoom;
+  const y = (e.clientY - rect.top) / state.zoom;
+
+  if (state.isDrawing && state.tool === 'draw') {
+    state.drawPath.push({ x, y });
+    octx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+    octx.save();
+    const _rs = getRenderScale();
+    octx.strokeStyle = state.drawColor;
+    octx.lineWidth = state.brushSize * _rs;
+    octx.lineCap = 'round';
+    octx.lineJoin = 'round';
+    octx.globalAlpha = state.brushOpacity / 100;
+    octx.beginPath();
+    const p = state.drawPath;
+    octx.moveTo(p[0].x * _rs, p[0].y * _rs);
+    for (let i = 1; i < p.length; i++) octx.lineTo(p[i].x * _rs, p[i].y * _rs);
+    octx.stroke();
+    octx.restore();
+    return;
+  }
+
+  if (state.isDrawingShape && state.shapeStart && SHAPE_TOOLS.includes(state.tool)) {
+    previewShape(state.shapeStart.x, state.shapeStart.y, x, y);
+  }
+});
+
+overlayCanvas.addEventListener('mouseup', (e) => {
+  if (state.draggingAnn) {
+    state.draggingAnn = false;
+    saveUndo();
+    renderCurrentPage();
+    return;
+  }
+  if (state.draggingShape) {
+    state.draggingShape = false;
+    saveUndo();
+    renderCurrentPage();
+    return;
+  }
+  if (state.isDrawing) {
+    state.isDrawing = false;
+    octx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+    if (state.drawPath.length > 1) {
+      state.pages[state.currentPage].drawings.push({
+        path: [...state.drawPath],
+        color: state.drawColor,
+        size: state.brushSize,
+        opacity: state.brushOpacity
+      });
+      renderCurrentPage();
+    }
+    state.drawPath = [];
+    return;
+  }
+  if (state.isDrawingShape && state.shapeStart) {
+    state.isDrawingShape = false;
+    const rect = overlayCanvas.getBoundingClientRect();
+    const x2 = (e.clientX - rect.left) / state.zoom;
+    const y2 = (e.clientY - rect.top) / state.zoom;
+    const { x: x1, y: y1 } = state.shapeStart;
+    state.shapeStart = null;
+    octx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+    // Minimum size check
+    if (Math.abs(x2 - x1) > 3 || Math.abs(y2 - y1) > 3) {
+      const shType = state.tool === 'line' ? 'line' :
+                     state.tool === 'staff' ? 'staff' :
+                     state.tool === 'circle' ? 'circle' :
+                     state.tool === 'rect' ? 'rect' : 'rectFill';
+      state.pages[state.currentPage].shapes = state.pages[state.currentPage].shapes || [];
+      state.pages[state.currentPage].shapes.push({
+        type: shType, x1, y1, x2, y2,
+        color: state.shapeColor,
+        size: state.shapeSize,
+        opacity: state.shapeOpacity
+      });
+      renderCurrentPage();
+      toast('도형 추가됨', 'success');
+    }
+  }
+});
+
+// 키보드: Delete / Backspace → 선택 어노테이션/도형 삭제
+// ── 줌 공통 함수 ──────────────────────────────────────────────────────────
+function applyZoom(newZoom, pivotX, pivotY) {
+  // pivotX/Y: canvasWrap 기준 CSS 픽셀 (휠 위치 중심으로 줌)
+  const wrap = document.getElementById('canvasWrap');
+  const prevZoom = state.zoom;
+  state.zoom = Math.min(4, Math.max(0.1, newZoom));
+  zoomLevel.textContent = Math.round(state.zoom * 100) + '%';
+
+  // 줌 후 스크롤 위치 보정 (pivot 기준)
+  if (pivotX !== undefined && pivotY !== undefined) {
+    const ratio = state.zoom / prevZoom;
+    const scrollX = (wrap.scrollLeft + pivotX) * ratio - pivotX;
+    const scrollY = (wrap.scrollTop  + pivotY) * ratio - pivotY;
+    renderCurrentPage().then(() => {
+      wrap.scrollLeft = scrollX;
+      wrap.scrollTop  = scrollY;
+    });
+  } else {
+    renderCurrentPage();
+  }
+}
+
+// ── Ctrl+휠 줌 (데스크탑) ───────────────────────────────────────────────────
+document.getElementById('canvasWrap').addEventListener('wheel', (e) => {
+  if (!e.ctrlKey && !e.metaKey) return;
+  e.preventDefault();
+  const wrap = document.getElementById('canvasWrap');
+  const rect = wrap.getBoundingClientRect();
+  const pivotX = e.clientX - rect.left;
+  const pivotY = e.clientY - rect.top;
+  const delta = e.deltaY > 0 ? -0.1 : 0.1;
+  applyZoom(state.zoom + delta, pivotX, pivotY);
+}, { passive: false });
+
+// ── 키보드 단축키 ────────────────────────────────────────────────────────────
+document.addEventListener('keydown', (e) => {
+  const ctrl = e.ctrlKey || e.metaKey;
+  const active = document.activeElement;
+  const isEditing = active.tagName === 'INPUT' || active.tagName === 'TEXTAREA'
+                    || active.isContentEditable;
+
+  // Ctrl/Cmd+Z → 실행취소
+  if (ctrl && e.key === 'z' && !e.shiftKey && !isEditing) {
+    e.preventDefault(); undo(); return;
+  }
+
+  // Ctrl/Cmd++ / Ctrl/Cmd+= → 확대
+  if (ctrl && (e.key === '+' || e.key === '=')) {
+    e.preventDefault(); applyZoom(state.zoom + 0.1); return;
+  }
+
+  // Ctrl/Cmd+- → 축소
+  if (ctrl && e.key === '-') {
+    e.preventDefault(); applyZoom(state.zoom - 0.1); return;
+  }
+
+  // Ctrl/Cmd+0 → 100% 리셋
+  if (ctrl && e.key === '0') {
+    e.preventDefault(); applyZoom(1.0); return;
+  }
+
+  // Delete / Backspace → 선택 항목 삭제
+  if ((e.key === 'Delete' || e.key === 'Backspace') && !isEditing) {
+    if (state.selectedAnn) { deleteSelectedAnn(); return; }
+    if (state.selectedShape) { deleteSelectedShape(); return; }
+  }
+});
+
+// ---- Touch 처리 ----
+const canvasWrapEl = document.getElementById('canvasWrap');
+
+// ── 핀치줌 (두 손가락) ──────────────────────────────────────────────────────
+let _pinchDist = null;
+let _pinchMidX = 0, _pinchMidY = 0;
+
+function getTouchDist(touches) {
+  const dx = touches[0].clientX - touches[1].clientX;
+  const dy = touches[0].clientY - touches[1].clientY;
+  return Math.hypot(dx, dy);
+}
+function getTouchMid(touches, rect) {
+  return {
+    x: ((touches[0].clientX + touches[1].clientX) / 2) - rect.left,
+    y: ((touches[0].clientY + touches[1].clientY) / 2) - rect.top,
+  };
+}
+
+canvasWrapEl.addEventListener('touchstart', (e) => {
+  if (e.touches.length === 2) {
+    _pinchDist = getTouchDist(e.touches);
+    const rect = canvasWrapEl.getBoundingClientRect();
+    const mid  = getTouchMid(e.touches, rect);
+    _pinchMidX = mid.x;
+    _pinchMidY = mid.y;
+    e.preventDefault();
+    return;
+  }
+}, { passive: false });
+
+canvasWrapEl.addEventListener('touchmove', (e) => {
+  if (e.touches.length === 2 && _pinchDist !== null) {
+    e.preventDefault();
+    const newDist = getTouchDist(e.touches);
+    const ratio   = newDist / _pinchDist;
+    _pinchDist = newDist;
+    applyZoom(state.zoom * ratio, _pinchMidX, _pinchMidY);
+    return;
+  }
+}, { passive: false });
+
+canvasWrapEl.addEventListener('touchend', (e) => {
+  if (e.touches.length < 2) _pinchDist = null;
+}, { passive: true });
+
+canvasWrapEl.addEventListener('touchstart', (e) => {
+  // text 모드: touchstart 시점(사용자 제스처 맥락)에서 즉시 focus 선점 → 키보드 보장
+  if (state.tool === 'text' && e.touches.length === 1 && state.currentPage !== -1) {
+    textEditInput.focus();
+  }
+  if (state.tool === 'select' && state.currentPage !== -1 && e.touches.length === 1) {
+    const touch = e.touches[0];
+    const rect = overlayCanvas.getBoundingClientRect();
+    const px = touch.clientX - rect.left, py = touch.clientY - rect.top;
+    const x = px / state.zoom, y = py / state.zoom;
+
+    // 도형 삭제 버튼 hit
+    if (state.selectedShape && state._shapeDelBtnPos) {
+      const d = state._shapeDelBtnPos;
+      if (Math.hypot(px - d.x, py - d.y) <= d.r + 4) {
+        deleteSelectedShape(); e.preventDefault(); return;
+      }
+    }
+
+    // 어노테이션 삭제 버튼 hit
+    if (state.selectedAnn && tryDeleteBtnHit(px, py)) {
+      deleteSelectedAnn(); e.preventDefault(); return;
+    }
+
+    // 어노테이션 hit-test
+    const idx = hitTestAnnotations(x, y);
+    if (idx !== null) {
+      const now = Date.now();
+      // 더블탭 감지: 350ms 이내 같은 위치 두 번 탭 → 텍스트 편집 진입
+      if (now - (overlayCanvas._lastTapTime || 0) < 350 &&
+          Math.hypot(x - (overlayCanvas._lastTapX||0), y - (overlayCanvas._lastTapY||0)) < 30 &&
+          (overlayCanvas._lastTapAnnIdx === idx)) {
+        overlayCanvas._lastTapTime = 0; // 초기화
+        const ann = state.pages[state.currentPage].annotations[idx];
+        saveUndo();
+        state.pages[state.currentPage].annotations.splice(idx, 1);
+        state.selectedAnn = null;
+        state.draggingAnn = false;
+        const savedTool = state.tool;
+        state.tool = 'text';
+        updateCanvasPointerEvents();
+        showTextEditBox(ann.x, ann.y, ann.text, ann.color, ann.fontSize, ann.fontFamily);
+        state.tool = savedTool;
+        updateCanvasPointerEvents();
+        renderCurrentPage();
+        e.preventDefault(); return;
+      }
+      // 첫 번째 탭: 선택 처리
+      overlayCanvas._lastTapTime = now;
+      overlayCanvas._lastTapX = x;
+      overlayCanvas._lastTapY = y;
+      overlayCanvas._lastTapAnnIdx = idx;
+      state.selectedAnn = { pageIdx: state.currentPage, annIdx: idx };
+      state.selectedShape = null;
+      const ann = state.pages[state.currentPage].annotations[idx];
+      state.draggingAnn = true;
+      state.dragAnnOffsetX = x - ann.x;
+      state.dragAnnOffsetY = y - ann.y;
+      syncPanelToAnn(ann);
+      drawSelectionOverlay();
+      e.preventDefault(); return;
+    }
+
+    // 도형 hit-test
+    const shIdx = hitTestShapes(x, y);
+    if (shIdx !== null) {
+      state.selectedShape = { pageIdx: state.currentPage, shapeIdx: shIdx };
+      state.selectedAnn = null;
+      const sh = state.pages[state.currentPage].shapes[shIdx];
+      state.draggingShape = true;
+      state.dragShapeOffsetX = x - sh.x1;
+      state.dragShapeOffsetY = y - sh.y1;
+      syncPanelToShape(sh);
+      drawSelectionOverlay();
+      e.preventDefault(); return;
+    }
+
+    state.selectedAnn = null;
+    state.selectedShape = null;
+    document.getElementById('selectedShapeOptions').classList.add('hidden');
+    octx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+    return;
+  }
+
+  if (state.tool !== 'draw' && !SHAPE_TOOLS.includes(state.tool)) return;
+  if (e.touches.length !== 1) return;
+  e.preventDefault();
+  const touch = e.touches[0];
+  const rect = overlayCanvas.getBoundingClientRect();
+  const x = (touch.clientX - rect.left) / state.zoom;
+  const y = (touch.clientY - rect.top) / state.zoom;
+
+  if (state.tool === 'draw') {
+    state.isDrawing = true;
+    state.drawPath = [{ x, y }];
+    saveUndo();
+  } else if (SHAPE_TOOLS.includes(state.tool)) {
+    state.isDrawingShape = true;
+    state.shapeStart = { x, y };
+    saveUndo();
+  }
+}, { passive: false });
+
+canvasWrapEl.addEventListener('touchmove', (e) => {
+  if (state.draggingAnn && state.selectedAnn && e.touches.length === 1) {
+    const touch = e.touches[0];
+    const rect = overlayCanvas.getBoundingClientRect();
+    const x = (touch.clientX - rect.left) / state.zoom;
+    const y = (touch.clientY - rect.top)  / state.zoom;
+    const ann = state.pages[state.selectedAnn.pageIdx].annotations[state.selectedAnn.annIdx];
+    ann.x = x - state.dragAnnOffsetX;
+    ann.y = y - state.dragAnnOffsetY;
+    renderAnnotationsOnly();
+    e.preventDefault(); return;
+  }
+  if (state.draggingShape && state.selectedShape && e.touches.length === 1) {
+    const touch = e.touches[0];
+    const rect = overlayCanvas.getBoundingClientRect();
+    const x = (touch.clientX - rect.left) / state.zoom;
+    const y = (touch.clientY - rect.top)  / state.zoom;
+    const sh = state.pages[state.selectedShape.pageIdx].shapes[state.selectedShape.shapeIdx];
+    const dx = x - state.dragShapeOffsetX - sh.x1;
+    const dy = y - state.dragShapeOffsetY - sh.y1;
+    sh.x1 += dx; sh.y1 += dy; sh.x2 += dx; sh.y2 += dy;
+    state.dragShapeOffsetX = x - sh.x1;
+    state.dragShapeOffsetY = y - sh.y1;
+    octx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+    drawShape(octx, sh, getRenderScale());
+    drawShapeSelection(sh);
+    e.preventDefault(); return;
+  }
+  if (state.tool !== 'draw' && !SHAPE_TOOLS.includes(state.tool)) return;
+  if (!state.isDrawing && !state.isDrawingShape) return;
+  if (e.touches.length !== 1) return;
+  e.preventDefault();
+  const touch = e.touches[0];
+  const rect = overlayCanvas.getBoundingClientRect();
+  const x = (touch.clientX - rect.left) / state.zoom;
+  const y = (touch.clientY - rect.top) / state.zoom;
+
+  if (state.isDrawing && state.tool === 'draw') {
+    state.drawPath.push({ x, y });
+    octx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+    octx.save();
+    const _rs2 = getRenderScale();
+    octx.strokeStyle = state.drawColor;
+    octx.lineWidth = state.brushSize * _rs2;
+    octx.lineCap = 'round';
+    octx.lineJoin = 'round';
+    octx.globalAlpha = state.brushOpacity / 100;
+    octx.beginPath();
+    const p = state.drawPath;
+    octx.moveTo(p[0].x * _rs2, p[0].y * _rs2);
+    for (let i = 1; i < p.length; i++) octx.lineTo(p[i].x * _rs2, p[i].y * _rs2);
+    octx.stroke();
+    octx.restore();
+  } else if (state.isDrawingShape && state.shapeStart) {
+    previewShape(state.shapeStart.x, state.shapeStart.y, x, y);
+  }
+}, { passive: false });
+
+canvasWrapEl.addEventListener('touchend', (e) => {
+  if (state.draggingAnn) {
+    state.draggingAnn = false;
+    saveUndo();
+    renderCurrentPage();
+    return;
+  }
+  if (state.draggingShape) {
+    state.draggingShape = false;
+    saveUndo();
+    renderCurrentPage();
+    return;
+  }
+  if (isDraggingPreview) return; // 미리보기 박스 드래그 중이면 무시
+  if (state.tool === 'text' && e.changedTouches.length === 1) {
+    // 텍스트 박스가 이미 열려있으면 포커스만 복원
+    if (textEditBox.classList.contains('active')) {
+      textEditInput.focus();
+      return;
+    }
+    const touch = e.changedTouches[0];
+    const rect = overlayCanvas.getBoundingClientRect();
+    const x = (touch.clientX - rect.left) / state.zoom;
+    const y = (touch.clientY - rect.top)  / state.zoom;
+    if (state.currentPage !== -1) showTextEditBox(x, y);
+    return;
+  }
+  if (state.tool === 'draw' && state.isDrawing) {
+    e.preventDefault();
+    state.isDrawing = false;
+    octx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+    if (state.drawPath.length > 1) {
+      state.pages[state.currentPage].drawings.push({
+        path: [...state.drawPath],
+        color: state.drawColor,
+        size: state.brushSize,
+        opacity: state.brushOpacity
+      });
+      renderCurrentPage();
+    }
+    state.drawPath = [];
+    return;
+  }
+  if (SHAPE_TOOLS.includes(state.tool) && state.isDrawingShape && e.changedTouches.length === 1) {
+    e.preventDefault();
+    state.isDrawingShape = false;
+    const touch = e.changedTouches[0];
+    const rect = overlayCanvas.getBoundingClientRect();
+    const x2 = (touch.clientX - rect.left) / state.zoom;
+    const y2 = (touch.clientY - rect.top) / state.zoom;
+    const { x: x1, y: y1 } = state.shapeStart || { x: x2, y: y2 };
+    state.shapeStart = null;
+    octx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+    if (Math.abs(x2 - x1) > 3 || Math.abs(y2 - y1) > 3) {
+      const shType = state.tool === 'line' ? 'line' :
+                     state.tool === 'staff' ? 'staff' :
+                     state.tool === 'circle' ? 'circle' :
+                     state.tool === 'rect' ? 'rect' : 'rectFill';
+      state.pages[state.currentPage].shapes = state.pages[state.currentPage].shapes || [];
+      state.pages[state.currentPage].shapes.push({
+        type: shType, x1, y1, x2, y2,
+        color: state.shapeColor,
+        size: state.shapeSize,
+        opacity: state.shapeOpacity
+      });
+      renderCurrentPage();
+    }
+  }
+}, { passive: false });
+
+function updateCanvasPointerEvents() {
+  // select 모드에서도 overlayCanvas가 mouse 이벤트를 받아야 도형/어노테이션 클릭 가능
+  // (기존엔 'none'으로 해서 마우스 클릭이 overlayCanvas를 통과해 hit-test 자체가 안 됐음)
+  overlayCanvas.style.pointerEvents = 'auto';
+  const isDrawOrShape = state.tool === 'draw' || SHAPE_TOOLS.includes(state.tool);
+  // touch: draw/shape 모드만 스크롤 막고 그리기 허용, 나머지는 네이티브 스크롤
+  // 핀치줌을 JS로 직접 처리하므로 항상 none (브라우저 기본 핀치줌 비활성)
+  canvasWrapEl.style.touchAction = isDrawOrShape ? 'none' : 'pan-x pan-y';
+  // select 모드 커서
+  overlayCanvas.style.cursor = 
+    state.tool === 'text' ? 'text' :
+    (state.tool === 'draw' || SHAPE_TOOLS.includes(state.tool)) ? 'crosshair' :
+    'default';
+}
+
+// ---- Undo ----
+// ── 변경 감지 ────────────────────────────────────────────────────────────
+function setDirty() {
+  if (!state.isDirty) {
+    state.isDirty = true;
+    // 탭 제목에 * 표시
+    document.title = '* PDF Markly';
+  }
+}
+function clearDirty() {
+  state.isDirty = false;
+  document.title = 'PDF Markly';
+}
+
+// 창 닫기 / 새로고침 시 경고
+window.addEventListener('beforeunload', (e) => {
+  if (state.isDirty) {
+    e.preventDefault();
+    e.returnValue = '저장되지 않은 변경사항이 있습니다. 나가시겠습니까?';
+    return e.returnValue;
+  }
+});
+
+function saveUndo() {
+  const pg = state.pages[state.currentPage];
+  const snapshot = {
+    annotations: JSON.parse(JSON.stringify(pg.annotations)),
+    drawings: JSON.parse(JSON.stringify(pg.drawings)),
+    shapes: JSON.parse(JSON.stringify(pg.shapes || []))
+  };
+  if (!state.undoStack[state.currentPage]) state.undoStack[state.currentPage] = [];
+  state.undoStack[state.currentPage].push(snapshot);
+  setDirty();
+}
+
+function undo() {
+  // 페이지 삭제 undo 우선 처리
+  if (state.pageUndoStack.length > 0) {
+    if (undoDeletePage()) return;
+  }
+  const stack = state.undoStack[state.currentPage];
+  if (!stack || stack.length === 0) { toast('실행 취소할 내용이 없습니다'); return; }
+  const snapshot = stack.pop();
+  state.pages[state.currentPage].annotations = snapshot.annotations;
+  state.pages[state.currentPage].drawings = snapshot.drawings;
+  state.pages[state.currentPage].shapes = snapshot.shapes || [];
+  renderCurrentPage();
+  toast('실행 취소됨');
+}
+
+// ---- Export PDF ----
+
+// ── 저장 함수 ─────────────────────────────────────────────
+async function mobileSaveBlob(blob, filename, mimeType) {
+  const isMobile = /Mobi|Android|iPad|iPhone|iPod/i.test(navigator.userAgent);
+  const url = URL.createObjectURL(blob);
+
+  if (!isMobile) {
+    // 데스크탑: 바로 다운로드
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    return;
+  }
+
+  // 모바일: Web Share API 시도
+  if (navigator.share && navigator.canShare) {
+    try {
+      const file = new File([blob], filename, { type: mimeType });
+      if (navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: filename });
+        URL.revokeObjectURL(url);
+        return;
+      }
+    } catch(e) {
+      if (e.name === 'AbortError') { URL.revokeObjectURL(url); return; }
+    }
+  }
+
+  // 모바일 폴백: 화면에 다운로드 링크 표시
+  showDownloadLink(url, filename);
+}
+
+function showDownloadLink(url, filename) {
+  const existing = document.getElementById('_dlOverlay');
+  if (existing) existing.remove();
+
+  const overlay = document.createElement('div');
+  overlay.id = '_dlOverlay';
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:24px;backdrop-filter:blur(4px)';
+
+  // 카드
+  const card = document.createElement('div');
+  card.style.cssText = 'background:var(--surface);border-radius:14px;padding:24px 20px;max-width:320px;width:100%;text-align:center;box-shadow:0 8px 40px rgba(0,0,0,.4)';
+
+  const icon = document.createElement('div');
+  icon.style.cssText = 'font-size:32px;margin-bottom:10px';
+  icon.textContent = '⬇';
+
+  const title = document.createElement('div');
+  title.style.cssText = 'font-size:14px;font-weight:600;color:var(--text);margin-bottom:6px';
+  title.textContent = '파일 저장';
+
+  const fname = document.createElement('div');
+  fname.style.cssText = 'font-size:11px;color:var(--muted);margin-bottom:18px;word-break:break-all';
+  fname.textContent = filename;
+
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  link.style.cssText = 'display:block;background:var(--accent);color:#fff;border-radius:8px;padding:12px 16px;font-size:14px;font-weight:600;text-decoration:none;margin-bottom:10px';
+  link.textContent = '저장하기';
+  link.addEventListener('click', () => {
+    setTimeout(() => { overlay.remove(); URL.revokeObjectURL(url); }, 1500);
+  });
+
+  const cancel = document.createElement('button');
+  cancel.style.cssText = 'background:transparent;border:none;color:var(--muted);font-size:12px;cursor:pointer;padding:6px 12px';
+  cancel.textContent = '취소';
+  cancel.addEventListener('click', () => { overlay.remove(); URL.revokeObjectURL(url); });
+
+  card.append(icon, title, fname, link, cancel);
+  overlay.appendChild(card);
+
+  overlay.addEventListener('click', e => {
+    if (e.target === overlay) { overlay.remove(); URL.revokeObjectURL(url); }
+  });
+
+  document.body.appendChild(overlay);
+}
+
+async function exportPDF() {
+  if (state.pages.length === 0) { toast('페이지가 없습니다', 'error'); return; }
+  setLoading(true);
+  try {
+    const { PDFDocument, rgb, StandardFonts } = PDFLib;
+    const outDoc = await PDFDocument.create();
+    const font = await outDoc.embedFont(StandardFonts.Helvetica);
+
+    const EXPORT_SCALE = 3; // 고품질 출력 (300dpi급)
+
+    // 모든 페이지의 원본 너비 중 최댓값을 기준 너비로 설정
+    const maxWidth = Math.max(...state.pages.map(pg => pg.width));
+
+    for (const pg of state.pages) {
+      let pdfPage;
+
+      // 이 페이지를 maxWidth에 맞게 축소/확대할 비율
+      const scaleToFit = maxWidth / pg.width;
+      const outW = maxWidth;
+      const outH = Math.round(pg.height * scaleToFit);
+      const renderScale = EXPORT_SCALE * scaleToFit;
+
+      if (pg.type === 'pdf') {
+        // Render PDF page to canvas, then embed as image
+        const srcPage = await pg.pdfDoc.getPage(pg.pageIndex);
+        const vp = srcPage.getViewport({ scale: renderScale });
+        const tmpCanvas = document.createElement('canvas');
+        tmpCanvas.width = vp.width; tmpCanvas.height = vp.height;
+        const tmpCtx = tmpCanvas.getContext('2d');
+        await srcPage.render({ canvasContext: tmpCtx, viewport: vp }).promise;
+
+        // Draw annotations & drawings on tmpCanvas
+        pg.annotations.forEach(ann => drawAnnotation(tmpCtx, ann, renderScale));
+        pg.drawings.forEach(d => drawStroke(tmpCtx, d, renderScale));
+        (pg.shapes || []).forEach(sh => drawShape(tmpCtx, sh, renderScale));
+
+        const pngBytes = await new Promise(res => tmpCanvas.toBlob(b => b.arrayBuffer().then(res), 'image/png'));
+        const pngImage = await outDoc.embedPng(pngBytes);
+        pdfPage = outDoc.addPage([outW, outH]);
+        pdfPage.drawImage(pngImage, { x: 0, y: 0, width: outW, height: outH });
+
+      } else {
+        // Image page
+        const img = await loadImage(pg.imageData);
+        const tmpCanvas = document.createElement('canvas');
+        tmpCanvas.width = Math.round(img.width * renderScale);
+        tmpCanvas.height = Math.round(img.height * renderScale);
+        const tmpCtx = tmpCanvas.getContext('2d');
+        tmpCtx.drawImage(img, 0, 0, tmpCanvas.width, tmpCanvas.height);
+        pg.annotations.forEach(ann => drawAnnotation(tmpCtx, ann, renderScale));
+        pg.drawings.forEach(d => drawStroke(tmpCtx, d, renderScale));
+        (pg.shapes || []).forEach(sh => drawShape(tmpCtx, sh, renderScale));
+
+        const pngBytes = await new Promise(res => tmpCanvas.toBlob(b => b.arrayBuffer().then(res), 'image/png'));
+        const pngImage = await outDoc.embedPng(pngBytes);
+        pdfPage = outDoc.addPage([outW, outH]);
+        pdfPage.drawImage(pngImage, { x: 0, y: 0, width: outW, height: outH });
+      }
+    }
+
+    const pdfBytes = await outDoc.save();
+    const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+    await mobileSaveBlob(blob, 'edited-document.pdf', 'application/pdf');
+    clearDirty();
+    toast('PDF 저장 완료!', 'success');
+  } catch(e) {
+    toast('PDF 저장 실패: ' + e.message, 'error');
+    console.error(e);
+  }
+  setLoading(false);
+}
+
+// ---- File list ----
+function updateFileList() {
+  const fl = document.getElementById('fileList');
+  const nf = document.getElementById('noFiles');
+  if (state.files.length === 0) { nf.style.display = ''; fl.style.display = 'none'; return; }
+  nf.style.display = 'none'; fl.style.display = 'flex';
+  fl.innerHTML = state.files.map(f => `
+    <div style="background:var(--surface2);padding:8px 10px;border-radius:6px;font-size:12px;">
+      <div style="color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${f.name}</div>
+      <div style="color:var(--text2);margin-top:2px">${f.pageCount}페이지</div>
+    </div>
+  `).join('');
+}
+
+// ---- UI bindings ----
+document.getElementById('toolSelect').addEventListener('click', () => setTool('select'));
+document.getElementById('toolText').addEventListener('click', () => setTool('text'));
+document.getElementById('toolDraw').addEventListener('click', () => setTool('draw'));
+document.getElementById('toolLine').addEventListener('click', () => setTool('line'));
+document.getElementById('toolStaff').addEventListener('click', () => setTool('staff'));
+document.getElementById('toolCircle').addEventListener('click', () => setTool('circle'));
+document.getElementById('toolRect').addEventListener('click', () => setTool('rect'));
+document.getElementById('toolRectFill').addEventListener('click', () => setTool('rectFill'));
+document.getElementById('btnUndo').addEventListener('click', undo);
+
+// ---- PNG 렌더 공통 함수 ----
+async function renderPageToPngBlob(pg) {
+  const EXPORT_SCALE = 3;
+  const tmpCanvas = document.createElement('canvas');
+  const tmpCtx = tmpCanvas.getContext('2d');
+
+  if (pg.type === 'pdf') {
+    const srcPage = await pg.pdfDoc.getPage(pg.pageIndex);
+    const vp = srcPage.getViewport({ scale: EXPORT_SCALE });
+    tmpCanvas.width = vp.width;
+    tmpCanvas.height = vp.height;
+    await srcPage.render({ canvasContext: tmpCtx, viewport: vp }).promise;
+    pg.annotations.forEach(ann => drawAnnotation(tmpCtx, ann, EXPORT_SCALE));
+    pg.drawings.forEach(d => drawStroke(tmpCtx, d, EXPORT_SCALE));
+    (pg.shapes || []).forEach(sh => drawShape(tmpCtx, sh, EXPORT_SCALE));
+  } else {
+    const img = await loadImage(pg.imageData);
+    tmpCanvas.width = img.width * EXPORT_SCALE;
+    tmpCanvas.height = img.height * EXPORT_SCALE;
+    tmpCtx.drawImage(img, 0, 0, tmpCanvas.width, tmpCanvas.height);
+    pg.annotations.forEach(ann => drawAnnotation(tmpCtx, ann, EXPORT_SCALE));
+    pg.drawings.forEach(d => drawStroke(tmpCtx, d, EXPORT_SCALE));
+    (pg.shapes || []).forEach(sh => drawShape(tmpCtx, sh, EXPORT_SCALE));
+  }
+  return new Promise(res => tmpCanvas.toBlob(res, 'image/png'));
+}
+
+// ---- 현재 페이지 PNG 저장 ----
+async function exportPngOne() {
+  if (state.currentPage === -1 || state.pages.length === 0) {
+    toast('페이지가 없습니다', 'error'); return;
+  }
+  setLoading(true);
+  try {
+    const pg = state.pages[state.currentPage];
+    const blob = await renderPageToPngBlob(pg);
+    await mobileSaveBlob(blob, `page-${state.currentPage + 1}.png`, 'image/png');
+    toast(`페이지 ${state.currentPage + 1} PNG 저장 완료!`, 'success');
+  } catch(e) {
+    toast('PNG 저장 실패: ' + e.message, 'error');
+    console.error(e);
+  }
+  setLoading(false);
+}
+
+// ---- 전체 페이지 PNG → ZIP 저장 ----
+async function exportPngAll() {
+  if (state.pages.length === 0) { toast('페이지가 없습니다', 'error'); return; }
+  setLoading(true);
+  try {
+    const zip = new JSZip();
+    const digits = String(state.pages.length).length;
+    for (let i = 0; i < state.pages.length; i++) {
+      const pg = state.pages[i];
+      const blob = await renderPageToPngBlob(pg);
+      const buf = await blob.arrayBuffer();
+      const num = String(i + 1).padStart(digits, '0');
+      zip.file(`page-${num}.png`, buf);
+      toast(`렌더링 중… ${i + 1} / ${state.pages.length}`, 'info', 900);
+    }
+    const zipBlob = await zip.generateAsync({ type: 'blob' });
+    await mobileSaveBlob(zipBlob, 'pages.zip', 'application/zip');
+    toast('전체 PNG ZIP 저장 완료!', 'success');
+  } catch(e) {
+    toast('PNG 저장 실패: ' + e.message, 'error');
+    console.error(e);
+  }
+  setLoading(false);
+}
+
+// ---- 드롭다운 토글 ----
+const _exportMenu = document.getElementById('exportDropdownMenu');
+document.getElementById('btnExportPng').addEventListener('click', (e) => {
+  e.stopPropagation();
+  _exportMenu.classList.toggle('open');
+});
+document.getElementById('btnExportPngOne').addEventListener('click', () => {
+  _exportMenu.classList.remove('open');
+  exportPngOne();
+});
+document.getElementById('btnExportPngAll').addEventListener('click', () => {
+  _exportMenu.classList.remove('open');
+  exportPngAll();
+});
+document.addEventListener('click', () => _exportMenu.classList.remove('open'));
+
+document.getElementById('btnExport').addEventListener('click', exportPDF);
+
+document.getElementById('btnDeletePage').addEventListener('click', () => {
+  if (state.currentPage >= 0) deletePage(state.currentPage);
+});
+document.getElementById('btnMoveUp').addEventListener('click', () => {
+  if (state.currentPage > 0) movePage(state.currentPage, state.currentPage - 1);
+});
+document.getElementById('btnMoveDown').addEventListener('click', () => {
+  if (state.currentPage < state.pages.length - 1) movePage(state.currentPage, state.currentPage + 1);
+});
+
+document.getElementById('btnClearDrawings').addEventListener('click', () => {
+  if (state.currentPage === -1) return;
+  saveUndo();
+  state.pages[state.currentPage].drawings = [];
+  renderCurrentPage();
+  toast('그리기 초기화됨');
+});
+
+// btnAddText removed
+
+// Page nav
+pageNav.addEventListener('change', () => selectPage(parseInt(pageNav.value) - 1));
+
+// Zoom
+document.getElementById('btnZoomIn').addEventListener('click', () => applyZoom(state.zoom + 0.25));
+document.getElementById('btnZoomOut').addEventListener('click', () => applyZoom(state.zoom - 0.25));
+
+// Font size
+const fontSizeRange = document.getElementById('fontSize');
+fontSizeRange.addEventListener('input', () => {
+  state.fontSize = parseInt(fontSizeRange.value);
+  document.getElementById('fontSizeVal').textContent = state.fontSize;
+  syncTextEditBoxStyle();
+  applyToSelectedAnn();
+});
+
+// Brush
+document.getElementById('brushSize').addEventListener('input', function() {
+  state.brushSize = parseInt(this.value);
+  document.getElementById('brushSizeVal').textContent = this.value;
+});
+document.getElementById('brushOpacity').addEventListener('input', function() {
+  state.brushOpacity = parseInt(this.value);
+  document.getElementById('brushOpacityVal').textContent = this.value + '%';
+});
+
+// Colors
+document.querySelectorAll('#textColors .color-swatch').forEach(sw => {
+  sw.addEventListener('click', () => {
+    document.querySelectorAll('#textColors .color-swatch').forEach(s => s.classList.remove('selected'));
+    sw.classList.add('selected');
+    state.textColor = sw.dataset.color;
+    document.getElementById('customTextColor').value = sw.dataset.color;
+    syncTextEditBoxStyle();
+    applyToSelectedAnn();
+  });
+});
+document.getElementById('customTextColor').addEventListener('input', function() {
+  state.textColor = this.value;
+  document.querySelectorAll('#textColors .color-swatch').forEach(s => s.classList.remove('selected'));
+  syncTextEditBoxStyle();
+  applyToSelectedAnn();
+});
+
+function syncAllDrawColorUI(color) {
+  // 데스크탑 패널 동기화
+  document.querySelectorAll('#drawColors .color-swatch').forEach(s =>
+    s.classList.toggle('selected', s.dataset.color === color));
+  document.getElementById('customDrawColor').value = color;
+  // 모바일 패널 동기화
+  document.querySelectorAll('#mpanel-draw .color-swatch').forEach(s =>
+    s.classList.toggle('selected', s.dataset.color === color));
+  const mobileCustom = document.getElementById('mobileCustomDrawColor');
+  if (mobileCustom) mobileCustom.value = color;
+}
+
+document.querySelectorAll('#drawColors .color-swatch').forEach(sw => {
+  sw.addEventListener('click', () => {
+    state.drawColor = sw.dataset.color;
+    syncAllDrawColorUI(sw.dataset.color);
+  });
+});
+document.getElementById('customDrawColor').addEventListener('input', function() {
+  state.drawColor = this.value;
+  syncAllDrawColorUI(this.value);
+});
+
+// Shape options
+// shapeSize/Opacity: oninput 방식으로 처리
+// 도형 색상/크기/불투명도 — window에 명시 노출 (onclick에서 전역 접근)
+// ── 굵기/기울기 전역 함수 ─────────────────────────────────────────────────
+window.setFontWeight = function(weight, el) {
+  state.fontWeight = weight;
+  // 모바일 font-weight-btn
+  document.querySelectorAll('.font-weight-btn[data-weight]').forEach(b =>
+    b.classList.toggle('selected', b.dataset.weight === weight));
+  // 데스크탑 리본 tsb 버튼
+  document.querySelectorAll('.tsb[data-weight]').forEach(b =>
+    b.classList.toggle('active', b.dataset.weight === weight));
+  syncTextEditBoxStyle();
+  applyToSelectedAnn();
+};
+
+window.toggleFontItalic = function(el) {
+  state.fontStyle = state.fontStyle === 'italic' ? 'normal' : 'italic';
+  // 데스크탑·모바일 양쪽 버튼 동기화
+  ['fsBtnItalic', 'fsBtnItalicMobile'].forEach(id => {
+    const btn = document.getElementById(id);
+    if (btn) btn.classList.toggle('selected', state.fontStyle === 'italic');
+  });
+  syncTextEditBoxStyle();
+  applyToSelectedAnn();
+};
+
+window.setShapeColor = function(el) {
+  document.querySelectorAll('#shapeColors .color-swatch').forEach(s => s.classList.remove('selected'));
+  el.classList.add('selected');
+  state.shapeColor = el.dataset.color;
+  document.getElementById('customShapeColor').value = el.dataset.color;
+};
+window.setShapeColorDirect = function(val) {
+  state.shapeColor = val;
+  document.querySelectorAll('#shapeColors .color-swatch').forEach(s => s.classList.remove('selected'));
+};
+window.setSelectedShapeColor = function(el) {
+  document.querySelectorAll('#selectedShapeColors .color-swatch').forEach(s => s.classList.remove('selected'));
+  el.classList.add('selected');
+  document.getElementById('customSelectedShapeColor').value = el.dataset.color;
+  applyColorToSelectedShape(el.dataset.color);
+};
+window.setShapeSize = function(el) {
+  state.shapeSize = parseInt(el.value);
+  document.getElementById('shapeSizeVal').textContent = el.value;
+};
+window.setShapeOpacity = function(el) {
+  state.shapeOpacity = parseInt(el.value);
+  document.getElementById('shapeOpacityVal').textContent = el.value + '%';
+};
+
+// 선택된 도형 색상 변경
+// selectedShapeColors: onclick 방식으로 처리
+document.getElementById('customSelectedShapeColor').addEventListener('input', function() {
+  document.querySelectorAll('#selectedShapeColors .color-swatch').forEach(s => s.classList.remove('selected'));
+  applyColorToSelectedShape(this.value);
+});
+document.getElementById('btnDeleteSelectedShape').addEventListener('click', () => {
+  deleteSelectedShape();
+  document.getElementById('selectedShapeOptions').classList.add('hidden');
+});
+
+// File inputs
+document.getElementById('btnAddPdf').addEventListener('click', () => document.getElementById('pdfInput').click());
+document.getElementById('btnAddImage').addEventListener('click', () => document.getElementById('imageInput').click());
+document.getElementById('pdfInput').addEventListener('change', async (e) => {
+  const files = Array.from(e.target.files);
+  e.target.value = '';
+  for (const file of files) await addPDFFile(file);
+});
+document.getElementById('imageInput').addEventListener('change', async (e) => {
+  const files = Array.from(e.target.files);
+  e.target.value = '';
+  for (const file of files) await addImageFile(file);
+});
+
+// Drop zone (sidebar)
+// empty-state 클릭 → 파일 선택
+document.getElementById('emptyState').style.cursor = 'pointer';
+document.getElementById('emptyState').addEventListener('click', () => {
+  const inp = document.createElement('input');
+  inp.type = 'file'; inp.accept = '.pdf,image/*'; inp.multiple = true;
+  inp.onchange = async (e) => {
+    const files = Array.from(e.target.files);
+    for (const file of files) {
+      if (file.type === 'application/pdf') await addPDFFile(file);
+      else if (file.type.startsWith('image/')) await addImageFile(file);
+    }
+  };
+  inp.click();
+});
+
+// Sidebar tabs
+document.querySelectorAll('.sidebar-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.sidebar-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+  });
+});
+
+// 메인 영역 전체 드래그 앤 드롭 (emptyState + canvasWrap 모두 커버)
+const mainAreaEl = document.querySelector('.main-area');
+let _dragCounter = 0; // dragenter/dragleave 중첩 보정용
+
+mainAreaEl.addEventListener('dragenter', (e) => {
+  e.preventDefault();
+  _dragCounter++;
+  mainAreaEl.classList.add('drag-over-main');
+});
+mainAreaEl.addEventListener('dragleave', () => {
+  _dragCounter--;
+  if (_dragCounter <= 0) {
+    _dragCounter = 0;
+    mainAreaEl.classList.remove('drag-over-main');
+  }
+});
+mainAreaEl.addEventListener('dragover', e => e.preventDefault());
+mainAreaEl.addEventListener('drop', async (e) => {
+  e.preventDefault();
+  _dragCounter = 0;
+  mainAreaEl.classList.remove('drag-over-main');
+  const files = Array.from(e.dataTransfer.files);
+  if (files.length === 0) return;
+  const doAdd = async () => {
+    for (const file of files) {
+      if (file.type === 'application/pdf') await addPDFFile(file);
+      else if (file.type.startsWith('image/')) await addImageFile(file);
+      else toast(`${file.name} - 지원하지 않는 형식`, 'error');
+    }
+  };
+  // 첫 파일 추가(pages 없을 때)는 확인 불필요, 이후 추가는 항상 허용
+  await doAdd();
+});
+
+// ---- 시스템 폰트 로드 ----
+// ── Google Fonts 카테고리별 목록 ─────────────────────────────────────────
+const GOOGLE_FONTS = {
+  '한국어 고딕': [
+    'Nanum Gothic', 'Noto Sans KR', 'Black Han Sans',
+    'Do Hyeon', 'Jua', 'Gugi', 'Sunflower', 'Gowun Dodum',
+  ],
+  '한국어 명조': [
+    'Nanum Myeongjo', 'Noto Serif KR', 'Song Myung',
+    'Hahmlet', 'Gowun Batang',
+  ],
+  '한국어 손글씨': [
+    'Nanum Brush Script', 'Nanum Pen Script',
+    'Gamja Flower', 'Poor Story', 'Single Day', 'Hi Melody',
+  ],
+  '영문 산세리프': [
+    'Inter', 'Roboto', 'Open Sans', 'Lato', 'Poppins',
+    'Nunito', 'Montserrat', 'Raleway', 'Oswald',
+    'Source Sans 3',
+  ],
+  '영문 세리프': [
+    'Playfair Display', 'Merriweather', 'Lora',
+    'EB Garamond', 'Cormorant Garamond', 'Libre Baskerville',
+    'Crimson Text', 'PT Serif',
+  ],
+  '영문 손글씨': [
+    'Pacifico', 'Dancing Script', 'Caveat', 'Indie Flower',
+    'Permanent Marker', 'Satisfy', 'Lobster', 'Great Vibes',
+    'Kalam', 'Patrick Hand',
+  ],
+  '코드/모노': [
+    'Fira Code', 'Source Code Pro', 'JetBrains Mono',
+    'IBM Plex Mono', 'Inconsolata', 'Space Mono',
+  ],
+  '시스템': [
+    'sans-serif', 'serif', 'monospace',
+    'Arial', 'Georgia', 'Times New Roman', 'Courier New',
+    'Helvetica Neue', 'Verdana', 'Tahoma', 'Trebuchet MS',
+    'Malgun Gothic', 'Apple SD Gothic Neo',
+  ],
+};
+
+// isFontAvailable: Google Fonts 방식으로 전환하여 제거
+
+async function loadSystemFonts() {
+  const selects = ['fontFamily', 'mobileFontFamily']
+    .map(id => document.getElementById(id)).filter(Boolean);
+
+  // Google Fonts 카테고리별로 <optgroup> 구성
+  selects.forEach(sel => {
+    const prev = sel.value || 'Nanum Gothic';
+    sel.innerHTML = '';
+
+    Object.entries(GOOGLE_FONTS).forEach(([category, fonts]) => {
+      const group = document.createElement('optgroup');
+      group.label = category;
+      fonts.forEach(name => {
+        const opt = document.createElement('option');
+        opt.value = name;
+        opt.textContent = name;
+        // 시스템 폰트 카테고리는 style 미적용
+        if (category !== '시스템') {
+          opt.style.fontFamily = name;
+        }
+        group.appendChild(opt);
+      });
+      sel.appendChild(group);
+    });
+
+    // 이전 선택값 복원
+    const allFonts = Object.values(GOOGLE_FONTS).flat();
+    sel.value = allFonts.includes(prev) ? prev : 'Nanum Gothic';
+  });
+}
+
+loadSystemFonts().then(() => {
+  // 초기 선택 폰트 미리보기
+  ['fontFamily', 'mobileFontFamily'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.fontFamily = el.value;
+  });
+  // 초기 굵기 버튼 selected 표시
+  document.querySelectorAll('.font-weight-btn[data-weight]').forEach(b =>
+    b.classList.toggle('selected', b.dataset.weight === state.fontWeight));
+});
+
+// Google Fonts 동적 로드 (아직 로드 안 된 폰트를 <link>로 추가)
+const _loadedFonts = new Set(['sans-serif', 'serif', 'monospace',
+  'Nanum Gothic', 'Noto Sans KR', 'Space Mono', 'Nanum Myeongjo',
+  'Nanum Brush Script', 'Nanum Pen Script', 'Black Han Sans',
+  'Do Hyeon', 'Jua', 'Gugi', 'Gamja Flower', 'Sunflower',
+  'Poor Story', 'Single Day', 'Hi Melody', 'Song Myung',
+  'Hahmlet', 'Gowun Dodum', 'Gowun Batang',
+  'Roboto', 'Open Sans', 'Lato', 'Montserrat', 'Raleway',
+  'Oswald', 'Inter', 'Poppins', 'Nunito', 'Source Sans 3',
+  'Playfair Display', 'Merriweather', 'Lora', 'EB Garamond',
+  'Cormorant Garamond', 'Libre Baskerville', 'Crimson Text', 'PT Serif',
+  'Fira Code', 'Source Code Pro', 'JetBrains Mono', 'IBM Plex Mono',
+  'Inconsolata', 'Pacifico', 'Dancing Script', 'Caveat',
+  'Indie Flower', 'Permanent Marker', 'Satisfy', 'Lobster',
+  'Great Vibes', 'Kalam', 'Patrick Hand',
+]);
+
+async function loadGoogleFont(family) {
+  if (_loadedFonts.has(family)) return;
+  _loadedFonts.add(family);
+  const encoded = encodeURIComponent(family);
+  const link = document.createElement('link');
+  link.rel = 'stylesheet';
+  link.href = `https://fonts.googleapis.com/css2?family=${encoded}:wght@400;700&display=swap`;
+  document.head.appendChild(link);
+  // 로드 대기
+  await new Promise(r => { link.onload = r; link.onerror = r; setTimeout(r, 2000); });
+}
+
+async function ensureFontLoaded(family) {
+  if (!family || family === 'sans-serif' || family === 'serif' || family === 'monospace') return;
+  await loadGoogleFont(family);
+  try {
+    await document.fonts.load(`16px "${family}"`);
+  } catch(e) { /* 로드 실패 무시 */ }
+}
+
+function onFontFamilyChange(val) {
+  state.fontFamily = val;
+  ['fontFamily', 'mobileFontFamily'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      if (el.value !== val) el.value = val;
+      // select 자체에 선택 폰트 미리보기
+      el.style.fontFamily = val;
+    }
+  });
+  // Google Fonts 로드 후 스타일 적용
+  ensureFontLoaded(val).then(() => {
+    syncTextEditBoxStyle();
+    applyToSelectedAnn();
+  });
+}
+
+document.getElementById('fontFamily')?.addEventListener('change', function() { onFontFamilyChange(this.value); });
+document.getElementById('mobileFontFamily')?.addEventListener('change', function() { onFontFamilyChange(this.value); });
+function switchMobilePanel(name, tabEl) {
+  document.querySelectorAll('.mobile-edit-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.mobile-edit-content').forEach(p => p.classList.add('hidden'));
+  if (tabEl) tabEl.classList.add('active');
+  document.getElementById('mpanel-' + name)?.classList.remove('hidden');
+  // tool은 mIconAll에서 처리 — 여기선 setTool 호출 안 함
+  if (name === 'pages') renderMobileThumbRow();
+}
+
+function renderMobileThumbRow() {
+  const row = document.getElementById('mobileThumbRow');
+  if (!row) return;
+  if (state.pages.length === 0) {
+    row.innerHTML = '<div style="font-size:12px;color:var(--text2);padding:16px 0;text-align:center;width:100%">PDF를 추가하세요</div>';
+    return;
+  }
+  row.innerHTML = '';
+  state.pages.forEach((pg, i) => {
+    const item = document.createElement('div');
+    item.className = 'mobile-thumb-item';
+    item.innerHTML = `
+      <div class="mobile-thumb-item-inner ${i === state.currentPage ? 'selected' : ''}" id="mthumb-${i}">
+        <span style="font-size:10px;color:#aaa">${i+1}</span>
+      </div>
+      <div class="mobile-thumb-label">p.${i+1}</div>
+    `;
+    item.addEventListener('click', () => { selectPage(i); renderMobileThumbRow(); });
+    row.appendChild(item);
+    renderMobileThumb(pg, i);
+  });
+  setTimeout(() => {
+    document.getElementById(`mthumb-${state.currentPage}`)
+      ?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+  }, 50);
+}
+
+async function renderMobileThumb(pg, idx) {
+  const thumbEl = document.getElementById(`mthumb-${idx}`);
+  if (!thumbEl) return;
+  const c = document.createElement('canvas');
+  const tc = c.getContext('2d');
+  try {
+    if (pg.type === 'pdf') {
+      const page = await pg.pdfDoc.getPage(pg.pageIndex);
+      const vp = page.getViewport({ scale: 52 / pg.width });
+      c.width = 52; c.height = vp.height;
+      await page.render({ canvasContext: tc, viewport: vp }).promise;
+    } else {
+      const img = await loadImage(pg.imageData);
+      const scale = Math.min(52/img.width, 68/img.height);
+      c.width = img.width * scale; c.height = img.height * scale;
+      tc.drawImage(img, 0, 0, c.width, c.height);
+    }
+    thumbEl.innerHTML = '';
+    thumbEl.appendChild(c);
+  } catch(e) {}
+}
+
+function setMobileTextColor(el) {
+  document.querySelectorAll('#mpanel-text .color-swatch').forEach(s => s.classList.remove('selected'));
+  el.classList.add('selected');
+  state.textColor = el.dataset.color;
+  document.getElementById('customTextColor').value = el.dataset.color;
+  syncTextEditBoxStyle();
+  applyToSelectedAnn();
+}
+
+function setMobileShapeTool(tool, el) {
+  setTool(tool);
+  document.querySelectorAll('#mpanel-shape .tool-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+}
+
+function setMobileShapeColor(el) {
+  document.querySelectorAll('#mpanel-shape .color-swatch').forEach(s => s.classList.remove('selected'));
+  el.classList.add('selected');
+  state.shapeColor = el.dataset.color;
+  const picker = document.getElementById('mobileShapeColorPicker2');
+  if (picker) picker.value = el.dataset.color;
+}
+
+function setMobileDrawColor(el) {
+  state.drawColor = el.dataset.color;
+  syncAllDrawColorUI(el.dataset.color);
+}
+
+// 모바일 커스텀 컬러 피커
+// mobileCustomDrawColor handled by unified mDrawShapeColors palette
+
+function clearMobileDrawings() {
+  if (state.currentPage === -1) return;
+  saveUndo();
+  state.pages[state.currentPage].drawings = [];
+  renderCurrentPage();
+  toast('그리기 초기화됨');
+}
+
+function activateMobileText() {
+  setTool('text');
+  toast('캔버스를 탭해서 배치하세요', 'info');
+}
+
+function openDrawer(id) {
+  const drawerId = id || 'drawerEdit';
+  closeDrawer();
+  const drawer = document.getElementById(drawerId);
+  if (drawer) drawer.classList.add('open');
+  const bd = document.getElementById('drawerBackdrop');
+  if (bd) bd.classList.add('open');
+}
+
+function closeDrawer() {
+  document.querySelectorAll('.mobile-drawer').forEach(d => d.classList.remove('open'));
+  const bd = document.getElementById('drawerBackdrop');
+  if (bd) bd.classList.remove('open');
+}
+
+document.getElementById('mobileTextColorPicker')?.addEventListener('input', function() {
+  state.textColor = this.value;
+  document.querySelectorAll('#mpanel-text .color-swatch').forEach(s => s.classList.remove('selected'));
+  syncTextEditBoxStyle();
+  applyToSelectedAnn();
+});
+document.getElementById('mobileBrushSize')?.addEventListener('input', function() {
+  state.brushSize = parseInt(this.value);
+  const _sv = document.getElementById('mDrawSizeVal'); if(_sv) _sv.textContent = this.value;
+  document.getElementById('brushSize').value = this.value;
+});
+document.getElementById('mobileBrushOpacity')?.addEventListener('input', function() {
+  state.brushOpacity = parseInt(this.value);
+  const _ov = document.getElementById('mDrawOpacityVal'); if(_ov) _ov.textContent = this.value + '%';
+  document.getElementById('brushOpacity').value = this.value;
+});
+document.getElementById('mobileFontSize')?.addEventListener('input', function() {
+  state.fontSize = parseInt(this.value);
+  document.getElementById('mobileFontSizeVal').textContent = this.value;
+  document.getElementById('fontSize').value = this.value;
+  document.getElementById('fontSizeVal').textContent = this.value;
+  syncTextEditBoxStyle();
+  applyToSelectedAnn();
+});
+
+// 페이지 목록 업데이트 시 모바일 썸네일도 갱신
+const _origRenderPageList = renderPageList;
+
+// ---- Init
+setTool('select');
+updateFileList();
+renderMobileThumbRow();
+
+// ── 도형 옵션 바인딩: document 레벨에서 위임 (ribbon UI 호환) ──────────────
+document.addEventListener('click', function(e) {
+  // shapeColors 스워치 (.swatch 또는 .color-swatch 모두 지원)
+  const shSw = e.target.closest('#shapeColors .swatch, #shapeColors .color-swatch');
+  if (shSw) {
+    document.querySelectorAll('#shapeColors .swatch, #shapeColors .color-swatch').forEach(s => s.classList.remove('selected', 'sel'));
+    shSw.classList.add('selected');
+    state.shapeColor = shSw.dataset.color;
+    document.getElementById('customShapeColor').value = shSw.dataset.color;
+    const face = document.getElementById('shapeColorFace');
+    if (face) face.style.background = shSw.dataset.color;
+    return;
+  }
+  // selectedShapeColors 스워치
+  const selSw = e.target.closest('#selectedShapeColors .swatch, #selectedShapeColors .color-swatch');
+  if (selSw) {
+    document.querySelectorAll('#selectedShapeColors .swatch, #selectedShapeColors .color-swatch').forEach(s => s.classList.remove('selected', 'sel'));
+    selSw.classList.add('selected');
+    document.getElementById('customSelectedShapeColor').value = selSw.dataset.color;
+    applyColorToSelectedShape(selSw.dataset.color);
+    return;
+  }
+});
+
+document.addEventListener('input', function(e) {
+  if (e.target.id === 'customShapeColor') {
+    state.shapeColor = e.target.value;
+    document.querySelectorAll('#shapeColors .swatch, #shapeColors .color-swatch').forEach(s => s.classList.remove('selected', 'sel'));
+    const face = document.getElementById('shapeColorFace');
+    if (face) face.style.background = e.target.value;
+  }
+  if (e.target.id === 'customSelectedShapeColor') {
+    applyColorToSelectedShape(e.target.value);
+  }
+  if (e.target.id === 'shapeSize') {
+    state.shapeSize = parseInt(e.target.value);
+    document.getElementById('shapeSizeVal').textContent = e.target.value;
+  }
+  if (e.target.id === 'shapeOpacity') {
+    state.shapeOpacity = parseInt(e.target.value);
+    document.getElementById('shapeOpacityVal').textContent = e.target.value + '%';
+  }
+});
+
+</script>
+<script>
+
+// ── Custom mobile sliders (replaces iOS buggy input[type=range]) ──────────
+(function() {
+  function initSlider(wrap) {
+    const track = wrap.querySelector('.mslider-track');
+    const fill  = wrap.querySelector('.mslider-fill');
+    const thumb = wrap.querySelector('.mslider-thumb');
+    const min   = parseFloat(wrap.dataset.min);
+    const max   = parseFloat(wrap.dataset.max);
+    const inputId = wrap.dataset.input;
+    let val = parseFloat(wrap.dataset.val);
+
+    function setVal(v) {
+      val = Math.min(max, Math.max(min, v));
+      const pct = (val - min) / (max - min) * 100;
+      fill.style.width  = pct + '%';
+      thumb.style.left  = pct + '%';
+      // read inputId dynamically (may change when tool switches)
+      const currentInputId = wrap.dataset.input;
+      const inp = document.getElementById(currentInputId);
+      if (inp) {
+        inp.value = val;
+        inp.dispatchEvent(new Event('input', {bubbles:true}));
+      }
+    }
+
+    setVal(val); // init position
+
+    function onMove(clientX) {
+      const rect = track.getBoundingClientRect();
+      const pct  = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
+      setVal(min + pct * (max - min));
+    }
+
+    let active = false;
+    wrap.addEventListener('touchstart', e => {
+      active = true;
+      onMove(e.touches[0].clientX);
+      e.preventDefault();
+    }, {passive:false});
+    wrap.addEventListener('touchmove', e => {
+      if (!active) return;
+      onMove(e.touches[0].clientX);
+      e.preventDefault();
+    }, {passive:false});
+    wrap.addEventListener('touchend', () => { active = false; });
+    wrap.addEventListener('mousedown', e => {
+      active = true; onMove(e.clientX);
+    });
+    document.addEventListener('mousemove', e => { if (active) onMove(e.clientX); });
+    document.addEventListener('mouseup', () => { active = false; });
+  }
+
+  // Init all sliders when DOM ready
+  document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.mslider-wrap').forEach(initSlider);
+  });
+
+  // Also expose update function for when values change programmatically
+  window.updateMSlider = function(inputId, value) {
+    const wrap = document.querySelector(`.mslider-wrap[data-input="${inputId}"]`);
+    if (!wrap) return;
+    const min = parseFloat(wrap.dataset.min);
+    const max = parseFloat(wrap.dataset.max);
+    const fill  = wrap.querySelector('.mslider-fill');
+    const thumb = wrap.querySelector('.mslider-thumb');
+    const pct = (value - min) / (max - min) * 100;
+    fill.style.width = pct + '%';
+    thumb.style.left = pct + '%';
+  };
+})();
+
+
+// ══════════════════════════════════════
+// RIBBON UI BINDINGS
+// ══════════════════════════════════════
+
+// The original JS uses querySelector('.right-panel .panel-body') for shape color
+// event delegation. Our new UI has shapeColors/selectedShapeColors in the ribbon,
+// so we re-delegate those events from the ribbon-draw panel instead.
+// The hidden .right-panel .panel-body div (added as compat shim) prevents null crash.
+// We additionally wire shapeSize/shapeOpacity inputs from ribbon to state directly.
+
+
+// ── 데스크탑 통합 두께/불투명도 슬라이더 ─────────────────
+const _shapeToolIds = ['line','staff','circle','rect','rectFill'];
+
+function ribbonSyncSliders(tool) {
+  const isShape = _shapeToolIds.includes(tool);
+  const sl = document.getElementById('ribbonSizeSlider');
+  const lbl = document.getElementById('ribbonSizeLbl');
+  const val = document.getElementById('ribbonSizeVal');
+  const opSl = document.getElementById('ribbonOpacitySlider');
+  const opVal = document.getElementById('ribbonOpacityVal');
+  if (!sl) return;
+
+  if (isShape) {
+    sl.min = 1; sl.max = 20;
+    sl.value = state.shapeSize;
+    if (lbl) lbl.textContent = '선 두께';
+    if (val) val.textContent = state.shapeSize;
+    if (opSl) opSl.value = state.shapeOpacity;
+    if (opVal) opVal.textContent = state.shapeOpacity + '%';
+  } else {
+    sl.min = 1; sl.max = 30;
+    sl.value = state.brushSize;
+    if (lbl) lbl.textContent = '브러시 크기';
+    if (val) val.textContent = state.brushSize;
+    if (opSl) opSl.value = state.brushOpacity;
+    if (opVal) opVal.textContent = state.brushOpacity + '%';
+  }
+}
+
+document.getElementById('ribbonSizeSlider')?.addEventListener('input', function() {
+  const v = parseInt(this.value);
+  const isShape = _shapeToolIds.includes(state.tool) || (state.tool === 'select' && state.selectedShape);
+  document.getElementById('ribbonSizeVal').textContent = v;
+  if (isShape) {
+    state.shapeSize = v;
+    document.getElementById('shapeSize').value = v;
+    document.getElementById('shapeSizeVal').textContent = v;
+    applySizeToSelectedShape(v);
+  } else {
+    state.brushSize = v;
+    document.getElementById('brushSize').value = v;
+    document.getElementById('brushSizeVal').textContent = v;
+  }
+});
+
+document.getElementById('ribbonOpacitySlider')?.addEventListener('input', function() {
+  const v = parseInt(this.value);
+  const isShape = _shapeToolIds.includes(state.tool) || (state.tool === 'select' && state.selectedShape);
+  document.getElementById('ribbonOpacityVal').textContent = v + '%';
+  if (isShape) {
+    state.shapeOpacity = v;
+    document.getElementById('shapeOpacity').value = v;
+    document.getElementById('shapeOpacityVal').textContent = v + '%';
+    applyOpacityToSelectedShape(v);
+  } else {
+    state.brushOpacity = v;
+    document.getElementById('brushOpacity').value = v;
+    document.getElementById('brushOpacityVal').textContent = v + '%';
+  }
+});
+
+// setTool 패치에서 슬라이더 동기화 호출
+// Tab bar switching
+document.querySelectorAll('.tab-btn[data-rb]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn[data-rb]').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.ribbon-panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    const p = document.getElementById('ribbon-' + btn.dataset.rb);
+    if (p) p.classList.add('active');
+  });
+});
+
+// Sidebar tabs
+document.querySelectorAll('.sb-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.sb-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    const p = document.getElementById('tab-' + tab.dataset.tab);
+    if (p) p.classList.add('active');
+  });
+});
+
+// Theme toggle
+function setTheme(t) {
+  document.documentElement.setAttribute('data-theme', t);
+  const dark = t === 'dark';
+  const btl = document.getElementById('btnThemeLight'); if(btl) btl.classList.toggle('theme-active', !dark);
+  const btd = document.getElementById('btnThemeDark'); if(btd) btd.classList.toggle('theme-active', dark);
+  document.getElementById('viewLight').classList.toggle('active', !dark);
+  document.getElementById('viewDark').classList.toggle('active', dark);
+  const ml = document.getElementById('mThemeLight');
+  const md = document.getElementById('mThemeDark');
+  if (ml) ml.classList.toggle('theme-active', !dark);
+  if (md) md.classList.toggle('theme-active', dark);
+  try { localStorage.setItem('pm-theme', t); } catch(e) {}
+}
+document.getElementById('viewLight').addEventListener('click', () => setTheme('light'));
+document.getElementById('viewDark').addEventListener('click', () => setTheme('dark'));
+
+// Restore saved theme
+try { const s = localStorage.getItem('pm-theme'); if (s) setTheme(s); } catch(e) {}
+
+// Font size spinner
+function adjFontSize(delta) {
+  let v = (parseInt(document.getElementById('fontSizeNum').value) || 18) + delta;
+  v = Math.max(8, Math.min(200, v));
+  document.getElementById('fontSizeNum').value = v;
+  state.fontSize = v;
+  document.getElementById('fontSize').value = Math.min(v, 72);
+  document.getElementById('fontSizeVal').textContent = v;
+  syncTextEditBoxStyle();
+  applyToSelectedAnn();
+}
+document.getElementById('fontSizeNum').addEventListener('change', function() {
+  adjFontSize(0); // clamp & sync
+});
+
+// Sync ribbon fontSizeNum when fontSize range changes
+const _origFSRange = document.getElementById('fontSize');
+_origFSRange.addEventListener('input', () => {
+  document.getElementById('fontSizeNum').value = _origFSRange.value;
+  document.getElementById('fontSizeVal').textContent = _origFSRange.value;
+});
+
+// Color picker face preview
+document.getElementById('customTextColor')?.addEventListener('input', function() {
+  state.textColor = this.value;
+  syncTextEditBoxStyle(); applyToSelectedAnn();
+});
+document.getElementById('customDrawColor')?.addEventListener('input', function() {
+  syncAllDrawColorUI(this.value);
+});
+document.getElementById('customShapeColor')?.addEventListener('input', function() {
+  state.shapeColor = this.value;
+  applyColorToSelectedShape(this.value);
+  // sync unified palette
+  ribbonApplyColor(this.value);
+});
+document.getElementById('customSelectedShapeColor').addEventListener('input', function() {
+  applyColorToSelectedShape(this.value);
+});
+
+// ── 통합 색상 팔레트 (데스크탑 리본) ────────────────────
+function ribbonApplyColor(color) {
+  const tool = state.tool;
+  const shapeTools = ['line','staff','circle','rect','rectFill'];
+  // 통합 팔레트 UI 동기화
+  document.querySelectorAll('#unifiedColors .swatch').forEach(s => s.classList.remove('sel'));
+  const matching = document.querySelector(`#unifiedColors .swatch[data-color="${color}"]`);
+  if (matching) matching.classList.add('sel');
+  document.getElementById('unifiedColorFace').style.background = color;
+  document.getElementById('customUnifiedColor').value = color;
+  // 도구별 적용
+  if (tool === 'text' || (tool === 'select' && state.selectedAnn)) {
+    state.textColor = color;
+    document.getElementById('customTextColor').value = color;
+    syncTextEditBoxStyle(); applyToSelectedAnn();
+  } else if (shapeTools.includes(tool) || (tool === 'select' && state.selectedShape)) {
+    state.shapeColor = color;
+    document.getElementById('customShapeColor').value = color;
+    if (state.selectedShape) applyColorToSelectedShape(color);
+  } else {
+    state.drawColor = color;
+    document.getElementById('customDrawColor').value = color;
+    syncAllDrawColorUI(color);
+  }
+}
+
+document.querySelectorAll('#unifiedColors .swatch').forEach(sw => {
+  sw.addEventListener('click', () => ribbonApplyColor(sw.dataset.color));
+});
+document.getElementById('customUnifiedColor')?.addEventListener('input', function() {
+  ribbonApplyColor(this.value);
+});
+
+// legacy empty palette stubs (JS refs these but they're now hidden)
+document.querySelectorAll('#textColors .swatch').forEach(sw => {
+  sw.addEventListener('click', () => {
+    state.textColor = sw.dataset.color;
+    document.getElementById('customTextColor').value = sw.dataset.color;
+    syncTextEditBoxStyle(); applyToSelectedAnn();
+  });
+});
+document.querySelectorAll('#drawColors .swatch').forEach(sw => {
+  sw.addEventListener('click', () => {
+    state.drawColor = sw.dataset.color;
+    syncAllDrawColorUI(sw.dataset.color);
+  });
+});
+
+// shapeColors and selectedShapeColors are handled via document-level listener in original JS section
+
+// shapeSize/shapeOpacity handled by ribbonSizeSlider
+
+// Status bar
+function updateStatusBar() {
+  const names = {select:'선택',text:'텍스트',draw:'그리기',line:'직선',staff:'오선',circle:'원',rect:'사각형',rectFill:'채운사각'};
+  const pg = state.currentPage >= 0 ? `${state.currentPage+1}/${state.pages.length}` : '-';
+  document.getElementById('statPage').textContent = pg;
+  document.getElementById('statZoom').textContent = Math.round(state.zoom*100)+'%';
+  document.getElementById('statTool').textContent = names[state.tool] || state.tool;
+  const dirty = document.getElementById('statDirty');
+  dirty.textContent = state.isDirty ? '● 저장 안됨' : '';
+  dirty.style.color = state.isDirty ? 'var(--accent2)' : '';
+}
+
+// Patch setTool to sync ribbon active state + status bar
+const _origSetTool = setTool;
+setTool = function(tool) {
+  _origSetTool(tool);
+  // Update all .ib[id^=tool] active states
+  document.querySelectorAll('.ib').forEach(b => {
+    if (b.id && b.id.startsWith('tool')) b.classList.remove('active');
+  });
+  const map = {
+    select:'toolSelect', text:'toolText', draw:'toolDraw',
+    line:'toolLine', staff:'toolStaff', circle:'toolCircle',
+    rect:'toolRect', rectFill:'toolRectFill'
+  };
+  if (map[tool]) {
+    document.querySelectorAll(`[id="${map[tool]}"]`).forEach(el => el.classList.add('active'));
+  }
+  // All tools live in 'input' tab - always keep it active
+  document.querySelectorAll('.tab-btn[data-rb]').forEach(b =>
+    b.classList.toggle('active', b.dataset.rb === 'input'));
+  document.querySelectorAll('.ribbon-panel').forEach(p =>
+    p.classList.toggle('active', p.id === 'ribbon-input'));
+  updateStatusBar();
+  // 두께/불투명도 슬라이더 도구에 맞게 동기화
+  if (typeof ribbonSyncSliders === 'function') ribbonSyncSliders(tool);
+  // 통합 팔레트 색상을 현재 도구 색상으로 동기화
+  const _shapeTs = ['line','staff','circle','rect','rectFill'];
+  let _curColor = state.drawColor;
+  if (tool === 'text') _curColor = state.textColor;
+  else if (_shapeTs.includes(tool)) _curColor = state.shapeColor;
+  const _face = document.getElementById('unifiedColorFace');
+  if (_face) _face.style.background = _curColor;
+  const _cp = document.getElementById('customUnifiedColor');
+  if (_cp) _cp.value = _curColor;
+  document.querySelectorAll('#unifiedColors .swatch').forEach(s =>
+    s.classList.toggle('sel', s.dataset.color === _curColor));
+};
+
+// Patch selectPage to update status bar
+const _origSelectPage = selectPage;
+selectPage = function(idx) {
+  _origSelectPage(idx);
+  updateStatusBar();
+};
+
+// Patch drawSelectionOverlay to toggle selectedShapeOptions panel
+const _origDrawSel = drawSelectionOverlay;
+drawSelectionOverlay = function() {
+  _origDrawSel();
+  const panel = document.getElementById('selectedShapeOptions');
+  const hasShape = state.selectedShape && state.selectedShape.pageIdx === state.currentPage;
+  panel.style.display = 'none'; // 통합 색상 팔레트로 대체 — 별도 패널 불필요
+
+  // Sync sliders & color pickers to selected shape's current values
+  if (hasShape) {
+    const { pageIdx, shapeIdx } = state.selectedShape;
+    const sh = state.pages[pageIdx]?.shapes?.[shapeIdx];
+    if (sh) {
+      // ── 데스크탑 통합 슬라이더 동기화 ──
+      const rss = document.getElementById('ribbonSizeSlider');
+      if (rss) {
+        rss.min = 1; rss.max = 20; rss.value = sh.size;
+        const lbl = document.getElementById('ribbonSizeLbl');
+        if (lbl) lbl.textContent = '선 두께';
+        const val = document.getElementById('ribbonSizeVal');
+        if (val) val.textContent = sh.size;
+      }
+      const ros = document.getElementById('ribbonOpacitySlider');
+      if (ros) {
+        ros.value = sh.opacity;
+        const oval = document.getElementById('ribbonOpacityVal');
+        if (oval) oval.textContent = sh.opacity + '%';
+      }
+      // ── 통합 색상 팔레트 동기화 ──
+      document.querySelectorAll('#unifiedColors .swatch').forEach(s =>
+        s.classList.toggle('sel', s.dataset.color === sh.color));
+      const ucf = document.getElementById('unifiedColorFace');
+      if (ucf) ucf.style.background = sh.color;
+      const ucp = document.getElementById('customUnifiedColor');
+      if (ucp) ucp.value = sh.color;
+      // ── hidden input 동기화 ──
+      document.getElementById('shapeSize').value = sh.size;
+      document.getElementById('shapeSizeVal').textContent = sh.size;
+      document.getElementById('shapeOpacity').value = sh.opacity;
+      document.getElementById('shapeOpacityVal').textContent = sh.opacity + '%';
+      document.getElementById('customShapeColor').value = sh.color;
+      document.getElementById('customSelectedShapeColor').value = sh.color;
+      // ── 모바일 슬라이더 동기화 ──
+      const mss = document.getElementById('mobileShapeSize');
+      if (mss) { mss.value = sh.size; if(typeof updateMSlider==='function') updateMSlider('mobileShapeSize', sh.size); }
+      const mso = document.getElementById('mobileShapeOpacity');
+      if (mso) { mso.value = sh.opacity; if(typeof updateMSlider==='function') updateMSlider('mobileShapeOpacity', sh.opacity); }
+      const msv = document.getElementById('mDrawSizeVal');
+      if (msv) msv.textContent = sh.size;
+      const mov = document.getElementById('mDrawOpacityVal');
+      if (mov) mov.textContent = sh.opacity + '%';
+      // ── selectedShapeColors 스워치 ──
+      document.querySelectorAll('#selectedShapeColors .swatch').forEach(s =>
+        s.classList.toggle('sel', s.dataset.color === sh.color));
+    }
+  } else {
+    // 선택 해제 시 슬라이더를 현재 state 값으로 복원
+    if (typeof ribbonSyncSliders === 'function') ribbonSyncSliders(state.tool);
+  }
+  updateStatusBar();
+};
+
+// Sidebar drop zone
+// sidebarDrop removed
+
+// ── 모바일 편집 탭: 통합 아이콘 도구 ──────────────────
+const _mAllIcons = ['mIconSelect','mIconText','mIconDraw','mIconLine','mIconStaff','mIconCircle','mIconRect','mIconRectFill'];
+const _mShapeTools = ['line','staff','circle','rect','rectFill'];
+let _mIconTool = 'select';
+
+function mIconAll(tool, btn) {
+  _mIconTool = tool;
+
+  // 아이콘 active 상태
+  _mAllIcons.forEach(id => document.getElementById(id)?.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+
+  const isShape  = _mShapeTools.includes(tool);
+  const isDraw   = tool === 'draw';
+  const isText   = tool === 'text';
+
+  // 텍스트 옵션: 텍스트일 때만
+  const textOpt = document.getElementById('mOptText');
+  if (textOpt) textOpt.style.display = isText ? 'flex' : 'none';
+
+  // 두께/투명도: 그리기·도형·선택일 때 표시 (텍스트엔 불필요)
+  const drawOpt = document.getElementById('mOptDraw');
+  if (drawOpt) drawOpt.style.display = isText ? 'none' : 'flex';
+
+  // 슬라이더 input 전환 (그리기↔도형)
+  const sizeSlider    = document.getElementById('mDrawSizeSlider');
+  const opacitySlider = document.getElementById('mDrawOpacitySlider');
+  // select 모드에서도 도형 슬라이더로 라우팅
+  const useShape = isShape || tool === 'select';
+  if (sizeSlider) {
+    sizeSlider.dataset.input = useShape ? 'mobileShapeSize' : 'mobileBrushSize';
+    sizeSlider.dataset.max   = useShape ? '20' : '30';
+    const curSize = useShape ? state.shapeSize : state.brushSize;
+    const sInp = document.getElementById(sizeSlider.dataset.input);
+    if (sInp) { sInp.value = curSize; sInp.dispatchEvent(new Event('input', {bubbles:true})); }
+  }
+  if (opacitySlider) {
+    opacitySlider.dataset.input = useShape ? 'mobileShapeOpacity' : 'mobileBrushOpacity';
+    const curOpacity = useShape ? state.shapeOpacity : state.brushOpacity;
+    const oInp = document.getElementById(opacitySlider.dataset.input);
+    if (oInp) { oInp.value = curOpacity; oInp.dispatchEvent(new Event('input', {bubbles:true})); }
+  }
+
+  // 텍스트 도구로 전환 시 기존 선택 해제 (이전 선택 박스가 유지되는 문제 방지)
+  if (isText) {
+    state.selectedAnn = null;
+    state.selectedShape = null;
+    octx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+  }
+
+  // 실제 도구 적용
+  if (isText)       setTool('text');
+  else if (isDraw)  setTool('draw');
+  else if (isShape) setTool(tool);
+  else              setTool('select');
+}
+
+// legacy compat — 구형 mSetEditTool 호출 대응
+function mSetEditTool(mode, btn) { mIconAll(mode, btn); }
+function mIconSetTool(tool, btn) { mIconAll(tool, btn); }
+
+// 통합 색상 팔레트 — 그리기면 drawColor, 도형이면 shapeColor+selectedShape
+function mApplyColor(color) {
+  // 현재 도구에 따라 적절한 state에 색상 적용
+  if (_mIconTool === 'text' || (_mIconTool === 'select' && state.selectedAnn)) {
+    state.textColor = color;
+    syncTextEditBoxStyle();
+    applyToSelectedAnn();
+    document.getElementById('customTextColor').value = color;
+    document.getElementById('textColorFace').style.background = color;
+    const teb = document.getElementById('textEditBox');
+    const tei = document.getElementById('textEditInput');
+    if (teb && teb.classList.contains('active') && tei) {
+      setTimeout(() => tei.focus(), 50);
+    }
+  } else if (_mShapeTools.includes(_mIconTool) || _mIconTool === 'select') {
+    state.shapeColor = color;
+    if (state.selectedShape) applyColorToSelectedShape(color);
+    document.getElementById('customShapeColor').value = color;
+    document.getElementById('shapeColorFace').style.background = color;
+  } else {
+    state.drawColor = color;
+    syncAllDrawColorUI(color);
+  }
+}
+
+document.getElementById('mDrawShapeColors')?.addEventListener('click', function(e) {
+  const sw = e.target.closest('.color-swatch');
+  if (!sw) return;
+  document.querySelectorAll('#mDrawShapeColors .color-swatch').forEach(s => s.classList.remove('selected'));
+  sw.classList.add('selected');
+  document.getElementById('mobileDrawShapeColor').value = sw.dataset.color;
+  mApplyColor(sw.dataset.color);
+});
+document.getElementById('mobileDrawShapeColor')?.addEventListener('input', function() {
+  document.querySelectorAll('#mDrawShapeColors .color-swatch').forEach(s => s.classList.remove('selected'));
+  mApplyColor(this.value);
+});
+
+// 슬라이더 값 표시 업데이트 (mDrawSizeVal, mDrawOpacityVal)
+document.getElementById('mobileBrushSize')?.addEventListener('input', function() {
+  const v = this.value;
+  state.brushSize = parseInt(v);
+  const el = document.getElementById('mDrawSizeVal');
+  if (el) el.textContent = v;
+  document.getElementById('brushSize').value = v;
+  document.getElementById('brushSizeVal').textContent = v;
+});
+document.getElementById('mobileBrushOpacity')?.addEventListener('input', function() {
+  const v = this.value;
+  state.brushOpacity = parseInt(v);
+  const el = document.getElementById('mDrawOpacityVal');
+  if (el) el.textContent = v + '%';
+  document.getElementById('brushOpacity').value = v;
+  document.getElementById('brushOpacityVal').textContent = v + '%';
+});
+document.getElementById('mobileShapeSize')?.addEventListener('input', function() {
+  const v = parseInt(this.value);
+  state.shapeSize = v;
+  const el = document.getElementById('mDrawSizeVal');
+  if (el) el.textContent = v;
+  // 리본 동기화는 하되 apply는 선택된 도형이 있을 때만
+  document.getElementById('shapeSize').value = v;
+  document.getElementById('shapeSizeVal').textContent = v;
+  if (state.selectedShape) applySizeToSelectedShape(v);
+});
+document.getElementById('mobileShapeOpacity')?.addEventListener('input', function() {
+  const v = parseInt(this.value);
+  state.shapeOpacity = v;
+  const el = document.getElementById('mDrawOpacityVal');
+  if (el) el.textContent = v + '%';
+  document.getElementById('shapeOpacity').value = v;
+  document.getElementById('shapeOpacityVal').textContent = v + '%';
+  if (state.selectedShape) applyOpacityToSelectedShape(v);
+});
+
+// 도형 색상 (legacy compat)
+function mShapeColorClick(el) {
+  document.querySelectorAll('#mOptShape .color-swatch').forEach(s => s.classList.remove('selected'));
+  el.classList.add('selected');
+  state.shapeColor = el.dataset.color;
+  applyColorToSelectedShape(el.dataset.color);
+}
+function mShapeColorDirect(val) {
+  state.shapeColor = val;
+  applyColorToSelectedShape(val);
+}
+
+// Mobile shape size/opacity sliders
+// shape size/opacity handled in mIconSetTool section above
+
+// ══ 페이지 번호 기능 ══════════════════════════════════════
+
+let _pnPos = 'bot-center';
+let _pnFmt = '{n}';
+let _pnRange = 'all';
+
+function openPageNumDialog() {
+  if (state.pages.length === 0) { toast('먼저 PDF를 추가하세요', 'info'); return; }
+  const dlg = document.getElementById('pageNumDialog');
+  dlg.style.display = 'flex';
+}
+
+function closePageNumDialog() {
+  document.getElementById('pageNumDialog').style.display = 'none';
+}
+
+// 위치 버튼
+document.querySelectorAll('.pn-pos-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.pn-pos-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    _pnPos = btn.dataset.pos;
+  });
+});
+
+// 형식 버튼
+document.querySelectorAll('.pn-fmt-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.pn-fmt-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    _pnFmt = btn.dataset.fmt;
+  });
+});
+
+// 범위 버튼
+document.querySelectorAll('.pn-range-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.pn-range-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    _pnRange = btn.dataset.range;
+  });
+});
+
+// 색상 피커 ↔ hex 동기화
+document.getElementById('pnColor')?.addEventListener('input', function() {
+  document.getElementById('pnColorHex').value = this.value;
+});
+document.getElementById('pnColorHex')?.addEventListener('input', function() {
+  if (/^#[0-9a-fA-F]{6}$/.test(this.value))
+    document.getElementById('pnColor').value = this.value;
+});
+
+// 배경 클릭으로 닫기
+document.getElementById('pageNumDialog')?.addEventListener('click', function(e) {
+  if (e.target === this) closePageNumDialog();
+});
+
+// 페이지 번호 삽입
+function applyPageNumbers() {
+  const fontSize = parseInt(document.getElementById('pnFontSize').value) || 12;
+  const color    = document.getElementById('pnColorHex').value || '#333333';
+  const fmt      = _pnFmt;
+  const pos      = _pnPos;
+  const total    = state.pages.length;
+
+  const pages = _pnRange === 'all'
+    ? state.pages.map((_, i) => i)
+    : [state.currentPage];
+
+  saveUndo();
+
+  pages.forEach(pageIdx => {
+    const pg = state.pages[pageIdx];
+    if (!pg) return;
+    const w = pg.width  || pg.canvas?.width  || 595;
+    const h = pg.height || pg.canvas?.height || 842;
+
+    // 위치 계산 (여백 포함)
+    const margin = fontSize * 1.5;
+    const posMap = {
+      'top-left':    { x: margin,       y: margin },
+      'top-center':  { x: w / 2,        y: margin },
+      'top-right':   { x: w - margin,   y: margin },
+      'mid-left':    { x: margin,       y: h / 2 },
+      'mid-center':  { x: w / 2,        y: h / 2 },
+      'mid-right':   { x: w - margin,   y: h / 2 },
+      'bot-left':    { x: margin,       y: h - margin },
+      'bot-center':  { x: w / 2,        y: h - margin },
+      'bot-right':   { x: w - margin,   y: h - margin },
+    };
+
+    const alignMap = {
+      'top-left':'left','top-center':'center','top-right':'right',
+      'mid-left':'left','mid-center':'center','mid-right':'right',
+      'bot-left':'left','bot-center':'center','bot-right':'right',
+    };
+
+    const { x, y } = posMap[pos] || posMap['bot-center'];
+    const n = pageIdx + 1;
+    const text = fmt.replace('{n}', n).replace('{total}', total);
+
+    // annotation으로 추가
+    if (!pg.annotations) pg.annotations = [];
+    pg.annotations.push({
+      x, y,
+      text,
+      color,
+      fontSize,
+      fontFamily: 'sans-serif',
+      fontWeight: '400',
+      fontStyle:  'normal',
+      align:      alignMap[pos] || 'center',
+    });
+  });
+
+  renderCurrentPage();
+  closePageNumDialog();
+  toast(`페이지 번호 삽입 완료 (${pages.length}페이지)`, 'success');
+}
+
+
+// Initial status bar render
+updateStatusBar();
+
+</script>
+      <div id="shapeOptions_hidden"></div>
+      <div id="selectedShapeOptions_hidden"></div>
+      <div id="shapeColors_hidden" class="color-row"></div>
+      <div id="selectedShapeColors_hidden" class="color-row"></div></div>
+  </div>
+</div>
+</body>
+</html>
