@@ -455,11 +455,11 @@ input[type=range]{flex:1;accent-color:var(--accent)}
   .ribbon-panel{display:none!important}.status-bar{display:none}
   .app-body{flex-direction:column;flex:1;overflow:hidden;min-height:0}
   .canvas-wrap{flex:1;overflow:scroll;-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y pinch-zoom;min-height:0;min-width:0}
-  .mobile-edit-panel{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border);display:flex;flex-direction:column;max-height:220px;overflow:hidden}
+  .mobile-edit-panel{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border);display:flex;flex-direction:column;max-height:min(220px,35vh);overflow:hidden}
   .mobile-edit-tabs{display:flex;border-bottom:1px solid var(--border);flex-shrink:0;height:36px;min-height:36px}
   .mobile-edit-tab{flex:1;padding:0 3px;font-size:10px;font-weight:500;text-align:center;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;transition:all .14s;font-family:inherit;background:none;border-left:none;border-right:none;border-top:none;display:flex;align-items:center;justify-content:center}
   .mobile-edit-tab.active{color:var(--accent);border-bottom-color:var(--accent)}
-  .mobile-edit-content{padding:8px 12px;overflow-y:auto;max-height:174px}
+  .mobile-edit-content{padding:8px 12px;overflow-y:auto;max-height:min(174px,calc(35vh - 36px))}
   .mobile-thumb-row{display:flex;gap:6px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:3px;height:90px;align-items:center;flex-shrink:0}
   .mobile-thumb-item{flex-shrink:0;width:46px;cursor:pointer}
   .mobile-thumb-item-inner{width:46px;height:62px;background:#fff;border-radius:3px;border:2px solid transparent;overflow:hidden;display:flex;align-items:center;justify-content:center;transition:border-color .14s}
@@ -470,7 +470,8 @@ input[type=range]{flex:1;accent-color:var(--accent)}
   .tool-btn.active{background:var(--active);border-color:var(--accent);color:var(--accent)}
 }
   /* iOS 홈 인디케이터 여백 */
-  .safe-area-bottom{height:env(safe-area-inset-bottom,0px);flex-shrink:0;background:var(--surface)}
+  .safe-area-bottom{height:env(safe-area-inset-bottom,0px);flex-shrink:0;background:var(--surface);display:none}
+@media(max-width:768px){.safe-area-bottom{display:block}}
 @media(min-width:769px){
   .mobile-edit-panel{display:none!important}
   .mobile-drawer{display:none!important}
