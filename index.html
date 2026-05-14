@@ -852,6 +852,24 @@ input[type=range]{flex:1;accent-color:var(--accent)}
   </div>
   <div class="rs">
     <div class="rs-body">
+      <button class="ib" onclick="openAboutDialog()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        프로그램 정보
+      </button>
+      <button class="ib" onclick="openHelpDialog()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        사용설명서
+      </button>
+      <button class="ib" onclick="location.href='mailto:limfrog75@gmail.com?subject=PDF Markly 문의'">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+        제작자 연락
+      </button>
+    </div>
+    <div class="rs-label">정보</div>
+  </div>
+
+  <div class="rs">
+    <div class="rs-body">
       <button class="ib" id="viewLight">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
         라이트 모드
@@ -1034,6 +1052,12 @@ input[type=range]{flex:1;accent-color:var(--accent)}
             <button class="tbtn" style="justify-content:center;font-size:10px;grid-column:1/-1" onclick="openPageNumDialog()">📄 페이지 번호 삽입</button>
           </div>
           <div style="height:1px;background:var(--borderl)"></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px">
+            <button class="tbtn" style="justify-content:center;font-size:10px" onclick="openAboutDialog()">ℹ️ 정보</button>
+            <button class="tbtn" style="justify-content:center;font-size:10px" onclick="openHelpDialog()">❓ 설명서</button>
+            <button class="tbtn" style="justify-content:center;font-size:10px" onclick="location.href='mailto:limfrog75@gmail.com?subject=PDF Markly 문의'">✉️ 연락</button>
+          </div>
+          <div style="height:1px;background:var(--borderl)"></div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px">
             <button class="tbtn" id="mThemeLight" style="justify-content:center;font-size:10px" onclick="setTheme('light')">☀️ 라이트 모드</button>
             <button class="tbtn" id="mThemeDark" style="justify-content:center;font-size:10px" onclick="setTheme('dark')">🌙 다크 모드</button>
@@ -1158,6 +1182,85 @@ input[type=range]{flex:1;accent-color:var(--accent)}
       <button onclick="closePageNumDialog()" style="padding:8px 16px;border-radius:7px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;font-family:inherit;font-size:12px">취소</button>
       <button onclick="applyPageNumbers()" style="padding:8px 18px;border-radius:7px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-family:inherit;font-size:12px;font-weight:600">삽입</button>
     </div>
+  </div>
+</div>
+
+
+<!-- ══ 프로그램 정보 다이얼로그 ══════════════════════════════ -->
+<div id="aboutDialog" style="display:none;position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.55);backdrop-filter:blur(4px);align-items:center;justify-content:center">
+  <div style="background:var(--surface);border-radius:16px;padding:28px 24px;width:320px;max-width:90vw;box-shadow:0 8px 40px rgba(0,0,0,.4);text-align:center">
+    <div style="font-size:48px;margin-bottom:10px">📄</div>
+    <div style="font-size:20px;font-weight:800;color:var(--text);margin-bottom:4px">PDF Markly</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:4px">PDF 편집 · 주석 · 페이지 관리</div>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:18px">버전 0.8.0</div>
+    <div style="font-size:11px;color:var(--muted);line-height:1.7;margin-bottom:20px;text-align:left;background:var(--surface2);border-radius:8px;padding:12px 14px">
+      <div>🖊️ 텍스트 · 그리기 · 도형 추가</div>
+      <div>📐 오선 · 직선 · 원 · 사각형</div>
+      <div>📑 페이지 추가 · 삭제 · 순서 변경</div>
+      <div>🔢 페이지 번호 자동 삽입</div>
+      <div>💾 PDF · PNG 저장</div>
+    </div>
+    <div style="font-size:10px;color:var(--muted);margin-bottom:20px">
+      제작: <a href="mailto:limfrog75@gmail.com" style="color:var(--accent)">limfrog75@gmail.com</a>
+    </div>
+    <button onclick="document.getElementById('aboutDialog').style.display='none'"
+      style="padding:9px 28px;border-radius:8px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-family:inherit;font-size:13px;font-weight:600">확인</button>
+  </div>
+</div>
+
+<!-- ══ 사용설명서 다이얼로그 ══════════════════════════════ -->
+<div id="helpDialog" style="display:none;position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.55);backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:16px">
+  <div style="background:var(--surface);border-radius:16px;padding:24px;width:360px;max-width:100%;max-height:85vh;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,.4)">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
+      <div style="font-size:16px;font-weight:700;color:var(--text)">❓ 사용설명서</div>
+      <button onclick="document.getElementById('helpDialog').style.display='none'"
+        style="width:28px;height:28px;border-radius:50%;border:none;background:var(--surface2);color:var(--muted);cursor:pointer;font-size:14px">✕</button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:14px;font-size:12px;line-height:1.6;color:var(--text)">
+
+      <div style="background:var(--surface2);border-radius:8px;padding:12px">
+        <div style="font-weight:700;color:var(--accent);margin-bottom:6px">📂 파일 불러오기</div>
+        <div>상단 <b>PDF 불러오기</b> 또는 <b>이미지 불러오기</b> 버튼으로 파일을 추가합니다. 여러 파일을 순서대로 추가할 수 있습니다.</div>
+      </div>
+
+      <div style="background:var(--surface2);border-radius:8px;padding:12px">
+        <div style="font-weight:700;color:var(--accent);margin-bottom:6px">✏️ 텍스트 입력</div>
+        <div>텍스트(T) 도구 선택 후 캔버스를 클릭하면 입력창이 열립니다. <b>Enter</b>로 확정, <b>Shift+Enter</b>로 줄바꿈, <b>Esc</b>로 취소합니다.</div>
+      </div>
+
+      <div style="background:var(--surface2);border-radius:8px;padding:12px">
+        <div style="font-weight:700;color:var(--accent);margin-bottom:6px">🖊️ 그리기 · 도형</div>
+        <div>그리기 도구로 자유롭게 그릴 수 있고, 직선·원·사각형 등 도형을 추가할 수 있습니다. 두께·불투명도·색상을 조절하세요.</div>
+      </div>
+
+      <div style="background:var(--surface2);border-radius:8px;padding:12px">
+        <div style="font-weight:700;color:var(--accent);margin-bottom:6px">👆 선택 · 편집</div>
+        <div>선택(↖) 도구로 텍스트나 도형을 탭하면 선택됩니다. <b>더블탭(더블클릭)</b>하면 텍스트 내용을 수정할 수 있습니다. 선택 후 색상·두께를 바꾸면 즉시 적용됩니다.</div>
+      </div>
+
+      <div style="background:var(--surface2);border-radius:8px;padding:12px">
+        <div style="font-weight:700;color:var(--accent);margin-bottom:6px">📑 페이지 관리</div>
+        <div>왼쪽 사이드바(데스크탑) 또는 하단 페이지 탭(모바일)에서 페이지를 확인하고 순서를 바꿀 수 있습니다.</div>
+      </div>
+
+      <div style="background:var(--surface2);border-radius:8px;padding:12px">
+        <div style="font-weight:700;color:var(--accent);margin-bottom:6px">🔢 페이지 번호 삽입</div>
+        <div>페이지 탭(데스크탑) 또는 동작 탭(모바일)의 <b>페이지 번호 삽입</b> 버튼으로 위치·형식·크기를 설정해 자동 삽입합니다.</div>
+      </div>
+
+      <div style="background:var(--surface2);border-radius:8px;padding:12px">
+        <div style="font-weight:700;color:var(--accent);margin-bottom:6px">💾 저장</div>
+        <div><b>저장 PDF</b>: PDF 파일로 저장합니다.<br><b>저장 PNG</b>: 현재 페이지 또는 전체 페이지를 이미지로 저장합니다.<br>모바일에서는 공유 시트를 통해 저장합니다.</div>
+      </div>
+
+      <div style="background:var(--surface2);border-radius:8px;padding:12px">
+        <div style="font-weight:700;color:var(--accent);margin-bottom:6px">↩ 실행취소</div>
+        <div>상단 <b>편집 실행취소</b> 버튼 또는 <b>Ctrl+Z</b>로 이전 작업을 취소합니다.</div>
+      </div>
+
+    </div>
+    <button onclick="document.getElementById('helpDialog').style.display='none'"
+      style="width:100%;margin-top:18px;padding:10px;border-radius:8px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-family:inherit;font-size:13px;font-weight:600">닫기</button>
   </div>
 </div>
 
@@ -2930,6 +3033,21 @@ function undo() {
 }
 
 // ---- Export PDF ----
+
+// ── 정보 / 설명서 다이얼로그 ─────────────────────────────
+function openAboutDialog() {
+  document.getElementById('aboutDialog').style.display = 'flex';
+}
+function openHelpDialog() {
+  document.getElementById('helpDialog').style.display = 'flex';
+}
+// 배경 클릭으로 닫기
+['aboutDialog','helpDialog'].forEach(id => {
+  document.getElementById(id)?.addEventListener('click', function(e) {
+    if (e.target === this) this.style.display = 'none';
+  });
+});
+
 
 // ── 저장 함수 ─────────────────────────────────────────────
 async function mobileSaveBlob(blob, filename, mimeType) {
