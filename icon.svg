@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- 배경: PDF를 연상시키는 레드 -->
+  <rect width="512" height="512" rx="112" fill="#c8202e"/>
+
+  <!-- 핵심 요소를 중앙 기준 약 84%로 축소해 마스커블 안전영역 확보 -->
+  <g transform="translate(256 256) scale(0.84) translate(-256 -256)">
+    <!-- 문서 -->
+    <path d="M162 108h134l66 66v232a18 18 0 0 1-18 18H162a18 18 0 0 1-18-18V126a18 18 0 0 1 18-18z"
+          fill="#ffffff"/>
+    <!-- 접힌 모서리 -->
+    <path d="M296 108l66 66h-66z" fill="#f2a7ad"/>
+
+    <!-- 텍스트 라인 (최소한만) -->
+    <rect x="180" y="194" width="120" height="22" rx="11" fill="#ccd6df"/>
+    <rect x="180" y="360" width="146" height="22" rx="11" fill="#ccd6df"/>
+
+    <!-- 굵은 형광 마크 — 문서 밖으로 살짝 넘쳐 '표시하는 동작'을 드러냄 -->
+    <rect x="122" y="252" width="272" height="74" rx="37" fill="#ffd400"
+          transform="rotate(-12 256 289)"/>
+  </g>
+</svg>
