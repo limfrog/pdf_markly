@@ -50,7 +50,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
   padding:0 8px;border-bottom:1px solid var(--border);flex-shrink:0;gap:1px;height:30px;}
 .tab-btn{padding:0 14px;height:100%;display:flex;align-items:center;justify-content:center;
   font-size:12px;font-weight:500;color:var(--muted);cursor:pointer;border:1px solid transparent;
-  border-bottom:none;border-radius:4px 4px 0 0;transition:background .1s;}
+  background:transparent;border-bottom:none;border-radius:4px 4px 0 0;transition:background .1s;}
 .tab-btn:hover{color:var(--text);background:var(--hover);}
 .tab-btn.active{color:var(--accent);background:var(--ribbon);border-color:var(--border);border-bottom-color:var(--ribbon);}
 .update-badge-dot{position:absolute;top:4px;right:2px;width:7px;height:7px;border-radius:50%;
@@ -432,7 +432,7 @@ canvas{display:block;}
     </div>
     <span class="rs-label">두께</span>
   </div>
-  <div class="rs">
+  <div class="rs text-style-live">
     <div class="rs-body" style="flex-direction:column;gap:4px;align-items:flex-start">
       <div class="btn-row">
         <span style="font-size:9px;color:var(--muted)">폰트</span>
@@ -495,7 +495,7 @@ canvas{display:block;}
     </div>
     <span class="rs-label">텍스트</span>
   </div>
-  <div class="rs" id="boxOptionsGroup" style="display:none">
+  <div class="rs text-style-live" id="boxOptionsGroup" style="display:none">
     <div class="rs-body" style="flex-direction:column;gap:4px;align-items:flex-start">
       <div class="btn-row">
         <label style="display:flex;align-items:center;gap:3px;font-size:9px;color:var(--text);cursor:pointer;font-weight:600" title="텍스트에 테두리 상자를 씌웁니다">
@@ -932,8 +932,9 @@ function updateBoxOptionsVisibility(){
   if(!grp)return;
   const sel=selId!=null?get_objs().find(x=>x.id===selId):null;
   // 텍스트 도구를 쓰는 중이거나(박스 여부와 무관하게 바로 옵션을 켤 수 있도록),
-  // 이미 박스가 적용된 텍스트를 선택한 경우 노출
-  const show=(sel&&sel.type==='text') || (!sel&&tool==='text');
+  // 이미 박스가 적용된 텍스트를 선택한 경우, 또는 지금 바로 텍스트를 입력/편집하는 중인 경우 노출
+  // (편집 중인 기존 텍스트는 get_objs()에서 잠시 빠져 있어 sel로 못 찾을 수 있으므로 actTed로 보강)
+  const show=(sel&&sel.type==='text') || (!sel&&tool==='text') || !!actTed;
   grp.style.display=show?'':'none';
 }
 
@@ -1065,6 +1066,14 @@ function setZoom(z){
 }
 function zoomIn(){setZoom(zoom*1.25);}
 function zoomOut(){setZoom(zoom/1.25);}
+
+// Ctrl(Windows)/Cmd(Mac)+휠로 캔버스 확대·축소. 기본 동작(브라우저 페이지 확대)을 막고 캔버스 줌으로 대체.
+document.getElementById('canvasArea').addEventListener('wheel',e=>{
+  if(!(e.ctrlKey||e.metaKey))return; // 그 외엔 기본 스크롤 동작 유지
+  e.preventDefault();
+  const factor=Math.pow(1.0015,-e.deltaY); // 휠 이동량에 비례해 부드럽게 확대·축소
+  setZoom(zoom*factor);
+},{passive:false});
 
 // ════════════ 렌더링 ════════════
 function drawBG(){
@@ -1553,6 +1562,7 @@ function openTed(x,y,exist=null){
   const ed=document.createElement('textarea');
   ed.className='canvas-text-editor';
   ed._x=x;ed._y=y;ed._oid=exist?exist.id:null;ed._savedObj=null;ed._savedIdx=null;
+  actTed=ed; // updateBoxOptionsVisibility() 등이 '편집 중'임을 즉시 인식하도록 여기서 먼저 지정
 
   if(exist){
     const idx=get_objs().findIndex(o=>o.id===exist.id);
@@ -1581,29 +1591,14 @@ function openTed(x,y,exist=null){
     editingId=null;
   }
 
-  ed.style.left=x+'px';ed.style.top=y+'px';
   ed.style.position='absolute';
-  ed.style.fontFamily=fFam;ed.style.fontSize=fSz+'px';
-  ed.style.fontWeight=fBold?'bold':'normal';
-  ed.style.fontStyle=fItal?'italic':'normal';
-  ed.style.textDecoration=fUnder?'underline':'none';
-  ed.style.color=fgH;
   ed.spellcheck=false;
   ed.setAttribute('autocorrect','off');ed.setAttribute('autocapitalize','off');
+  applyLiveTextEditorStyle(ed);
   updateBoxOptionsVisibility();
-  if(fBoxed){
-    // 편집 중에도 박스 모양을 바로 볼 수 있도록 여백·테두리·모서리를 미리보기로 반영
-    ed.style.padding=fBoxPad+'px';
-    ed.style.left=(x-fBoxPad)+'px';ed.style.top=(y-fBoxPad)+'px';
-    ed.style.border=fBoxStroke+'px solid '+fgH;
-    ed.style.borderRadius=fBoxRadius+'px';
-    ed.style.boxSizing='border-box';
-    ed.style.background=fBoxFill?bgH:'transparent';
-  }
 
   TO.style.pointerEvents='auto';
   TO.appendChild(ed);
-  actTed=ed;
   renderAll();
   setTimeout(()=>ed.focus(),0);
   ed.addEventListener('keydown',e=>{
@@ -1612,10 +1607,43 @@ function openTed(x,y,exist=null){
   });
 }
 
+// 편집 중인 텍스트 입력창(actTed)에 현재 폰트·박스 옵션 상태를 실시간으로 반영.
+// 폰트/박스 리본 컨트롤을 조작할 때 편집을 끝내지 않고 미리보기를 즉시 갱신하기 위해 사용.
+function applyLiveTextEditorStyle(ed){
+  if(!ed)return;
+  const x=ed._x,y=ed._y;
+  ed.style.fontFamily=normalizeFontFamily(fFam);
+  ed.style.fontSize=fSz+'px';
+  ed.style.fontWeight=fBold?'bold':'normal';
+  ed.style.fontStyle=fItal?'italic':'normal';
+  ed.style.textDecoration=fUnder?'underline':'none';
+  ed.style.color=fgH;
+  if(fBoxed){
+    // 편집 중에도 박스 모양을 바로 볼 수 있도록 여백·테두리·모서리를 미리보기로 반영
+    ed.style.padding=fBoxPad+'px';
+    ed.style.left=(x-fBoxPad)+'px';ed.style.top=(y-fBoxPad)+'px';
+    ed.style.border=fBoxStroke+'px solid '+fgH;
+    ed.style.borderRadius=fBoxRadius+'px';
+    ed.style.boxSizing='border-box';
+    ed.style.background=fBoxFill?bgH:'transparent';
+  } else {
+    // 박스를 껐을 때는 기본 편집창 모양(점선 테두리, CSS 기본값)으로 되돌림
+    ed.style.left=x+'px';ed.style.top=y+'px';
+    ed.style.padding='';
+    ed.style.border='';
+    ed.style.borderRadius='';
+    ed.style.boxSizing='';
+    ed.style.background='';
+  }
+}
+
 // 텍스트 편집 중 편집창 바깥을 클릭하면 확정 (캔버스뿐 아니라 리본·패널 등 어디를 눌러도 동작)
+// 단, 폰트/박스 옵션 등 '입력 중에도 실시간으로 반영해야 하는' 컨트롤을 누른 경우는 예외 —
+// 그 컨트롤들은 편집을 끝내지 않고 미리보기(actTed)에 바로 스타일을 반영한다.
 document.addEventListener('mousedown',e=>{
   if(!actTed)return;
   if(e.target===actTed || actTed.contains(e.target))return; // 편집창 자체 클릭은 무시
+  if(e.target.closest && e.target.closest('.text-style-live'))return; // 폰트/박스 옵션 클릭은 편집 유지
   commitT();
   // 이 클릭으로 텍스트 확정을 이미 처리했으므로, 같은 클릭이 onDown(select2의 빈 곳 클릭 시
   // clearSel 등)까지 이어져 방금 선택된 텍스트를 다시 해제하는 것을 막는다.
@@ -1678,6 +1706,16 @@ document.addEventListener('mouseup',()=>{
   if(dragging){dragging=false;HC.style.cursor='default';saveH();renderAll();return;}
   if(drawing){onUp();return;} // 캔버스 밖에서 손을 뗀 경우에도 그리기를 확정
 });
+
+// 선택된 객체들을 (dx,dy)만큼 이동 (드래그·방향키 이동에서 공통으로 사용)
+function moveSelectedObjsBy(dx,dy){
+  selectedObjs().forEach(o=>{
+    if(o.type==='stroke')o.points=o.points.map(p=>({x:p.x+dx,y:p.y+dy}));
+    else if(o.type==='shape'){o.x1+=dx;o.y1+=dy;o.x2+=dx;o.y2+=dy;}
+    else if(o.type==='image'){o.x+=dx;o.y+=dy;}
+    else if(o.type==='text'){o.x+=dx;o.y+=dy;}
+  });
+}
 
 function onDown(e){
   const{x,y}=getPos(e);const xi=Math.round(x),yi=Math.round(y);
@@ -1752,12 +1790,7 @@ function onMove(e){
   if(dragging&&selIds.length){
     const dx=x-dragLX,dy=y-dragLY;
     dragLX=x;dragLY=y;
-    selectedObjs().forEach(o=>{
-      if(o.type==='stroke')o.points=o.points.map(p=>({x:p.x+dx,y:p.y+dy}));
-      else if(o.type==='shape'){o.x1+=dx;o.y1+=dy;o.x2+=dx;o.y2+=dy;}
-      else if(o.type==='image'){o.x+=dx;o.y+=dy;}
-      else if(o.type==='text'){o.x+=dx;o.y+=dy;}
-    });
+    moveSelectedObjsBy(dx,dy);
     renderAll();
     return;
   }
@@ -1842,6 +1875,8 @@ function duplicateSelectionInPlace(){
 
 // ════════════ 도구 전환 ════════════
 function setTool(t){
+  const prevTool=tool; // commitT()가 내부적으로 tool을 바꾸므로, 실제 전환 여부 판단을 위해 미리 기억
+  const wasEditingText=!!actTed;
   if(actTed)commitT(); // 텍스트 편집 중 다른 도구로 전환하면 먼저 확정
   tool=t;
   document.querySelectorAll('[id^="tool-"]').forEach(b=>b.classList.remove('active'));
@@ -1851,6 +1886,14 @@ function setTool(t){
     select2:'선택/이동',text:'텍스트',pencil:'연필',eraser:'지우개',
     line:'선',rect:'사각형',ellipse:'원',arrow:'화살표',highlight:'형광펜',staff:'오선'
   }[t]||t);
+  if(prevTool!==t && !wasEditingText){
+    // 명확하게 다른 도구를 선택한 것은 이전 선택에서 벗어나겠다는 의사 표시 → 선택 해제
+    // (단, 방금 타이핑을 마치며 도구를 클릭한 경우는 예외 — commitT가 새로 만든 텍스트의
+    //  선택을 그대로 유지해야 도형을 그린 직후와 동일하게 바로 이어서 수정할 수 있음)
+    clearSel();
+    document.getElementById('statusObj').textContent='';
+    refreshObjList();
+  }
   updateBoxOptionsVisibility();
 }
 
@@ -1890,22 +1933,27 @@ function applyShapeFill(){
 function applyFontFamily(){
   fFam=document.getElementById('fontFamily').value;
   applyPropToSelection(o=>{ if(o.type==='text'){o.fontFamily=fFam;return true;} return false; });
+  if(actTed)applyLiveTextEditorStyle(actTed);
 }
 function applyFontSize(){
   fSz=parseInt(document.getElementById('fontSizeInput').value)||16;
   applyPropToSelection(o=>{ if(o.type==='text'){o.fontSize=fSz;return true;} return false; });
+  if(actTed)applyLiveTextEditorStyle(actTed);
 }
 function toggleBold(){
   fBold=!fBold;document.getElementById('btn-bold').classList.toggle('active',fBold);
   applyPropToSelection(o=>{ if(o.type==='text'){o.bold=fBold;return true;} return false; });
+  if(actTed)applyLiveTextEditorStyle(actTed);
 }
 function toggleItalic(){
   fItal=!fItal;document.getElementById('btn-italic').classList.toggle('active',fItal);
   applyPropToSelection(o=>{ if(o.type==='text'){o.italic=fItal;return true;} return false; });
+  if(actTed)applyLiveTextEditorStyle(actTed);
 }
 function toggleUnderline(){
   fUnder=!fUnder;document.getElementById('btn-underline').classList.toggle('active',fUnder);
   applyPropToSelection(o=>{ if(o.type==='text'){o.underline=fUnder;return true;} return false; });
+  if(actTed)applyLiveTextEditorStyle(actTed);
 }
 function toggleBoxed(){
   setBoxedMode(!fBoxed);
@@ -1920,22 +1968,27 @@ function setBoxedMode(on){
   document.getElementById('boxEnableCheck').checked=fBoxed;
   applyPropToSelection(o=>{ if(o.type==='text'){o.boxed=fBoxed;return true;} return false; });
   updateBoxOptionsVisibility();
+  if(actTed)applyLiveTextEditorStyle(actTed);
 }
 function applyBoxPad(){
   fBoxPad=Math.max(0,parseInt(document.getElementById('boxPadInput').value)||0);
   applyPropToSelection(o=>{ if(o.type==='text'&&o.boxed){o.boxPad=fBoxPad;return true;} return false; });
+  if(actTed)applyLiveTextEditorStyle(actTed);
 }
 function applyBoxStroke(){
   fBoxStroke=Math.max(0,parseFloat(document.getElementById('boxStrokeInput').value)||0);
   applyPropToSelection(o=>{ if(o.type==='text'&&o.boxed){o.boxStrokeWidth=fBoxStroke;return true;} return false; });
+  if(actTed)applyLiveTextEditorStyle(actTed);
 }
 function applyBoxRadius(){
   fBoxRadius=Math.max(0,parseInt(document.getElementById('boxRadiusInput').value)||0);
   applyPropToSelection(o=>{ if(o.type==='text'&&o.boxed){o.boxRadius=fBoxRadius;return true;} return false; });
+  if(actTed)applyLiveTextEditorStyle(actTed);
 }
 function applyBoxFillToggle(){
   fBoxFill=document.getElementById('boxFillCheck').checked;
   applyPropToSelection(o=>{ if(o.type==='text'&&o.boxed){o.boxFill=fBoxFill;return true;} return false; });
+  if(actTed)applyLiveTextEditorStyle(actTed);
 }
 function applyFgAlpha(){
   fgA=parseInt(document.getElementById('fgAlpha').value)/100;
@@ -3244,6 +3297,7 @@ function pasteClip(){
 }
 
 // ════════════ 키보드 단축키 ════════════
+let arrowMoveActive=false; // 방향키를 누르고 있는 동안 매 프레임 saveH하지 않고, 뗄 때 한 번만 기록하기 위한 상태
 document.addEventListener('keydown',e=>{
   if(actTed){
     // 텍스트 편집 중엔 다른 단축키를 막되, Escape만은 안전망으로 여기서도 확정 처리
@@ -3269,9 +3323,34 @@ document.addEventListener('keydown',e=>{
   }
   if(e.key==='Delete'||e.key==='Backspace'){if(selIds.length)deleteSelected();}
   if(e.key==='Escape'){clearSel();refreshObjList();renderAll();document.getElementById('statusObj').textContent='';}
+
+  // 방향키로 선택된 객체 이동 (Shift: 10px씩 크게, 기본: 1px씩). 입력창에 포커스가 있으면
+  // 그 필드의 기본 동작(숫자 증감 등)을 그대로 두고 캔버스 이동은 하지 않음.
+  const arrowDelta={ArrowUp:[0,-1],ArrowDown:[0,1],ArrowLeft:[-1,0],ArrowRight:[1,0]};
+  if(arrowDelta[e.key] && selIds.length){
+    const active=document.activeElement;
+    const inField=active && ['INPUT','SELECT','TEXTAREA'].includes(active.tagName);
+    if(!inField){
+      e.preventDefault();
+      const step=e.shiftKey?10:1;
+      const [ux,uy]=arrowDelta[e.key];
+      moveSelectedObjsBy(ux*step,uy*step);
+      renderAll();
+      arrowMoveActive=true;
+    }
+  }
+
   // 도구 단축키
   const toolKeys={v:'select2',t:'text',p:'pencil',e:'eraser',h:'highlight',l:'line',r:'rect',o:'ellipse',a:'arrow',s:'staff'};
   if(toolKeys[key]){setTool(toolKeys[key]);}
+});
+document.addEventListener('keyup',e=>{
+  // 방향키를 눌렀다 뗀 시점에 한 번만 실행 취소 기록 (누르고 있는 동안 반복 입력될 때마다 기록하지 않도록)
+  if(arrowMoveActive && ['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)){
+    arrowMoveActive=false;
+    saveH();
+    refreshObjList();
+  }
 });
 
 // ════════════ 커스텀 툴팁 ════════════
@@ -3360,7 +3439,7 @@ function normalizeFontFamily(f){
 }
 
 // ════════════ 버전 정보 & 업데이트 확인 ════════════
-const APP_VERSION='0.1';
+const APP_VERSION='0.2';
 // 실제 배포용 GitHub 저장소를 만들면 'owner/repo' 형태로 채워주세요. (예: 'limfrog75/pdf-markly')
 // 비워두면 업데이트 확인을 시도하지 않습니다.
 const UPDATE_CHECK_REPO='';
