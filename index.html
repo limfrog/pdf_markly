@@ -37,7 +37,7 @@
 *{margin:0;padding:0;box-sizing:border-box;}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
   background:var(--bg);color:var(--text);font-size:12px;
-  height:100vh;overflow:hidden;display:flex;flex-direction:column;user-select:none;
+  height:100vh;height:100dvh;overflow:hidden;display:flex;flex-direction:column;user-select:none;
   touch-action:pan-x pan-y;}
 
 /* ═══ 타이틀바 ═══ */
@@ -197,7 +197,7 @@ canvas{display:block;}
   display:flex;align-items:center;justify-content:center;}
 .modal-overlay.hidden{display:none;}
 .modal{background:var(--bar);border-radius:10px;border:1px solid var(--border);
-  box-shadow:0 8px 32px rgba(0,0,0,.3);display:flex;flex-direction:column;max-height:90vh;}
+  box-shadow:0 8px 32px rgba(0,0,0,.3);display:flex;flex-direction:column;max-height:90vh;max-height:90dvh;}
 .modal-head{padding:14px 16px 10px;font-size:14px;font-weight:700;color:var(--text);
   border-bottom:1px solid var(--borderl);display:flex;align-items:center;justify-content:space-between;}
 .modal-body{padding:14px 16px;display:flex;flex-direction:column;gap:10px;overflow-y:auto;}
@@ -3761,7 +3761,7 @@ function normalizeFontFamily(f){
 }
 
 // ════════════ 버전 정보 & 업데이트 확인 ════════════
-const APP_VERSION='0.5';
+const APP_VERSION='0.6';
 // 실제 배포용 GitHub 저장소를 만들면 'owner/repo' 형태로 채워주세요. (예: 'limfrog75/pdf-markly')
 // 비워두면 업데이트 확인을 시도하지 않습니다.
 const UPDATE_CHECK_REPO='limfrog/pdf_markly';
