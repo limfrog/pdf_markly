@@ -12,7 +12,7 @@
   connect-src 'self' data: blob: https://cdnjs.cloudflare.com https://mozilla.github.io https://fonts.googleapis.com https://fonts.gstatic.com https://api.github.com;
   object-src 'none'; base-uri 'self';
 ">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#c8202e">
 <link rel="manifest" href="./manifest.json">
 <link rel="icon" type="image/png" sizes="32x32" href="./favicon.png">
@@ -38,7 +38,8 @@
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
   background:var(--bg);color:var(--text);font-size:12px;
   height:100vh;height:100dvh;overflow:hidden;display:flex;flex-direction:column;user-select:none;
-  touch-action:pan-x pan-y;}
+  touch-action:pan-x pan-y;
+  padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);}
 
 /* ═══ 타이틀바 ═══ */
 .title-bar{background:var(--bar);height:36px;display:flex;align-items:center;
@@ -3761,7 +3762,7 @@ function normalizeFontFamily(f){
 }
 
 // ════════════ 버전 정보 & 업데이트 확인 ════════════
-const APP_VERSION='0.6';
+const APP_VERSION='0.6.2';
 // 실제 배포용 GitHub 저장소를 만들면 'owner/repo' 형태로 채워주세요. (예: 'limfrog75/pdf-markly')
 // 비워두면 업데이트 확인을 시도하지 않습니다.
 const UPDATE_CHECK_REPO='limfrog/pdf_markly';
