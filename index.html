@@ -37,7 +37,8 @@
 *{margin:0;padding:0;box-sizing:border-box;}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
   background:var(--bg);color:var(--text);font-size:12px;
-  height:100vh;overflow:hidden;display:flex;flex-direction:column;user-select:none;}
+  height:100vh;overflow:hidden;display:flex;flex-direction:column;user-select:none;
+  touch-action:pan-x pan-y;}
 
 /* ═══ 타이틀바 ═══ */
 .title-bar{background:var(--bar);height:36px;display:flex;align-items:center;
@@ -294,6 +295,36 @@ canvas{display:block;}
 .num-input{background:var(--bar);border:1px solid var(--border);color:var(--text);
   border-radius:4px;padding:2px 4px;font-size:11px;text-align:center;}
 
+/* ═══ 숫자 스텝퍼 (−/표시/+) — 모바일에서 탭하기 쉬운 숫자 입력 UI ═══
+   가운데 숫자를 탭하면 큰 슬라이더가 있는 모달이 열려 정밀 입력도 가능하다. */
+.fsize-ctrl{display:flex;align-items:stretch;border:1px solid var(--border);border-radius:6px;
+  overflow:hidden;height:26px;}
+.fsize-btn{width:26px;border:none;background:var(--hover);cursor:pointer;font-size:15px;font-weight:600;
+  display:flex;align-items:center;justify-content:center;color:var(--text);padding:0;
+  touch-action:manipulation;user-select:none;}
+.fsize-btn:hover{background:var(--active);}
+.fsize-display{min-width:32px;padding:0 5px;display:flex;align-items:center;justify-content:center;
+  font-size:11px;font-weight:600;background:var(--bar);color:var(--text);cursor:pointer;
+  border-left:1px solid var(--border);border-right:1px solid var(--border);}
+.fsize-display:hover{background:var(--hover);}
+@media (pointer:coarse){
+  .fsize-ctrl{height:34px;}
+  .fsize-btn{width:36px;font-size:18px;}
+  .fsize-display{min-width:40px;font-size:13px;}
+}
+.fsize-ctrl-sm{height:22px;}
+.fsize-ctrl-sm .fsize-btn{width:20px;font-size:12px;}
+.fsize-ctrl-sm .fsize-display{min-width:22px;font-size:10px;padding:0 3px;}
+@media (pointer:coarse){
+  .fsize-ctrl-sm{height:30px;}
+  .fsize-ctrl-sm .fsize-btn{width:30px;font-size:15px;}
+  .fsize-ctrl-sm .fsize-display{min-width:28px;font-size:11px;}
+}
+.fsize-preset{padding:10px 4px;border:1px solid var(--border);border-radius:8px;
+  background:var(--bar);color:var(--text);font-size:14px;font-weight:600;cursor:pointer;}
+.fsize-preset:hover{background:var(--hover);}
+.fsize-preset:active{background:var(--active);}
+
 /* ═══ 모바일(좁은 화면) 전용 레이아웃 ═══ */
 /* 페이지 목록·객체 목록을 항상 펼쳐두면 캔버스가 거의 안 보이므로, 좁은 화면에서는
    평소엔 숨겨뒀다가 타이틀바 버튼으로 슬라이드-인 오버레이로 열리도록 전환한다. */
@@ -447,7 +478,12 @@ canvas{display:block;}
     <div class="rs-body" style="flex-direction:column;align-items:flex-start;gap:4px">
       <div class="btn-row">
         <span style="font-size:9px;color:var(--muted)">두께</span>
-        <input type="number" class="num-input" id="strokeWidth" value="2" min="1" max="100" style="width:44px" oninput="applyStroke()">
+        <div class="fsize-ctrl">
+          <button class="fsize-btn" onclick="stepStrokeWidth(-1)" ontouchstart="event.preventDefault();stepStrokeWidth(-1)">−</button>
+          <span class="fsize-display" id="strokeWidthDisplay" onclick="openNumModal('strokeWidth')">2</span>
+          <button class="fsize-btn" onclick="stepStrokeWidth(1)" ontouchstart="event.preventDefault();stepStrokeWidth(1)">＋</button>
+        </div>
+        <input type="hidden" id="strokeWidth" value="2">
         <span style="font-size:9px;color:var(--muted)">px</span>
       </div>
       <div class="btn-row" style="gap:2px">
@@ -518,7 +554,12 @@ canvas{display:block;}
       </div>
       <div class="btn-row">
         <span style="font-size:9px;color:var(--muted)">크기</span>
-        <input type="number" class="num-input" id="fontSizeInput" value="16" min="6" max="300" style="width:48px" oninput="applyFontSize()">
+        <div class="fsize-ctrl">
+          <button class="fsize-btn" onclick="stepFontSize(-1)" ontouchstart="event.preventDefault();stepFontSize(-1)">−</button>
+          <span class="fsize-display" id="fontSizeInputDisplay" onclick="openFontSizeModal()">16</span>
+          <button class="fsize-btn" onclick="stepFontSize(1)" ontouchstart="event.preventDefault();stepFontSize(1)">＋</button>
+        </div>
+        <input type="hidden" id="fontSizeInput" value="16">
         <span style="font-size:9px;color:var(--muted)">pt</span>
         <button class="style-btn" id="btn-bold" onclick="toggleBold()"><b>B</b></button>
         <button class="style-btn" id="btn-italic" onclick="toggleItalic()"><i>I</i></button>
@@ -537,13 +578,28 @@ canvas{display:block;}
       </div>
       <div class="btn-row">
         <span style="font-size:9px;color:var(--muted)" title="글자와 테두리 사이 여백">패딩</span>
-        <input type="number" class="num-input" id="boxPadInput" value="8" min="0" max="60" style="width:44px" oninput="applyBoxPad()">
+        <div class="fsize-ctrl fsize-ctrl-sm">
+          <button class="fsize-btn" onclick="stepBoxPad(-1)" ontouchstart="event.preventDefault();stepBoxPad(-1)">−</button>
+          <span class="fsize-display" id="boxPadInputDisplay" onclick="openNumModal('boxPadInput')">8</span>
+          <button class="fsize-btn" onclick="stepBoxPad(1)" ontouchstart="event.preventDefault();stepBoxPad(1)">＋</button>
+        </div>
+        <input type="hidden" id="boxPadInput" value="8">
         <span style="font-size:9px;color:var(--muted)" title="박스 테두리 선의 두께">굵기</span>
-        <input type="number" class="num-input" id="boxStrokeInput" value="1.5" min="0" max="20" step="0.5" style="width:44px" oninput="applyBoxStroke()">
+        <div class="fsize-ctrl fsize-ctrl-sm">
+          <button class="fsize-btn" onclick="stepBoxStroke(-0.5)" ontouchstart="event.preventDefault();stepBoxStroke(-0.5)">−</button>
+          <span class="fsize-display" id="boxStrokeInputDisplay" onclick="openNumModal('boxStrokeInput')">1.5</span>
+          <button class="fsize-btn" onclick="stepBoxStroke(0.5)" ontouchstart="event.preventDefault();stepBoxStroke(0.5)">＋</button>
+        </div>
+        <input type="hidden" id="boxStrokeInput" value="1.5">
       </div>
       <div class="btn-row">
         <span style="font-size:9px;color:var(--muted)" title="모서리를 둥글게 깎는 정도">반경</span>
-        <input type="number" class="num-input" id="boxRadiusInput" value="0" min="0" max="60" style="width:44px" oninput="applyBoxRadius()">
+        <div class="fsize-ctrl fsize-ctrl-sm">
+          <button class="fsize-btn" onclick="stepBoxRadius(-1)" ontouchstart="event.preventDefault();stepBoxRadius(-1)">−</button>
+          <span class="fsize-display" id="boxRadiusInputDisplay" onclick="openNumModal('boxRadiusInput')">0</span>
+          <button class="fsize-btn" onclick="stepBoxRadius(1)" ontouchstart="event.preventDefault();stepBoxRadius(1)">＋</button>
+        </div>
+        <input type="hidden" id="boxRadiusInput" value="0">
         <label style="display:flex;align-items:center;gap:3px;font-size:9px;color:var(--muted);cursor:pointer" title="배경을 배경색으로 채우기">
           <input type="checkbox" id="boxFillCheck" onchange="applyBoxFillToggle()" style="margin:0">채우기
         </label>
@@ -689,6 +745,65 @@ canvas{display:block;}
 <input type="file" id="imageInput" accept="image/*" style="display:none">
 
 <!-- 프로그램 정보 모달 -->
+<!-- 숫자 값 정밀 입력 모달 (선 두께·박스 패딩/굵기/반경 공용) -->
+<div class="modal-overlay hidden" id="numModal">
+  <div class="modal" style="width:300px;max-width:88vw">
+    <div class="modal-head"><span id="numModalTitle">값 입력</span>
+      <button class="modal-xbtn" onclick="closeNumModal()">✕</button>
+    </div>
+    <div class="modal-body" style="gap:14px">
+      <div style="display:flex;align-items:center;justify-content:center;gap:14px">
+        <button class="fsize-btn" style="width:44px;height:44px;font-size:22px;border:1px solid var(--border);border-radius:8px"
+          onclick="numModalStep(-1)">−</button>
+        <div style="display:flex;align-items:baseline;gap:4px;min-width:80px;justify-content:center">
+          <span style="font-size:28px;font-weight:700;color:var(--accent)" id="numModalVal">0</span>
+          <span style="font-size:13px;color:var(--muted)" id="numModalUnit">px</span>
+        </div>
+        <button class="fsize-btn" style="width:44px;height:44px;font-size:22px;border:1px solid var(--border);border-radius:8px"
+          onclick="numModalStep(1)">＋</button>
+      </div>
+      <input type="range" id="numModalSlider" min="0" max="100" value="0"
+        style="width:100%;accent-color:var(--accent)" oninput="numModalFromSlider(this.value)">
+    </div>
+    <div class="modal-foot">
+      <button class="btn-ok" onclick="closeNumModal()" style="width:100%">확인</button>
+    </div>
+  </div>
+</div>
+
+<!-- 글자 크기 선택 모달 (모바일 친화적, 자주 쓰는 크기 프리셋 포함) -->
+<div class="modal-overlay hidden" id="fontSizeModal">
+  <div class="modal" style="width:320px;max-width:90vw">
+    <div class="modal-head">글자 크기
+      <button class="modal-xbtn" onclick="closeFontSizeModal()">✕</button>
+    </div>
+    <div class="modal-body" style="gap:14px">
+      <div style="display:flex;align-items:center;justify-content:center;gap:14px">
+        <button class="fsize-btn" style="width:44px;height:44px;font-size:22px;border:1px solid var(--border);border-radius:8px"
+          onclick="stepFontSize(-1)">−</button>
+        <div style="font-size:28px;font-weight:700;min-width:64px;text-align:center;color:var(--accent)" id="fontSizeModalVal">16</div>
+        <button class="fsize-btn" style="width:44px;height:44px;font-size:22px;border:1px solid var(--border);border-radius:8px"
+          onclick="stepFontSize(1)">＋</button>
+      </div>
+      <input type="range" id="fontSizeSlider" min="6" max="120" value="16"
+        style="width:100%;accent-color:var(--accent)" oninput="setFontSizeFromSlider(this.value)">
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
+        <button class="fsize-preset" onclick="setFontSizeExact(12)">12</button>
+        <button class="fsize-preset" onclick="setFontSizeExact(16)">16</button>
+        <button class="fsize-preset" onclick="setFontSizeExact(18)">18</button>
+        <button class="fsize-preset" onclick="setFontSizeExact(24)">24</button>
+        <button class="fsize-preset" onclick="setFontSizeExact(32)">32</button>
+        <button class="fsize-preset" onclick="setFontSizeExact(48)">48</button>
+        <button class="fsize-preset" onclick="setFontSizeExact(64)">64</button>
+        <button class="fsize-preset" onclick="setFontSizeExact(96)">96</button>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-ok" onclick="closeFontSizeModal()" style="width:100%">확인</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay hidden" id="aboutModal">
   <div class="modal" style="width:360px">
     <div class="modal-head">📄 PDF Markly
@@ -899,7 +1014,7 @@ function syncRibbonToSelection(){
   const o=selId!=null ? get_objs().find(x=>x.id===selId) : null;
   updateBoxOptionsVisibility();
   if(!o)return;
-  const set=(id,v)=>{const el=document.getElementById(id);if(el&&v!=null)el.value=v;};
+  const set=(id,v)=>{const el=document.getElementById(id);if(el&&v!=null){el.value=v;syncStepperDisplay(id);}};
   if(o.type==='stroke'||o.type==='shape'){
     if(o.strokeWidth!=null)set('strokeWidth',o.strokeWidth);
   }
@@ -1115,6 +1230,36 @@ document.getElementById('canvasArea').addEventListener('wheel',e=>{
   const factor=Math.pow(1.0015,-e.deltaY); // 휠 이동량에 비례해 부드럽게 확대·축소
   setZoom(zoom*factor);
 },{passive:false});
+
+// 모바일 핀치 줌 — 캔버스 영역에서 두 손가락으로 오므리고 벌려서 확대·축소.
+// (body에 touch-action:pan-x pan-y를 지정해 브라우저 기본 핀치줌은 이미 꺼둔 상태)
+let isPinching=false; // 핀치 도중 마우스 이벤트 기반 그리기 로직이 실수로 끼어들지 않도록 하는 안전장치
+(function(){
+  const area=document.getElementById('canvasArea');
+  let pinchStartDist=null, pinchStartZoom=1;
+  function touchDist(t0,t1){
+    return Math.hypot(t0.clientX-t1.clientX, t0.clientY-t1.clientY);
+  }
+  area.addEventListener('touchstart',e=>{
+    if(e.touches.length===2){
+      pinchStartDist=touchDist(e.touches[0],e.touches[1]);
+      pinchStartZoom=zoom;
+      isPinching=true;
+    }
+  },{passive:true});
+  area.addEventListener('touchmove',e=>{
+    if(e.touches.length===2&&pinchStartDist!=null){
+      e.preventDefault(); // 브라우저 기본 페이지 확대 대신 캔버스 자체 줌으로 처리
+      const dist=touchDist(e.touches[0],e.touches[1]);
+      setZoom(pinchStartZoom*(dist/pinchStartDist));
+    }
+  },{passive:false});
+  function endPinch(e){
+    if(e.touches.length<2){pinchStartDist=null;isPinching=false;}
+  }
+  area.addEventListener('touchend',endPinch);
+  area.addEventListener('touchcancel',endPinch);
+})();
 
 // ════════════ 렌더링 ════════════
 function drawBG(){
@@ -1612,7 +1757,7 @@ function openTed(x,y,exist=null){
     if(exist._edW)ed.style.width=exist._edW+'px';
     if(exist._edH)ed.style.height=exist._edH+'px';
     if(exist.fontFamily){fFam=normalizeFontFamily(exist.fontFamily);document.getElementById('fontFamily').value=fFam;}
-    if(exist.fontSize){fSz=exist.fontSize;document.getElementById('fontSizeInput').value=fSz;}
+    if(exist.fontSize){fSz=exist.fontSize;document.getElementById('fontSizeInput').value=fSz;syncStepperDisplay('fontSizeInput');}
     fBold=!!exist.bold;fItal=!!exist.italic;fUnder=!!exist.underline;fBoxed=!!exist.boxed;
     document.getElementById('btn-bold').classList.toggle('active',fBold);
     document.getElementById('btn-italic').classList.toggle('active',fItal);
@@ -1626,6 +1771,7 @@ function openTed(x,y,exist=null){
       document.getElementById('boxStrokeInput').value=fBoxStroke;
       document.getElementById('boxRadiusInput').value=fBoxRadius;
       document.getElementById('boxFillCheck').checked=fBoxFill;
+      syncStepperDisplay('boxPadInput');syncStepperDisplay('boxStrokeInput');syncStepperDisplay('boxRadiusInput');
     }
     editingId=exist.id;
   } else {
@@ -1759,6 +1905,7 @@ function moveSelectedObjsBy(dx,dy){
 }
 
 function onDown(e){
+  if(isPinching)return; // 핀치 줌 도중에는 그리기/선택 동작을 시작하지 않음
   const{x,y}=getPos(e);const xi=Math.round(x),yi=Math.round(y);
   if(actTed){commitT();return;}
 
@@ -1956,6 +2103,7 @@ function applyStroke(){
     if(o.type==='stroke'||o.type==='shape'){o.strokeWidth=strokeW;return true;}
     return false;
   });
+  syncStepperDisplay('strokeWidth');
 }
 function setStroke(w){
   strokeW=w;document.getElementById('strokeWidth').value=w;
@@ -1963,7 +2111,112 @@ function setStroke(w){
     if(o.type==='stroke'||o.type==='shape'){o.strokeWidth=strokeW;return true;}
     return false;
   });
+  syncStepperDisplay('strokeWidth');
 }
+
+// ════════════ 숫자 스텝퍼(−/표시/+) & 정밀 입력 모달 ════════════
+// 모바일에서는 좁은 숫자칸을 직접 탭해 입력하기 어려우므로, 스텝퍼 버튼으로 조금씩 조절하거나
+// 가운데 숫자를 탭해 큰 모달(슬라이더+프리셋)로 정밀하게 입력할 수 있게 한다.
+// 값 자체는 기존과 동일하게 숨겨진 input(#id)에 저장되어, 기존 apply*() 로직을 그대로 재사용한다.
+function syncStepperDisplay(id){
+  const el=document.getElementById(id);
+  const disp=document.getElementById(id+'Display');
+  if(el&&disp)disp.textContent=el.value;
+}
+
+function stepStrokeWidth(d){
+  const cur=parseInt(document.getElementById('strokeWidth').value)||2;
+  setStroke(Math.max(1,Math.min(100,cur+d)));
+}
+function stepBoxPad(d){
+  const el=document.getElementById('boxPadInput');
+  el.value=Math.max(0,Math.min(60,(parseInt(el.value)||0)+d));
+  applyBoxPad();
+}
+function stepBoxStroke(d){
+  const el=document.getElementById('boxStrokeInput');
+  el.value=Math.max(0,Math.min(20,+(((parseFloat(el.value)||0)+d).toFixed(1))));
+  applyBoxStroke();
+}
+function stepBoxRadius(d){
+  const el=document.getElementById('boxRadiusInput');
+  el.value=Math.max(0,Math.min(60,(parseInt(el.value)||0)+d));
+  applyBoxRadius();
+}
+
+// ── 공용 숫자 입력 모달: 스텝퍼의 숫자를 탭하면 열리는 큰 슬라이더 모달 ──
+const NUM_MODAL_CONFIG={
+  strokeWidth:{label:'선 두께',min:1,max:100,step:1,unit:'px',
+    getter:()=>parseInt(document.getElementById('strokeWidth').value)||2,
+    setter:v=>setStroke(v)},
+  boxPadInput:{label:'박스 패딩',min:0,max:60,step:1,unit:'px',
+    getter:()=>parseInt(document.getElementById('boxPadInput').value)||0,
+    setter:v=>{document.getElementById('boxPadInput').value=v;applyBoxPad();}},
+  boxStrokeInput:{label:'박스 테두리 굵기',min:0,max:20,step:0.5,unit:'px',
+    getter:()=>parseFloat(document.getElementById('boxStrokeInput').value)||0,
+    setter:v=>{document.getElementById('boxStrokeInput').value=v;applyBoxStroke();}},
+  boxRadiusInput:{label:'모서리 반경',min:0,max:60,step:1,unit:'px',
+    getter:()=>parseInt(document.getElementById('boxRadiusInput').value)||0,
+    setter:v=>{document.getElementById('boxRadiusInput').value=v;applyBoxRadius();}}
+};
+let _numModalKey=null;
+function openNumModal(key){
+  const cfg=NUM_MODAL_CONFIG[key];
+  if(!cfg)return;
+  _numModalKey=key;
+  const cur=cfg.getter();
+  document.getElementById('numModalTitle').textContent=cfg.label;
+  document.getElementById('numModalVal').textContent=cur;
+  document.getElementById('numModalUnit').textContent=cfg.unit;
+  const slider=document.getElementById('numModalSlider');
+  slider.min=cfg.min;slider.max=cfg.max;slider.step=cfg.step||1;slider.value=cur;
+  document.getElementById('numModal').classList.remove('hidden');
+}
+function closeNumModal(){document.getElementById('numModal').classList.add('hidden');}
+function numModalStep(d){
+  const cfg=NUM_MODAL_CONFIG[_numModalKey];if(!cfg)return;
+  const cur=parseFloat(document.getElementById('numModalVal').textContent)||0;
+  const step=cfg.step||1;
+  const nv=Math.max(cfg.min,Math.min(cfg.max,+((cur+d*step).toFixed(2))));
+  document.getElementById('numModalVal').textContent=nv;
+  document.getElementById('numModalSlider').value=nv;
+  cfg.setter(nv);
+}
+function numModalFromSlider(v){
+  const cfg=NUM_MODAL_CONFIG[_numModalKey];if(!cfg)return;
+  const nv=Math.max(cfg.min,Math.min(cfg.max,parseFloat(v)||0));
+  document.getElementById('numModalVal').textContent=nv;
+  cfg.setter(nv);
+}
+document.getElementById('numModal').addEventListener('click',e=>{
+  if(e.target.id==='numModal')closeNumModal();
+});
+
+// ── 글자 크기 전용 모달: 자주 쓰는 크기 프리셋 포함 ──
+function stepFontSize(d){
+  const el=document.getElementById('fontSizeInput');
+  el.value=Math.max(6,Math.min(300,(parseInt(el.value)||16)+d));
+  applyFontSize();
+}
+function openFontSizeModal(){
+  const cur=parseInt(document.getElementById('fontSizeInput').value)||16;
+  document.getElementById('fontSizeModalVal').textContent=cur;
+  document.getElementById('fontSizeSlider').value=Math.min(120,cur);
+  document.getElementById('fontSizeModal').classList.remove('hidden');
+}
+function closeFontSizeModal(){document.getElementById('fontSizeModal').classList.add('hidden');}
+function setFontSizeFromSlider(v){
+  const el=document.getElementById('fontSizeInput');
+  el.value=Math.max(6,Math.min(300,parseInt(v)||16));
+  applyFontSize();
+}
+function setFontSizeExact(v){
+  document.getElementById('fontSizeInput').value=v;
+  applyFontSize();
+}
+document.getElementById('fontSizeModal').addEventListener('click',e=>{
+  if(e.target.id==='fontSizeModal')closeFontSizeModal();
+});
 function applyShapeFill(){
   shapeFill=document.getElementById('shapeFill').value;
   applyPropToSelection(o=>{
@@ -1980,6 +2233,9 @@ function applyFontSize(){
   fSz=parseInt(document.getElementById('fontSizeInput').value)||16;
   applyPropToSelection(o=>{ if(o.type==='text'){o.fontSize=fSz;return true;} return false; });
   if(actTed)applyLiveTextEditorStyle(actTed);
+  syncStepperDisplay('fontSizeInput');
+  const mv=document.getElementById('fontSizeModalVal');if(mv)mv.textContent=fSz;
+  const ms=document.getElementById('fontSizeSlider');if(ms)ms.value=Math.min(120,fSz);
 }
 function toggleBold(){
   fBold=!fBold;document.getElementById('btn-bold').classList.toggle('active',fBold);
@@ -2015,16 +2271,19 @@ function applyBoxPad(){
   fBoxPad=Math.max(0,parseInt(document.getElementById('boxPadInput').value)||0);
   applyPropToSelection(o=>{ if(o.type==='text'&&o.boxed){o.boxPad=fBoxPad;return true;} return false; });
   if(actTed)applyLiveTextEditorStyle(actTed);
+  syncStepperDisplay('boxPadInput');
 }
 function applyBoxStroke(){
   fBoxStroke=Math.max(0,parseFloat(document.getElementById('boxStrokeInput').value)||0);
   applyPropToSelection(o=>{ if(o.type==='text'&&o.boxed){o.boxStrokeWidth=fBoxStroke;return true;} return false; });
   if(actTed)applyLiveTextEditorStyle(actTed);
+  syncStepperDisplay('boxStrokeInput');
 }
 function applyBoxRadius(){
   fBoxRadius=Math.max(0,parseInt(document.getElementById('boxRadiusInput').value)||0);
   applyPropToSelection(o=>{ if(o.type==='text'&&o.boxed){o.boxRadius=fBoxRadius;return true;} return false; });
   if(actTed)applyLiveTextEditorStyle(actTed);
+  syncStepperDisplay('boxRadiusInput');
 }
 function applyBoxFillToggle(){
   fBoxFill=document.getElementById('boxFillCheck').checked;
@@ -3502,7 +3761,7 @@ function normalizeFontFamily(f){
 }
 
 // ════════════ 버전 정보 & 업데이트 확인 ════════════
-const APP_VERSION='0.4';
+const APP_VERSION='0.5';
 // 실제 배포용 GitHub 저장소를 만들면 'owner/repo' 형태로 채워주세요. (예: 'limfrog75/pdf-markly')
 // 비워두면 업데이트 확인을 시도하지 않습니다.
 const UPDATE_CHECK_REPO='';
