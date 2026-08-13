@@ -56,6 +56,16 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
 .update-badge-dot{position:absolute;top:4px;right:2px;width:7px;height:7px;border-radius:50%;
   background:#e53e3e;box-shadow:0 0 0 1.5px var(--ribbon);}
 
+/* ═══ 모바일 패널 토글 / 닫기 버튼 (기본: 숨김, 좁은 화면에서만 노출) ═══ */
+.mobile-panel-toggle{display:none;background:transparent;border:none;color:var(--text);
+  cursor:pointer;padding:5px 7px;border-radius:5px;align-items:center;justify-content:center;}
+.mobile-panel-toggle:hover{background:var(--hover);}
+.mobile-panel-close{display:none;background:transparent;border:none;color:var(--muted);
+  cursor:pointer;font-size:16px;line-height:1;padding:2px 6px;border-radius:4px;}
+.mobile-panel-close:hover{background:var(--hover);color:var(--text);}
+.mobile-panel-backdrop{display:none;position:absolute;inset:0;background:rgba(0,0,0,.4);z-index:290;}
+.mobile-panel-backdrop.show{display:block;}
+
 /* ═══ 리본 ═══ */
 .ribbon-panel{background:var(--ribbon);border-bottom:1px solid var(--border);
   display:none;align-items:stretch;min-height:56px;flex-shrink:0;overflow-x:auto;
@@ -80,7 +90,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
 .btn-row{display:flex;align-items:center;gap:4px;}
 
 /* ═══ 메인 레이아웃 ═══ */
-.main-area{display:flex;flex:1;overflow:hidden;}
+.main-area{display:flex;flex:1;overflow:hidden;position:relative;}
 
 /* ═══ 페이지 인덱스 패널 ═══ */
 .page-index{width:160px;background:var(--idx-bg);border-right:1px solid var(--idx-border);
@@ -283,6 +293,21 @@ canvas{display:block;}
 /* ═══ 입력 박스 ═══ */
 .num-input{background:var(--bar);border:1px solid var(--border);color:var(--text);
   border-radius:4px;padding:2px 4px;font-size:11px;text-align:center;}
+
+/* ═══ 모바일(좁은 화면) 전용 레이아웃 ═══ */
+/* 페이지 목록·객체 목록을 항상 펼쳐두면 캔버스가 거의 안 보이므로, 좁은 화면에서는
+   평소엔 숨겨뒀다가 타이틀바 버튼으로 슬라이드-인 오버레이로 열리도록 전환한다. */
+@media (max-width:900px){
+  .mobile-panel-toggle{display:flex;}
+  .mobile-panel-close{display:inline-block;}
+  .page-index,.obj-panel{
+    position:absolute;top:0;bottom:0;width:min(80vw,300px);
+    z-index:300;transition:transform .22s ease;box-shadow:0 0 28px rgba(0,0,0,.35);
+  }
+  .page-index{left:0;transform:translateX(-100%);}
+  .obj-panel{right:0;transform:translateX(100%);}
+  .page-index.mobile-open,.obj-panel.mobile-open{transform:translateX(0);}
+}
 </style>
 </head>
 <body>
@@ -291,6 +316,12 @@ canvas{display:block;}
 <div class="title-bar">
   <span class="title-bar-icon">📄</span>
   <span id="titleText">PDF Markly</span>
+  <button class="mobile-panel-toggle" style="margin-left:auto" onclick="toggleMobilePanel('page')" aria-label="페이지 목록" title="페이지 목록">
+    <svg width="19" height="19" viewBox="0 0 20 20"><rect x="3" y="3" width="10.5" height="13.5" rx="1.4" fill="none" stroke="currentColor" stroke-width="1.5"/><rect x="6.5" y="5.8" width="10.5" height="13.5" rx="1.4" fill="var(--bar)" stroke="currentColor" stroke-width="1.5"/></svg>
+  </button>
+  <button class="mobile-panel-toggle" onclick="toggleMobilePanel('obj')" aria-label="객체 목록" title="객체 목록">
+    <svg width="19" height="19" viewBox="0 0 20 20"><rect x="3" y="4" width="14" height="2.3" rx="1" fill="currentColor"/><rect x="3" y="8.9" width="14" height="2.3" rx="1" fill="currentColor"/><rect x="3" y="13.7" width="14" height="2.3" rx="1" fill="currentColor"/></svg>
+  </button>
 </div>
 
 <!-- 탭바 -->
@@ -594,12 +625,16 @@ canvas{display:block;}
 
 <!-- 메인 영역 -->
 <div class="main-area">
+  <div class="mobile-panel-backdrop" id="mobilePanelBackdrop" onclick="closeMobilePanels()"></div>
 
   <!-- 페이지 인덱스 패널 -->
   <div class="page-index" id="pageIndex">
     <div class="page-index-header">
-      <span>페이지 목록</span>
-      <span id="pageCountLabel">0 페이지</span>
+      <div style="display:flex;align-items:baseline;gap:6px;overflow:hidden">
+        <span>페이지 목록</span>
+        <span id="pageCountLabel">0 페이지</span>
+      </div>
+      <button class="mobile-panel-close" onclick="closeMobilePanels()" aria-label="닫기">✕</button>
     </div>
     <div class="page-index-list" id="pageIndexList">
       <!-- JS로 채워짐 -->
@@ -619,14 +654,17 @@ canvas{display:block;}
   </div>
 
   <!-- 객체 목록 패널 -->
-  <div class="obj-panel">
+  <div class="obj-panel" id="objPanel">
     <div class="obj-panel-header">
       <span>객체 목록</span>
-      <div class="obj-panel-btns">
-        <button class="op-btn" onclick="moveLayerUp()" title="위로">↑</button>
-        <button class="op-btn" onclick="moveLayerDown()" title="아래로">↓</button>
-        <button class="op-btn" onclick="duplicateSelected()" title="복제">⧉</button>
-        <button class="op-btn" onclick="deleteSelected()" title="삭제">✕</button>
+      <div style="display:flex;align-items:center;gap:6px">
+        <div class="obj-panel-btns">
+          <button class="op-btn" onclick="moveLayerUp()" title="위로">↑</button>
+          <button class="op-btn" onclick="moveLayerDown()" title="아래로">↓</button>
+          <button class="op-btn" onclick="duplicateSelected()" title="복제">⧉</button>
+          <button class="op-btn" onclick="deleteSelected()" title="삭제">✕</button>
+        </div>
+        <button class="mobile-panel-close" onclick="closeMobilePanels()" aria-label="닫기">✕</button>
       </div>
     </div>
     <div id="objList"></div>
@@ -1039,6 +1077,7 @@ function goToPage(idx){
   document.querySelectorAll('.page-thumb-item').forEach((el,i)=>{
     el.classList.toggle('active',i===curPageIdx);
   });
+  closeMobilePanels(); // 모바일에서 페이지를 고르면 바로 캔버스가 보이도록 드로어를 닫음
 }
 
 function updatePageStatus(){
@@ -3233,6 +3272,28 @@ function switchTab(n,btn){
   btn.classList.add('active');
 }
 
+// ════════════ 모바일 패널(페이지 목록/객체 목록) 열기·닫기 ════════════
+// 좁은 화면에서는 두 패널을 항상 펼쳐두면 캔버스가 거의 안 보이므로,
+// 평소엔 숨겨두고 타이틀바 버튼으로 슬라이드-인 오버레이로 열고 닫는다.
+function toggleMobilePanel(which){
+  const page=document.getElementById('pageIndex');
+  const obj=document.getElementById('objPanel');
+  const wasOpen=(which==='page'?page:obj).classList.contains('mobile-open');
+  // 한 번에 하나만 — 반대쪽은 항상 닫고 시작
+  page.classList.remove('mobile-open');
+  obj.classList.remove('mobile-open');
+  if(!wasOpen){
+    (which==='page'?page:obj).classList.add('mobile-open');
+  }
+  document.getElementById('mobilePanelBackdrop').classList.toggle('show',
+    page.classList.contains('mobile-open')||obj.classList.contains('mobile-open'));
+}
+function closeMobilePanels(){
+  document.getElementById('pageIndex').classList.remove('mobile-open');
+  document.getElementById('objPanel').classList.remove('mobile-open');
+  document.getElementById('mobilePanelBackdrop').classList.remove('show');
+}
+
 // ════════════ 테마 ════════════
 function setTheme(t){
   document.documentElement.setAttribute('data-theme',t);
@@ -3324,7 +3385,7 @@ document.addEventListener('keydown',e=>{
     return;
   }
   if(e.key==='Delete'||e.key==='Backspace'){if(selIds.length)deleteSelected();}
-  if(e.key==='Escape'){clearSel();refreshObjList();renderAll();document.getElementById('statusObj').textContent='';}
+  if(e.key==='Escape'){clearSel();refreshObjList();renderAll();document.getElementById('statusObj').textContent='';closeMobilePanels();}
 
   // 방향키로 선택된 객체 이동 (Shift: 10px씩 크게, 기본: 1px씩). 입력창에 포커스가 있으면
   // 그 필드의 기본 동작(숫자 증감 등)을 그대로 두고 캔버스 이동은 하지 않음.
@@ -3441,7 +3502,7 @@ function normalizeFontFamily(f){
 }
 
 // ════════════ 버전 정보 & 업데이트 확인 ════════════
-const APP_VERSION='0.3';
+const APP_VERSION='0.4';
 // 실제 배포용 GitHub 저장소를 만들면 'owner/repo' 형태로 채워주세요. (예: 'limfrog75/pdf-markly')
 // 비워두면 업데이트 확인을 시도하지 않습니다.
 const UPDATE_CHECK_REPO='';
