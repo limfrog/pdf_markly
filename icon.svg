@@ -1,6 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
-  <!-- 배경: PDF를 연상시키는 레드 -->
-  <rect width="512" height="512" rx="112" fill="#c8202e"/>
+  <!-- 배경: PDF를 연상시키는 레드. 모서리를 둥글게 깎지 않고 512x512 전체를 꽉 채움 —
+       아이콘 모서리를 둥글게 다듬는 건 각 운영체제(iOS/Android/데스크톱)가 알아서 처리하며,
+       투명한 부분이 남아있으면 iOS는 그 자리를 검은색으로 채워버리기 때문에 완전 불투명이 필수. -->
+  <rect width="512" height="512" fill="#c8202e"/>
 
   <!-- 핵심 요소를 중앙 기준 약 84%로 축소해 마스커블 안전영역 확보 -->
   <g transform="translate(256 256) scale(0.84) translate(-256 -256)">
