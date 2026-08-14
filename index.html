@@ -862,6 +862,13 @@ canvas{display:block;}
   <button class="palette-more" onclick="openCustomColor()">사용자 지정...</button>
 </div>
 
+<!-- "사용자 지정" 색상 선택에 쓰는 네이티브 컬러피커. 매번 새로 만들지 않고 항상 DOM에
+     존재하는 요소를 재사용 — iOS Safari는 화면 밖 아주 먼 위치(예: left:-9999px)나
+     pointer-events:none인 요소에는 네이티브 색상 선택 시트를 못 띄우는 경우가 있어,
+     실제 화면 안(그러나 투명)에 자리 잡은 1x1px 요소로 둔다. -->
+<input type="color" id="fgColorPicker" style="position:fixed;top:0;left:0;width:1px;height:1px;opacity:0;border:none;padding:0;">
+<input type="color" id="bgColorPicker" style="position:fixed;top:0;left:0;width:1px;height:1px;opacity:0;border:none;padding:0;">
+
 <!-- PDF 저장 옵션 모달 (파일 크기 조절) -->
 <div class="modal-overlay hidden" id="pdfSaveOptModal">
   <div class="modal" style="width:380px">
@@ -2393,7 +2400,8 @@ document.addEventListener('mousedown',e=>{
 });
 
 function pickFg(){
-  const inp=document.createElement('input');inp.type='color';inp.value=fgH;
+  const inp=document.getElementById('fgColorPicker');
+  inp.value=fgH;
   inp.oninput=()=>{
     fgH=inp.value;updColorUI();
     applyPropToSelection(o=>{
@@ -2401,10 +2409,14 @@ function pickFg(){
       return false;
     });
   };
+  // iOS Safari는 click()만으로는 네이티브 색상 선택 시트가 안 열리는 경우가 있어
+  // focus()를 먼저 호출해야 안정적으로 열림
+  inp.focus();
   inp.click();
 }
 function pickBg(){
-  const inp=document.createElement('input');inp.type='color';inp.value=bgH;
+  const inp=document.getElementById('bgColorPicker');
+  inp.value=bgH;
   inp.oninput=()=>{
     bgH=inp.value;updColorUI();
     applyPropToSelection(o=>{
@@ -2414,6 +2426,7 @@ function pickBg(){
       return false;
     });
   };
+  inp.focus();
   inp.click();
 }
 function updColorUI(){
@@ -2739,15 +2752,17 @@ const loadJsPDF=()=>loadScriptOnce(JSPDF_CDN,()=>!!window.jspdf);
 
 // 페이지의 "주석만" 투명 캔버스에 렌더 → dataURL (없으면 null)
 function renderAnnotationsPNG(pg){
-  // 실제로 그릴 주석이 있는지 (지우개 제외)
-  const drawable=(pg.objs||[]).filter(o=>!(o.type==='stroke'&&o.eraser));
-  if(!drawable.length)return null;
+  // 실제로 그릴 주석이 있는지 확인 (지우개만 있고 지울 대상이 없으면 사실상 빈 오버레이)
+  const hasNonEraser=(pg.objs||[]).some(o=>!(o.type==='stroke'&&o.eraser));
+  if(!hasNonEraser)return null;
   const tmp=document.createElement('canvas');
   tmp.width=pg.width;tmp.height=pg.height;
   const tc=tmp.getContext('2d');
   const prevEditing=editingId; editingId=null;
-  // 지우개는 오버레이에서 스킵 (원본 벡터를 훼손하지 않음)
-  drawable.forEach(o=>drawO(tc,o,false,true));
+  // 지우개도 함께 그려서 화면에서 지운 효과가 저장된 PDF에도 그대로 반영되게 함.
+  // 이 오버레이는 원본 PDF 페이지와 완전히 분리된 투명 레이어이므로, 지우개가
+  // 여기서 다른 주석 객체를 지워도 원본 PDF의 실제 벡터 내용은 전혀 영향받지 않는다.
+  (pg.objs||[]).forEach(o=>drawO(tc,o,false,true));
   editingId=prevEditing;
   return tmp.toDataURL('image/png');
 }
@@ -3762,7 +3777,7 @@ function normalizeFontFamily(f){
 }
 
 // ════════════ 버전 정보 & 업데이트 확인 ════════════
-const APP_VERSION='0.6.2';
+const APP_VERSION='0.6.3';
 // 실제 배포용 GitHub 저장소를 만들면 'owner/repo' 형태로 채워주세요. (예: 'limfrog75/pdf-markly')
 // 비워두면 업데이트 확인을 시도하지 않습니다.
 const UPDATE_CHECK_REPO='limfrog/pdf_markly';
