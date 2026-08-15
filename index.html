@@ -119,7 +119,7 @@ canvas{display:block;}
 /* bgCanvas가 래퍼 크기를 정의(흐름 유지), 나머지 레이어는 그 위에 겹침 */
 #bgCanvas{position:relative;top:0;left:0;}
 #mainCanvas{position:absolute;top:0;left:0;}
-#hitCanvas{position:absolute;top:0;left:0;cursor:crosshair;opacity:0;}
+#hitCanvas{position:absolute;top:0;left:0;cursor:crosshair;opacity:0;touch-action:none;}
 #svgOverlay{position:absolute;top:0;left:0;pointer-events:none;}
 #textOverlay{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;}
 /* 드래그&드롭 오버레이 */
@@ -1239,31 +1239,43 @@ document.getElementById('canvasArea').addEventListener('wheel',e=>{
   setZoom(zoom*factor);
 },{passive:false});
 
-// 모바일 핀치 줌 — 캔버스 영역에서 두 손가락으로 오므리고 벌려서 확대·축소.
+// 모바일 핀치 줌 + 두 손가락 이동(팬) — 캔버스 영역에서 두 손가락으로 확대·축소하거나 이동.
+// 그리기는 한 손가락 전용(hitCanvas가 touch-action:none)이라, 확대된 캔버스를 둘러보려면
+// 별도의 입력 방식이 필요해 두 손가락 드래그로 팬을 지원한다.
 // (body에 touch-action:pan-x pan-y를 지정해 브라우저 기본 핀치줌은 이미 꺼둔 상태)
-let isPinching=false; // 핀치 도중 마우스 이벤트 기반 그리기 로직이 실수로 끼어들지 않도록 하는 안전장치
+let isPinching=false; // 핀치·팬 도중 마우스 이벤트 기반 그리기 로직이 실수로 끼어들지 않도록 하는 안전장치
 (function(){
   const area=document.getElementById('canvasArea');
   let pinchStartDist=null, pinchStartZoom=1;
+  let panLastX=null, panLastY=null;
   function touchDist(t0,t1){
     return Math.hypot(t0.clientX-t1.clientX, t0.clientY-t1.clientY);
+  }
+  function touchMid(t0,t1){
+    return {x:(t0.clientX+t1.clientX)/2, y:(t0.clientY+t1.clientY)/2};
   }
   area.addEventListener('touchstart',e=>{
     if(e.touches.length===2){
       pinchStartDist=touchDist(e.touches[0],e.touches[1]);
       pinchStartZoom=zoom;
+      const mid=touchMid(e.touches[0],e.touches[1]);
+      panLastX=mid.x;panLastY=mid.y;
       isPinching=true;
     }
   },{passive:true});
   area.addEventListener('touchmove',e=>{
     if(e.touches.length===2&&pinchStartDist!=null){
-      e.preventDefault(); // 브라우저 기본 페이지 확대 대신 캔버스 자체 줌으로 처리
+      e.preventDefault(); // 브라우저 기본 페이지 확대 대신 캔버스 자체 줌·이동으로 처리
       const dist=touchDist(e.touches[0],e.touches[1]);
       setZoom(pinchStartZoom*(dist/pinchStartDist));
+      const mid=touchMid(e.touches[0],e.touches[1]);
+      area.scrollLeft-=mid.x-panLastX;
+      area.scrollTop-=mid.y-panLastY;
+      panLastX=mid.x;panLastY=mid.y;
     }
   },{passive:false});
   function endPinch(e){
-    if(e.touches.length<2){pinchStartDist=null;isPinching=false;}
+    if(e.touches.length<2){pinchStartDist=null;panLastX=null;panLastY=null;isPinching=false;}
   }
   area.addEventListener('touchend',endPinch);
   area.addEventListener('touchcancel',endPinch);
@@ -3777,7 +3789,7 @@ function normalizeFontFamily(f){
 }
 
 // ════════════ 버전 정보 & 업데이트 확인 ════════════
-const APP_VERSION='0.6.3';
+const APP_VERSION='0.6.4';
 // 실제 배포용 GitHub 저장소를 만들면 'owner/repo' 형태로 채워주세요. (예: 'limfrog75/pdf-markly')
 // 비워두면 업데이트 확인을 시도하지 않습니다.
 const UPDATE_CHECK_REPO='limfrog/pdf_markly';
