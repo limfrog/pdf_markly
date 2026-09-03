@@ -100,7 +100,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
 .page-index-header{padding:8px 10px;border-bottom:1px solid var(--border);
   font-size:11px;font-weight:600;color:var(--muted);display:flex;align-items:center;
   justify-content:space-between;flex-shrink:0;}
-.page-index-list{flex:1;overflow-y:auto;padding:6px;}
+.page-index-list{flex:1;overflow-y:auto;padding:6px;position:relative;}
+.page-drop-indicator{position:absolute;left:6px;right:6px;height:3px;border-radius:2px;
+  background:var(--accent);display:none;pointer-events:none;z-index:5;
+  box-shadow:0 0 4px var(--accent);}
 .page-thumb-item{display:flex;flex-direction:column;align-items:center;gap:4px;
   padding:6px 4px;border-radius:6px;cursor:pointer;margin-bottom:4px;
   transition:background .1s;border:2px solid transparent;}
@@ -2583,7 +2586,7 @@ function convertPdfAnnotationsToObjs(annots,vp){
   return out;
 }
 
-async function loadPDFFromFile(file, append=false){
+async function loadPDFFromFile(file, append=false, insertAt=null){
   const modal=document.getElementById('loadingModal');
   const msgEl=document.getElementById('loadingMsg');
   const progEl=document.getElementById('loadingProgress');
@@ -2611,7 +2614,9 @@ async function loadPDFFromFile(file, append=false){
       origPdfStore={[docId]:bytes};
       origPdfBytes=bytes; // 레거시 별칭 (첫 원본)
     }
-    const startCount=pages.length;
+    // insertAt이 주어지면 그 위치에 끼워 넣고, 아니면 기존처럼 맨 뒤에 추가
+    const startCount=insertAt!=null?Math.max(0,Math.min(pages.length,insertAt)):pages.length;
+    let nextInsertIdx=startCount;
 
     for(let p=1;p<=totalPages;p++){
       msgEl.textContent=append
@@ -2650,11 +2655,17 @@ async function loadPDFFromFile(file, append=false){
         console.warn('페이지 '+p+' 주석을 읽는 중 오류:',err);
       }
 
-      pages.push({bg:null,bgImg,bgDataUrl:bgImg.src,objs:importedObjs,
+      const pageObj={bg:null,bgImg,bgDataUrl:bgImg.src,objs:importedObjs,
         undoSt:[importedObjs.map(o=>o.type==='stroke'?{...o,points:[...o.points]}:{...o})],redoSt:[],
         width:pw,height:ph,
         srcDocId:docId,      // 이 페이지가 어느 원본 PDF에서 왔는지
-        srcPdfPage:p-1});    // 그 원본에서의 0-based 페이지 인덱스
+        srcPdfPage:p-1};     // 그 원본에서의 0-based 페이지 인덱스
+      if(insertAt!=null){
+        pages.splice(nextInsertIdx,0,pageObj);
+        nextInsertIdx++;
+      } else {
+        pages.push(pageObj);
+      }
     }
 
     if(!append){
@@ -2668,7 +2679,7 @@ async function loadPDFFromFile(file, append=false){
     msgEl.textContent='완료!';
     await new Promise(r=>setTimeout(r,300));
 
-    goToPage(append?startCount:0); // append면 새로 추가된 첫 페이지로 이동
+    goToPage(append?startCount:0); // append(또는 지정 위치 삽입)면 새로 추가된 첫 페이지로 이동
     renderPageIndex();
 
   }catch(err){
@@ -2715,6 +2726,9 @@ function renderPageIndex(){
     item.onclick=()=>goToPage(i);
     list.appendChild(item);
   });
+
+  // 드롭 위치 표시선은 매번 새로 만들지 않고 재사용 — innerHTML=''로 지워졌으니 다시 붙여줌
+  list.appendChild(pageDropIndicator);
 }
 
 function updatePageThumb(idx){
@@ -3413,13 +3427,6 @@ async function appendPDFs(fileList){
   }
 }
 
-// 여러 PDF를 순서대로 맨 뒤에 이어붙임
-async function appendPDFs(fileList){
-  for(const f of fileList){
-    await loadPDFFromFile(f,true);
-  }
-}
-
 (function initDropZone(){
   const area=document.getElementById('canvasArea');
   const overlay=document.getElementById('dropOverlay');
@@ -3440,6 +3447,111 @@ async function appendPDFs(fileList){
   // 캔버스 밖에 떨어뜨린 파일이 브라우저에서 열리는 것 방지
   window.addEventListener('dragover',e=>{ if(hasFiles(e))e.preventDefault(); });
   window.addEventListener('drop',e=>{ if(hasFiles(e))e.preventDefault(); });
+})();
+
+// ════════════ 페이지 목록에 파일을 끌어다 놓아 그 위치에 페이지로 삽입 ════════════
+// 매번 새로 만들지 않고 재사용하는 드롭 위치 표시선 (renderPageIndex가 매번 다시 붙여줌)
+const pageDropIndicator=document.createElement('div');
+pageDropIndicator.className='page-drop-indicator';
+
+// 드래그 중인 세로 좌표(clientY)로부터 "몇 번째 페이지 앞에 끼워 넣을지" 계산
+function computePageDropIndex(clientY){
+  const list=document.getElementById('pageIndexList');
+  const items=[...list.querySelectorAll('.page-thumb-item')];
+  const listRect=list.getBoundingClientRect();
+  const relY=clientY-listRect.top+list.scrollTop; // 리스트의 스크롤 콘텐츠 좌표계로 변환
+  for(let i=0;i<items.length;i++){
+    const mid=items[i].offsetTop+items[i].offsetHeight/2;
+    if(relY<mid)return i;
+  }
+  return items.length;
+}
+function showPageDropIndicatorAt(idx){
+  const list=document.getElementById('pageIndexList');
+  const items=[...list.querySelectorAll('.page-thumb-item')];
+  let top;
+  if(!items.length) top=4;
+  else if(idx<=0) top=items[0].offsetTop-4;
+  else if(idx>=items.length){ const last=items[items.length-1]; top=last.offsetTop+last.offsetHeight+2; }
+  else top=items[idx].offsetTop-4;
+  pageDropIndicator.style.top=top+'px';
+  pageDropIndicator.style.display='block';
+  if(pageDropIndicator.parentElement!==list)list.appendChild(pageDropIndicator);
+}
+function hidePageDropIndicator(){ pageDropIndicator.style.display='none'; }
+
+// 이미지 파일을 새 페이지로 만들어 지정한 위치에 삽입 (이미지 자체의 비율을 페이지 크기로 사용,
+// PDF 페이지와 동일하게 A4 한도 안에 맞춰 스케일)
+function insertImageAsPage(file,insertAt){
+  return new Promise(resolve=>{
+    const rd=new FileReader();
+    rd.onload=ev=>{
+      const img=new Image();
+      img.onload=()=>{
+        const w=img.naturalWidth||img.width||A4_W, h=img.naturalHeight||img.height||A4_H;
+        const scale=Math.min(A4_W/w,A4_H/h);
+        const pw=Math.round(w*scale), ph=Math.round(h*scale);
+        const newPage={bg:null,bgImg:img,bgDataUrl:img.src,objs:[],
+          undoSt:[[]],redoSt:[],width:pw,height:ph,srcDocId:null,srcPdfPage:null};
+        pages.splice(Math.max(0,Math.min(pages.length,insertAt)),0,newPage);
+        resolve();
+      };
+      img.onerror=()=>{ alert('이미지를 불러올 수 없습니다: '+file.name); resolve(); };
+      img.src=ev.target.result;
+    };
+    rd.onerror=()=>{ alert('파일을 읽을 수 없습니다: '+file.name); resolve(); };
+    rd.readAsDataURL(file);
+  });
+}
+
+// 페이지 목록에 드롭한 파일들을 지정한 위치부터 순서대로 삽입
+async function insertFilesAtPageIndex(files,idx){
+  if(!files.length)return;
+  const supported=files.filter(f=>['pdf','image'].includes(fileKind(f)));
+  if(!supported.length){
+    alert('페이지로 끼워 넣을 수 있는 파일이 없습니다.\nPDF, 이미지 파일만 지원합니다.');
+    return;
+  }
+  const firstInsertAt=Math.max(0,Math.min(pages.length,idx));
+  let insertAt=firstInsertAt;
+  for(const f of supported){
+    const before=pages.length;
+    if(fileKind(f)==='pdf')await loadPDFFromFile(f,true,insertAt);
+    else await insertImageAsPage(f,insertAt);
+    insertAt+=Math.max(1,pages.length-before); // 방금 삽입된 만큼 다음 삽입 위치를 뒤로 밀기
+  }
+  goToPage(firstInsertAt); // 삽입한 첫 페이지로 이동 (여러 파일이어도 항상 맨 처음 위치로 확정)
+  renderPageIndex();
+  markDirty();
+}
+
+(function initPageListDropZone(){
+  const list=document.getElementById('pageIndexList');
+  if(!list)return;
+  const hasFiles=e=>e.dataTransfer&&Array.from(e.dataTransfer.types||[]).includes('Files');
+  let depth=0;
+
+  list.addEventListener('dragenter',e=>{
+    if(!hasFiles(e))return; e.preventDefault();e.stopPropagation();depth++;
+  });
+  list.addEventListener('dragover',e=>{
+    if(!hasFiles(e))return; e.preventDefault();e.stopPropagation();
+    e.dataTransfer.dropEffect='copy';
+    showPageDropIndicatorAt(computePageDropIndex(e.clientY));
+  });
+  list.addEventListener('dragleave',e=>{
+    if(!hasFiles(e))return;
+    depth=Math.max(0,depth-1);
+    if(depth===0)hidePageDropIndicator();
+  });
+  list.addEventListener('drop',e=>{
+    if(!hasFiles(e))return;
+    e.preventDefault();e.stopPropagation();
+    depth=0;
+    const idx=computePageDropIndex(e.clientY);
+    hidePageDropIndicator();
+    insertFilesAtPageIndex([...(e.dataTransfer.files||[])],idx);
+  });
 })();
 
 async function loadPMFProject(project,fileName){
