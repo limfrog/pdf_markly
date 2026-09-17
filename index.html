@@ -445,6 +445,9 @@ canvas{display:block;}
       <button class="ib" id="tool-text" data-tip="텍스트" data-key="T" onclick="setTool('text')">
         <svg width="22" height="22" viewBox="0 0 22 22"><text x="11" y="16" text-anchor="middle" font-size="14" fill="currentColor" font-weight="bold">A</text></svg>텍스트
       </button>
+      <button class="ib" id="tool-musicSymbol" data-tip="도형 (음악 기호)" data-key="M" onclick="setTool('musicSymbol')">
+        <svg width="22" height="22" viewBox="0 0 22 22"><text x="11" y="17" text-anchor="middle" font-family="'Noto Music',serif" font-size="17" fill="currentColor">𝄞</text></svg>도형
+      </button>
       <button class="ib" id="tool-pencil" data-tip="연필" data-key="P" onclick="setTool('pencil')">
         <svg width="22" height="22" viewBox="0 0 22 22"><path d="M4 16L14 6l2 2L6 18z" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M14 6l2-2 2 2-2 2z" fill="currentColor"/></svg>연필
       </button>
@@ -477,6 +480,23 @@ canvas{display:block;}
       </button>
     </div>
     <span class="rs-label">도구</span>
+  </div>
+  <!-- Easy Paint Pad 도형(음악 기호) 기능 -->
+  <div class="rs" id="musicSymbolSection" style="display:none">
+    <div class="rs-body" style="flex-direction:column;align-items:flex-start;gap:5px">
+      <div class="btn-row">
+        <span style="font-size:9px;color:var(--muted);min-width:44px">도형 선택</span>
+        <select class="sel" id="musicSymbolSelect" style="width:180px" onchange="onMusicSymbolSelectChange()"></select>
+      </div>
+      <div class="btn-row">
+        <span style="font-size:9px;color:var(--muted);min-width:44px">직접 입력</span>
+        <input class="num-input" id="musicSymbolInput" type="text" maxlength="8" value="𝄞"
+          style="width:88px;height:24px;text-align:center;padding:0 5px;font-family:'Noto Music',serif;font-size:13px;line-height:22px"
+          oninput="updateMusicSymbolPreview()" aria-label="도형 직접 입력">
+        <button class="style-btn" type="button" style="padding:3px 8px;white-space:nowrap" onclick="insertMusicSymbolAtCenter()">중앙삽입</button>
+      </div>
+    </div>
+    <span class="rs-label">도형</span>
   </div>
   <div class="rs">
     <div class="rs-body" style="flex-direction:column;align-items:flex-start;gap:4px">
@@ -547,6 +567,9 @@ canvas{display:block;}
             <option>Dancing Script</option>
             <option>Bebas Neue</option>
             <option>Pacifico</option>
+          </optgroup>
+          <optgroup label="음악 기호">
+            <option>Noto Music</option>
           </optgroup>
           <optgroup label="시스템 폰트">
             <option>Arial</option>
@@ -991,6 +1014,66 @@ function resyncOidSeq(){
   for(const p of pages) for(const o of p.objs){const n=Number(o.id);if(Number.isFinite(n)&&n>m)m=n;}
   if(m>=oidSeq)oidSeq=m;
 }
+
+// Easy Paint Pad의 "도형" 기능: 음악 기호를 텍스트 객체로 삽입해 기존 선택/이동/리사이즈/저장 기능과 자연스럽게 연동
+const MUSIC_SYMBOLS=[
+  {key:'trebleClef',label:'높은음자리표',text:'𝄞',fontFamily:'Noto Music',fontSize:72},
+  {key:'bassClef',label:'낮은음자리표',text:'𝄢',fontFamily:'Noto Music',fontSize:72},
+  {key:'altoClef',label:'가온음자리표',text:'𝄡',fontFamily:'Noto Music',fontSize:72},
+  {key:'flat',label:'내림표 (Flat)',text:'♭',fontFamily:'Noto Music',fontSize:56},
+  {key:'sharp',label:'올림표 (Sharp)',text:'♯',fontFamily:'Noto Music',fontSize:56},
+  {key:'natural',label:'제자리표',text:'♮',fontFamily:'Noto Music',fontSize:56},
+  {key:'segno',label:'세뇨',text:'𝄋',fontFamily:'Noto Music',fontSize:64},
+  {key:'coda',label:'코다',text:'𝄌',fontFamily:'Noto Music',fontSize:64},
+  {key:'fermata',label:'페르마타',text:'𝄐',fontFamily:'Noto Music',fontSize:58},
+  {key:'quarterRest',label:'4분쉼표',text:'𝄽',fontFamily:'Noto Music',fontSize:60},
+  {key:'eighthRest',label:'8분쉼표',text:'𝄾',fontFamily:'Noto Music',fontSize:60},
+  {key:'sixteenthRest',label:'16분쉼표',text:'𝄿',fontFamily:'Noto Music',fontSize:60},
+  {key:'quarterNote',label:'4분음표',text:'♩',fontFamily:'Noto Music',fontSize:64},
+  {key:'eighthNote',label:'8분음표',text:'♪',fontFamily:'Noto Music',fontSize:64},
+  {key:'sixteenthNote',label:'16분음표',text:'♬',fontFamily:'Noto Music',fontSize:64},
+  {key:'beginRepeat',label:'도돌이표 시작',text:'𝄆',fontFamily:'Noto Music',fontSize:72},
+  {key:'endRepeat',label:'도돌이표 끝',text:'𝄇',fontFamily:'Noto Music',fontSize:72},
+  {key:'doubleBar',label:'겹세로줄',text:'𝄁',fontFamily:'Noto Music',fontSize:72},
+  {key:'finalBar',label:'Final 겹세로줄',text:'𝄂',fontFamily:'Noto Music',fontSize:72},
+  {key:'singleBar',label:'세로줄',text:'𝄀',fontFamily:'Noto Music',fontSize:72}
+];
+function getMusicSymbolDef(key){return MUSIC_SYMBOLS.find(s=>s.key===key)||MUSIC_SYMBOLS[0];}
+function initMusicSymbolUI(){
+  const sel=document.getElementById('musicSymbolSelect');
+  if(!sel||sel.options.length)return;
+  MUSIC_SYMBOLS.forEach(item=>{
+    const opt=document.createElement('option');
+    opt.value=item.key;opt.textContent=`${item.label} ${item.text}`;sel.appendChild(opt);
+  });
+  sel.value='trebleClef';onMusicSymbolSelectChange();
+}
+function onMusicSymbolSelectChange(){
+  const sel=document.getElementById('musicSymbolSelect'),input=document.getElementById('musicSymbolInput');
+  if(!sel||!input)return;
+  const def=getMusicSymbolDef(sel.value);input.value=def.text;updateMusicSymbolPreview();
+}
+function updateMusicSymbolPreview(){
+  const input=document.getElementById('musicSymbolInput');if(!input)return;
+  input.style.fontFamily="'Noto Music',serif";input.style.fontSize='13px';input.style.lineHeight='22px';
+}
+function insertMusicSymbolAt(x,y){
+  const sel=document.getElementById('musicSymbolSelect'),input=document.getElementById('musicSymbolInput');
+  if(!sel||!input)return;
+  const def=getMusicSymbolDef(sel.value);
+  const txt=(input.value||def.text||'').trim();if(!txt)return;
+  const fontFamily=def.fontFamily||'Noto Music';
+  const fontSize=def.fontSize||Math.max(24,fSz||16);
+  fFam=fontFamily;fSz=fontSize;
+  const ff=document.getElementById('fontFamily');if(ff)ff.value=fontFamily;
+  const fsi=document.getElementById('fontSizeInput');if(fsi){fsi.value=fontSize;syncStepperDisplay('fontSizeInput');}
+  const no={id:mkId(),type:'text',x,y,text:txt,fontFamily,fontSize,bold:false,italic:false,underline:false,boxed:false,
+    color:fgH,alpha:fgA,_edW:Math.max(80,fontSize*Math.max([...txt].length,1)*0.95),_edH:Math.max(28,fontSize*1.25),
+    musicSymbol:true,symbolKey:def.key,symbolLabel:def.label};
+  get_objs().push(no);setSelection([no.id]);saveH();renderAll();refreshObjList();
+  document.getElementById('statusObj').textContent=`선택: 도형 #${no.id}`;
+}
+function insertMusicSymbolAtCenter(){insertMusicSymbolAt(Math.round(CW/2),Math.round(CH/2));}
 
 let selId=null;      // 대표 선택 (마지막으로 선택된 객체)
 let selIds=[];       // 다중 선택 집합
@@ -1591,13 +1674,14 @@ function refreshObjList(){
     const div=document.createElement('div');
     div.className='obj-item'+(isSel(o.id)?' selected':'');
     const icon=document.createElement('span');icon.className='obj-icon';
-    icon.textContent=icons[o.type]||'•';
+    icon.textContent=(o.type==='text'&&o.musicSymbol)?'♪':(icons[o.type]||'•');
     const name=document.createElement('span');name.className='obj-name';
     let lbl='';
-    if(o.type==='text')lbl='"'+(o.text||'').slice(0,12)+'"';
+    if(o.type==='text'&&o.musicSymbol)lbl=`${o.symbolLabel||'도형'} ${o.text||''}`.trim();
+    else if(o.type==='text')lbl='"'+(o.text||'').slice(0,12)+'"';
     else if(o.type==='shape')lbl=o.shape==='staff'?'오선':(o.shape||'');
     else if(o.type==='stroke')lbl=o.eraser?'지우개':o.highlight?'형광펜':(o.strokeWidth||2)+'px';
-    name.textContent=`${names[o.type]||o.type} ${lbl}`;
+    name.textContent=(o.type==='text'&&o.musicSymbol)?`도형 ${lbl}`:`${names[o.type]||o.type} ${lbl}`;
     const del=document.createElement('button');del.className='obj-del';
     del.textContent='✕';
     del.onclick=e=>{e.stopPropagation();removeObj(o.id);};
@@ -1935,6 +2019,9 @@ function onDown(e){
   if(tool==='text'){
     openTed(xi,yi);return;
   }
+  if(tool==='musicSymbol'){
+    insertMusicSymbolAt(xi,yi);return;
+  }
 
   if(tool==='select2'){
     const hit=hitTest(xi,yi);
@@ -2092,11 +2179,14 @@ function setTool(t){
   tool=t;
   document.querySelectorAll('[id^="tool-"]').forEach(b=>b.classList.remove('active'));
   document.getElementById('tool-'+t)?.classList.add('active');
-  HC.style.cursor=t==='select2'?'default':t==='text'?'text':'crosshair';
+  HC.style.cursor=t==='select2'?'default':t==='text'?'text':t==='musicSymbol'?'copy':'crosshair';
   document.getElementById('statusTool').textContent='도구: '+({
-    select2:'선택/이동',text:'텍스트',pencil:'연필',eraser:'지우개',
+    select2:'선택/이동',text:'텍스트',musicSymbol:'도형',pencil:'연필',eraser:'지우개',
     line:'선',rect:'사각형',ellipse:'원',arrow:'화살표',highlight:'형광펜',staff:'오선'
   }[t]||t);
+  const ms=document.getElementById('musicSymbolSection');
+  if(ms)ms.style.display=t==='musicSymbol'?'flex':'none';
+  if(t==='musicSymbol')updateMusicSymbolPreview();
   if(prevTool!==t && !wasEditingText){
     // 명확하게 다른 도구를 선택한 것은 이전 선택에서 벗어나겠다는 의사 표시 → 선택 해제
     // (단, 방금 타이핑을 마치며 도구를 클릭한 경우는 예외 — commitT가 새로 만든 텍스트의
@@ -3803,7 +3893,7 @@ document.addEventListener('keydown',e=>{
   }
 
   // 도구 단축키
-  const toolKeys={v:'select2',t:'text',p:'pencil',e:'eraser',h:'highlight',l:'line',r:'rect',o:'ellipse',a:'arrow',s:'staff'};
+  const toolKeys={v:'select2',t:'text',m:'musicSymbol',p:'pencil',e:'eraser',h:'highlight',l:'line',r:'rect',o:'ellipse',a:'arrow',s:'staff'};
   if(toolKeys[key]){setTool(toolKeys[key]);}
 });
 document.addEventListener('keyup',e=>{
@@ -3885,7 +3975,7 @@ const GOOGLE_FONT_FAMILIES=[
   'Roboto','Open Sans','Montserrat',
   'Playfair Display','Merriweather','Lora',
   'JetBrains Mono','Source Code Pro',
-  'Caveat','Dancing Script','Bebas Neue','Pacifico'
+  'Caveat','Dancing Script','Bebas Neue','Pacifico','Noto Music'
 ];
 function loadGoogleFonts(){
   const families=GOOGLE_FONT_FAMILIES.map(f=>'family='+encodeURIComponent(f).replace(/%20/g,'+')).join('&');
@@ -3901,7 +3991,7 @@ function normalizeFontFamily(f){
 }
 
 // ════════════ 버전 정보 & 업데이트 확인 ════════════
-const APP_VERSION='0.6.5';
+const APP_VERSION='0.6.6';
 // 실제 배포용 GitHub 저장소를 만들면 'owner/repo' 형태로 채워주세요. (예: 'limfrog75/pdf-markly')
 // 비워두면 업데이트 확인을 시도하지 않습니다.
 const UPDATE_CHECK_REPO='limfrog/pdf_markly';
@@ -4005,6 +4095,7 @@ async function checkForUpdates(force){
   setTheme(saved);
   updColorUI();
   loadGoogleFonts();
+  initMusicSymbolUI();
   initPages();
   setTool('select2');
   document.getElementById('aboutVersionText').textContent=APP_VERSION;
