@@ -1658,23 +1658,50 @@ function drawSel(){
   [[b.x,b.y],[b.x+b.w/2,b.y],[b.x+b.w,b.y],
    [b.x,b.y+b.h/2],[b.x+b.w,b.y+b.h/2],
    [b.x,b.y+b.h],[b.x+b.w/2,b.y+b.h],[b.x+b.w,b.y+b.h]].forEach(([hx,hy],i)=>{
-    const r=document.createElementNS(ns,'rect');
-    r.setAttribute('x',hx-4);r.setAttribute('y',hy-4);
-    r.setAttribute('width',8);r.setAttribute('height',8);
-    r.setAttribute('fill','#fff');r.setAttribute('stroke','#0078d4');
-    r.setAttribute('stroke-width',1.5);r.setAttribute('rx',1);
-    r.setAttribute('data-hi',i);
-    r.style.cursor=_HANDLE_CURSORS[i];
-    r.style.pointerEvents='auto'; // svgOverlay 전체는 pointer-events:none이므로 핸들만 개별로 클릭 가능하게
-    r.addEventListener('mousedown',e=>{
-      e.stopPropagation();
+    // 모바일에서는 8px 핸들이 너무 작아 터치 hit가 거의 되지 않으므로
+    // 보이는 핸들과 실제 입력 영역을 분리한다.
+    const g=document.createElementNS(ns,'g');
+    g.setAttribute('data-hi',i);
+
+    const vis=document.createElementNS(ns,'rect');
+    const vSize=10;
+    vis.setAttribute('x',hx-vSize/2);vis.setAttribute('y',hy-vSize/2);
+    vis.setAttribute('width',vSize);vis.setAttribute('height',vSize);
+    vis.setAttribute('fill','#fff');vis.setAttribute('stroke','#0078d4');
+    vis.setAttribute('stroke-width',1.5);vis.setAttribute('rx',1.5);
+    vis.style.pointerEvents='none';
+    g.appendChild(vis);
+
+    const hit=document.createElementNS(ns,'rect');
+    const hitSize=window.matchMedia('(pointer: coarse)').matches?36:20;
+    hit.setAttribute('x',hx-hitSize/2);hit.setAttribute('y',hy-hitSize/2);
+    hit.setAttribute('width',hitSize);hit.setAttribute('height',hitSize);
+    hit.setAttribute('fill','transparent');
+    hit.setAttribute('data-hi',i);
+    hit.style.cursor=_HANDLE_CURSORS[i];
+    hit.style.pointerEvents='all';
+    hit.style.touchAction='none';
+
+    const beginResize=(clientX,clientY)=>{
+      if(!isObjEditable(o))return;
       svgR=true;svgHi=i;
-      const p=getPos(e); // 캔버스 좌표계로 저장 (doSvgResize가 받는 x,y와 동일한 단위)
-      svgSX=p.x;svgSY=p.y;
+      const r=HC.getBoundingClientRect();
+      svgSX=Math.max(0,Math.min(CW,(clientX-r.left)/zoom));
+      svgSY=Math.max(0,Math.min(CH,(clientY-r.top)/zoom));
       svgOrigO=JSON.parse(JSON.stringify(o));
       svgOrigB=getBounds(o);
+    };
+    hit.addEventListener('mousedown',e=>{
+      e.stopPropagation();e.preventDefault();
+      beginResize(e.clientX,e.clientY);
     });
-    SV.appendChild(r);
+    hit.addEventListener('touchstart',e=>{
+      if(e.touches.length!==1)return;
+      e.stopPropagation();e.preventDefault();
+      const t=e.touches[0];beginResize(t.clientX,t.clientY);
+    },{passive:false});
+    g.appendChild(hit);
+    SV.appendChild(g);
   });
 }
 
@@ -2241,6 +2268,23 @@ HC.addEventListener('dblclick',onDbl);
 document.addEventListener('mousemove',e=>{
   if(svgR){const r=HC.getBoundingClientRect();doSvgResize((e.clientX-r.left)/zoom,(e.clientY-r.top)/zoom);}
 });
+// SVG 리사이즈 핸들은 hitCanvas 위에 있으므로 모바일에서는 별도의 touchmove/end가 필요하다.
+document.addEventListener('touchmove',e=>{
+  if(!svgR||e.touches.length!==1)return;
+  e.preventDefault();
+  const t=e.touches[0],r=HC.getBoundingClientRect();
+  doSvgResize((t.clientX-r.left)/zoom,(t.clientY-r.top)/zoom);
+},{passive:false});
+document.addEventListener('touchend',e=>{
+  if(!svgR)return;
+  e.preventDefault();
+  svgR=false;saveH();renderAll();refreshObjList();
+},{passive:false});
+document.addEventListener('touchcancel',e=>{
+  if(!svgR)return;
+  e.preventDefault();
+  svgR=false;renderAll();refreshObjList();
+},{passive:false});
 document.addEventListener('mouseup',()=>{
   if(svgR){svgR=false;saveH();renderAll();return;}
   if(marquee){marquee=null;renderAll();refreshObjList();
@@ -4255,7 +4299,7 @@ function normalizeFontFamily(f){
 }
 
 // ════════════ 버전 정보 & 업데이트 확인 ════════════
-const APP_VERSION='0.8.2';
+const APP_VERSION='0.8.3';
 // 실제 배포용 GitHub 저장소를 만들면 'owner/repo' 형태로 채워주세요. (예: 'limfrog75/pdf-markly')
 // 비워두면 업데이트 확인을 시도하지 않습니다.
 const UPDATE_CHECK_REPO='limfrog/pdf_markly';
