@@ -1238,7 +1238,7 @@ function syncRibbonToSelection(){
 let drawing=false, dragging=false, draggingStart=false;
 let dSX=0,dSY=0,dragLX=0,dragLY=0;
 let actStroke=null,actShape=null,actTed=null;
-let svgR=false,svgHi=-1,svgSX=0,svgSY=0,svgOrigO=null,svgOrigB=null;
+let svgR=false,svgHi=-1,svgSX=0,svgSY=0,svgOrigO=null,svgOrigB=null,svgTouchR=false;
 
 // 스타일
 let fgH='#000000', bgH='#ffffff'; // 전경: 검정, 배경: 흰색 (기본 배경색)
@@ -1682,9 +1682,9 @@ function drawSel(){
     hit.style.pointerEvents='all';
     hit.style.touchAction='none';
 
-    const beginResize=(clientX,clientY)=>{
+    const beginResize=(clientX,clientY,isTouch=false)=>{
       if(!isObjEditable(o))return;
-      svgR=true;svgHi=i;
+      svgR=true;svgHi=i;svgTouchR=!!isTouch;
       const r=HC.getBoundingClientRect();
       svgSX=Math.max(0,Math.min(CW,(clientX-r.left)/zoom));
       svgSY=Math.max(0,Math.min(CH,(clientY-r.top)/zoom));
@@ -1693,12 +1693,12 @@ function drawSel(){
     };
     hit.addEventListener('mousedown',e=>{
       e.stopPropagation();e.preventDefault();
-      beginResize(e.clientX,e.clientY);
+      beginResize(e.clientX,e.clientY,false);
     });
     hit.addEventListener('touchstart',e=>{
       if(e.touches.length!==1)return;
       e.stopPropagation();e.preventDefault();
-      const t=e.touches[0];beginResize(t.clientX,t.clientY);
+      const t=e.touches[0];beginResize(t.clientX,t.clientY,true);
     },{passive:false});
     g.appendChild(hit);
     SV.appendChild(g);
@@ -2040,6 +2040,17 @@ const _HANDLE_EDGES=[
   [1,0,0,0],        [0,0,1,0],     // 3 좌중,       4 우중
   [1,0,0,1],[0,0,0,1],[0,0,1,1]   // 5 좌하, 6 하중, 7 우하
 ];
+function renderCanvasDuringResize(){
+  // 모바일 터치 리사이즈 중에는 drawSel()로 SVG 핸들을 다시 만들지 않는다.
+  // iOS/Android는 터치 중인 DOM 노드가 교체되면 gesture stream이 끊겨
+  // 손가락을 많이 움직여도 핸들이 몇 px만 움직이는 현상이 생길 수 있다.
+  ctx.clearRect(0,0,CW,CH);
+  drawBG();
+  const pg=pages[curPageIdx];
+  if(!pg)return;
+  visibleObjs(pg).forEach(o=>drawO(ctx,o));
+}
+
 function doSvgResize(x,y){
   const o=get_objs().find(obj=>obj.id===selId);
   if(!o||!svgOrigO||!svgOrigB)return;
@@ -2083,7 +2094,11 @@ function doSvgResize(x,y){
     const ns=Math.max(6,Math.round((svgOrigO.fontSize||16)*sy));
     o.fontSize=ns;
   }
-  renderAll();
+  // 마우스에서는 기존처럼 선택 핸들을 실시간 갱신한다.
+  // 터치에서는 현재 핸들 DOM을 유지해 touchmove가 끊기지 않게 하고,
+  // 손을 뗀 뒤 renderAll()에서 최종 위치로 핸들을 다시 그린다.
+  if(svgTouchR)renderCanvasDuringResize();
+  else renderAll();
 }
 
 // ════════════ 텍스트 편집 ════════════
@@ -2278,15 +2293,15 @@ document.addEventListener('touchmove',e=>{
 document.addEventListener('touchend',e=>{
   if(!svgR)return;
   e.preventDefault();
-  svgR=false;saveH();renderAll();refreshObjList();
+  svgR=false;svgTouchR=false;saveH();renderAll();refreshObjList();
 },{passive:false});
 document.addEventListener('touchcancel',e=>{
   if(!svgR)return;
   e.preventDefault();
-  svgR=false;renderAll();refreshObjList();
+  svgR=false;svgTouchR=false;renderAll();refreshObjList();
 },{passive:false});
 document.addEventListener('mouseup',()=>{
-  if(svgR){svgR=false;saveH();renderAll();return;}
+  if(svgR){svgR=false;svgTouchR=false;saveH();renderAll();return;}
   if(marquee){marquee=null;renderAll();refreshObjList();
     document.getElementById('statusObj').textContent=selCount()?`${selCount()}개 선택`:'';return;}
   if(dragging){dragging=false;HC.style.cursor='default';saveH();renderAll();return;}
@@ -4299,7 +4314,7 @@ function normalizeFontFamily(f){
 }
 
 // ════════════ 버전 정보 & 업데이트 확인 ════════════
-const APP_VERSION='0.8.3';
+const APP_VERSION='0.8.4';
 // 실제 배포용 GitHub 저장소를 만들면 'owner/repo' 형태로 채워주세요. (예: 'limfrog75/pdf-markly')
 // 비워두면 업데이트 확인을 시도하지 않습니다.
 const UPDATE_CHECK_REPO='limfrog/pdf_markly';
