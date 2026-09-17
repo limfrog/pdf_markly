@@ -446,7 +446,7 @@ canvas{display:block;}
         <svg width="22" height="22" viewBox="0 0 22 22"><text x="11" y="16" text-anchor="middle" font-size="14" fill="currentColor" font-weight="bold">A</text></svg>텍스트
       </button>
       <button class="ib" id="tool-musicSymbol" data-tip="도형 (음악 기호)" data-key="M" onclick="setTool('musicSymbol')">
-        <svg width="22" height="22" viewBox="0 0 22 22"><text x="11" y="17" text-anchor="middle" font-family="'Noto Music',serif" font-size="17" fill="currentColor">𝄞</text></svg>도형
+        <svg width="22" height="22" viewBox="0 0 22 22"><text x="11" y="17" text-anchor="middle" font-family="'Noto Music','Segoe UI Symbol','Apple Symbols',serif" font-size="17" fill="currentColor">𝄞</text></svg>도형
       </button>
       <button class="ib" id="tool-pencil" data-tip="연필" data-key="P" onclick="setTool('pencil')">
         <svg width="22" height="22" viewBox="0 0 22 22"><path d="M4 16L14 6l2 2L6 18z" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M14 6l2-2 2 2-2 2z" fill="currentColor"/></svg>연필
@@ -491,7 +491,7 @@ canvas{display:block;}
       <div class="btn-row">
         <span style="font-size:9px;color:var(--muted);min-width:44px">직접 입력</span>
         <input class="num-input" id="musicSymbolInput" type="text" maxlength="8" value="𝄞"
-          style="width:88px;height:24px;text-align:center;padding:0 5px;font-family:'Noto Music',serif;font-size:13px;line-height:22px"
+          style="width:88px;height:24px;text-align:center;padding:0 5px;font-family:'Noto Music','Segoe UI Symbol','Apple Symbols',serif;font-size:13px;line-height:22px"
           oninput="updateMusicSymbolPreview()" aria-label="도형 직접 입력">
         <button class="style-btn" type="button" style="padding:3px 8px;white-space:nowrap" onclick="insertMusicSymbolAtCenter()">중앙삽입</button>
       </div>
@@ -1031,7 +1031,7 @@ const MUSIC_SYMBOLS=[
   {key:'sixteenthRest',label:'16분쉼표',text:'𝄿',fontFamily:'Noto Music',fontSize:60},
   {key:'quarterNote',label:'4분음표',text:'♩',fontFamily:'Noto Music',fontSize:64},
   {key:'eighthNote',label:'8분음표',text:'♪',fontFamily:'Noto Music',fontSize:64},
-  {key:'sixteenthNote',label:'16분음표',text:'♬',fontFamily:'Noto Music',fontSize:64},
+  {key:'sixteenthNote',label:'16분음표',text:'𝅘𝅥𝅯',fontFamily:'Noto Music',fontSize:64},
   {key:'beginRepeat',label:'도돌이표 시작',text:'𝄆',fontFamily:'Noto Music',fontSize:72},
   {key:'endRepeat',label:'도돌이표 끝',text:'𝄇',fontFamily:'Noto Music',fontSize:72},
   {key:'doubleBar',label:'겹세로줄',text:'𝄁',fontFamily:'Noto Music',fontSize:72},
@@ -1044,7 +1044,13 @@ function initMusicSymbolUI(){
   if(!sel||sel.options.length)return;
   MUSIC_SYMBOLS.forEach(item=>{
     const opt=document.createElement('option');
-    opt.value=item.key;opt.textContent=`${item.label} ${item.text}`;sel.appendChild(opt);
+    opt.value=item.key;
+    // 모바일 브라우저의 네이티브 select는 웹폰트(Noto Music)를 적용하지 못해
+    // 세뇨·코다 같은 음악 기호가 '?'로 보일 수 있으므로 목록에는 이름만 표시한다.
+    // 실제 기호 미리보기와 삽입은 아래 직접 입력 칸에서 Noto Music으로 처리한다.
+    opt.textContent=item.label;
+    opt.title=`${item.label} ${item.text}`;
+    sel.appendChild(opt);
   });
   sel.value='trebleClef';onMusicSymbolSelectChange();
 }
@@ -1055,7 +1061,9 @@ function onMusicSymbolSelectChange(){
 }
 function updateMusicSymbolPreview(){
   const input=document.getElementById('musicSymbolInput');if(!input)return;
-  input.style.fontFamily="'Noto Music',serif";input.style.fontSize='13px';input.style.lineHeight='22px';
+  input.style.fontFamily="'Noto Music','Segoe UI Symbol','Apple Symbols',serif";
+  input.style.fontSize='13px';
+  input.style.lineHeight='22px';
 }
 function insertMusicSymbolAt(x,y){
   const sel=document.getElementById('musicSymbolSelect'),input=document.getElementById('musicSymbolInput');
@@ -3991,7 +3999,7 @@ function normalizeFontFamily(f){
 }
 
 // ════════════ 버전 정보 & 업데이트 확인 ════════════
-const APP_VERSION='0.6.6';
+const APP_VERSION='0.6.7';
 // 실제 배포용 GitHub 저장소를 만들면 'owner/repo' 형태로 채워주세요. (예: 'limfrog75/pdf-markly')
 // 비워두면 업데이트 확인을 시도하지 않습니다.
 const UPDATE_CHECK_REPO='limfrog/pdf_markly';
