@@ -167,6 +167,17 @@ canvas{display:block;}
 .layer-info{min-width:0;flex:1;display:flex;flex-direction:column;gap:2px;}
 .layer-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10.5px;color:inherit;}
 .layer-meta{font-size:8.5px;color:var(--muted);font-weight:400;}
+.layer-objects{width:100%;border-top:1px solid var(--borderl);background:var(--bar);}
+.layer-object-item{display:flex;align-items:center;gap:6px;min-height:29px;padding:3px 7px 3px 36px;
+  border-bottom:1px solid var(--borderl);font-size:9.5px;color:var(--text);cursor:pointer;}
+.layer-object-item:hover{background:var(--hover);}
+.layer-object-item.selected{background:var(--active);color:var(--accent);font-weight:600;}
+.layer-object-item.uneditable{opacity:.55;}
+.layer-object-icon{width:16px;text-align:center;flex-shrink:0;font-size:11px;}
+.layer-object-name{min-width:0;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.layer-object-target{font-size:8px;color:var(--muted);flex-shrink:0;}
+.layer-block{border-bottom:1px solid var(--borderl);}
+.layer-block>.layer-item{border-bottom:none;}
 [data-theme="dark"] .layer-btn{background:transparent;color:var(--text);border-color:var(--borderl);}
 [data-theme="dark"] .layer-btn:hover{background:var(--hover);}
 
@@ -1737,6 +1748,33 @@ function objsInRect(rx,ry,rw,rh){
 }
 
 // ════════════ 캔버스 레이어 UI / 관리 ════════════
+function getLayerObjIcon(o){
+  if(o.type==='text'&&o.musicSymbol)return '♪';
+  if(o.type==='text')return 'T';
+  if(o.type==='stroke')return o.highlight?'▰':o.eraser?'⌫':'✎';
+  if(o.type==='shape')return o.shape==='rect'?'□':o.shape==='ellipse'?'○':o.shape==='arrow'?'→':o.shape==='staff'?'𝄚':'／';
+  if(o.type==='image')return '▧';
+  return '•';
+}
+function getLayerObjName(o){
+  if(o.type==='text'&&o.musicSymbol)return o.symbolLabel||o.text||'도형';
+  if(o.type==='text')return (o.text||'텍스트').replace(/\s+/g,' ').slice(0,28)||'텍스트';
+  if(o.type==='stroke')return o.highlight?'형광펜':o.eraser?'지우개':'자유선';
+  if(o.type==='shape'){
+    const n={line:'선',rect:'사각형',ellipse:'타원',arrow:'화살표',staff:'오선'};
+    return n[o.shape]||'도형';
+  }
+  if(o.type==='image')return '이미지';
+  return '객체';
+}
+function selectLayerObject(id,e){
+  e&&e.stopPropagation();
+  const o=get_objs().find(x=>x.id===id);if(!o)return;
+  if(!isObjEditable(o)){setActiveLayer(o.layerId);return;}
+  if(e?.shiftKey)addToSelection(id);else setSelection([id]);
+  setActiveLayer(o.layerId);
+  renderAll();refreshObjList();
+}
 function refreshObjList(){
   updateUndoRedoUI();
   const pg=ensurePageLayers(page());
@@ -1745,6 +1783,7 @@ function refreshObjList(){
   if(!pg)return;
   const lc=document.getElementById('layerCount');if(lc)lc.textContent=pg.layers.length+'개';
   [...pg.layers].reverse().forEach((l,revIdx)=>{
+    const block=document.createElement('div');block.className='layer-block';
     const div=document.createElement('div');
     div.className='layer-item'+(l.id===pg.activeLayerId?' active':'')+(l.visible===false?' hidden-layer':'')+(l.locked?' locked-layer':'');
     div.title='클릭: 활성 레이어 · 더블클릭: 이름 변경';
@@ -1755,8 +1794,8 @@ function refreshObjList(){
 
     const info=document.createElement('div');info.className='layer-info';
     const nm=document.createElement('div');nm.className='layer-name';nm.textContent=l.name||'레이어';
-    const count=pg.objs.filter(o=>o.layerId===l.id).length;
-    const meta=document.createElement('div');meta.className='layer-meta';meta.textContent=`${count}개 객체 · ${revIdx===0?'맨 위':'위에서 '+(revIdx+1)+'번째'}`;
+    const layerObjs=pg.objs.filter(o=>o.layerId===l.id);
+    const meta=document.createElement('div');meta.className='layer-meta';meta.textContent=`${layerObjs.length}개 객체 · ${revIdx===0?'맨 위':'위에서 '+(revIdx+1)+'번째'}`;
     info.append(nm,meta);
 
     const move=document.createElement('button');move.className='layer-move-objects';move.textContent='⇥';
@@ -1770,7 +1809,23 @@ function refreshObjList(){
     div.append(eye,info,move,lock);
     div.onclick=()=>setActiveLayer(l.id);
     div.ondblclick=e=>{if(e.target.closest('button'))return;e.stopPropagation();renameLayer(l.id);};
-    list.appendChild(div);
+    block.appendChild(div);
+
+    const objWrap=document.createElement('div');objWrap.className='layer-objects';
+    // 같은 레이어 안에서도 실제 그리기 순서의 위쪽 객체를 먼저 표시
+    [...layerObjs].reverse().forEach(o=>{
+      const row=document.createElement('div');
+      row.className='layer-object-item'+(isSel(o.id)?' selected':'')+(!isObjEditable(o,pg)?' uneditable':'');
+      row.dataset.objectId=o.id;
+      const ic=document.createElement('span');ic.className='layer-object-icon';ic.textContent=getLayerObjIcon(o);
+      const name=document.createElement('span');name.className='layer-object-name';name.textContent=getLayerObjName(o);
+      const tag=document.createElement('span');tag.className='layer-object-target';tag.textContent='#'+o.id;
+      row.append(ic,name,tag);
+      row.onclick=e=>selectLayerObject(o.id,e);
+      objWrap.appendChild(row);
+    });
+    if(layerObjs.length)block.appendChild(objWrap);
+    list.appendChild(block);
   });
 }
 function setActiveLayer(id){
@@ -2100,6 +2155,44 @@ HC.addEventListener('mousedown',onDown);
 HC.addEventListener('mousemove',onMove);
 HC.addEventListener('mouseup',onUp);
 HC.addEventListener('dblclick',onDbl);
+
+
+// 모바일 1손가락 입력: iOS/Android에서 synthetic mouse event에 의존하지 않고
+// 캔버스의 선택/이동/도형 그리기를 직접 처리한다. 두 손가락은 기존 핀치 줌이 담당한다.
+(function initCanvasTouchInput(){
+  let touchDrawing=false;
+  function pseudoTouchEvent(t){
+    return {clientX:t.clientX,clientY:t.clientY,shiftKey:false,ctrlKey:false,metaKey:false,preventDefault(){}};
+  }
+  HC.addEventListener('touchstart',e=>{
+    if(e.touches.length!==1||isPinching)return;
+    e.preventDefault();
+    touchDrawing=true;
+    onDown(pseudoTouchEvent(e.touches[0]));
+  },{passive:false});
+  HC.addEventListener('touchmove',e=>{
+    if(!touchDrawing||e.touches.length!==1||isPinching)return;
+    e.preventDefault();
+    onMove(pseudoTouchEvent(e.touches[0]));
+  },{passive:false});
+  function finishTouch(e){
+    if(!touchDrawing)return;
+    e.preventDefault();
+    touchDrawing=false;
+    if(marquee){
+      marquee=null;renderAll();refreshObjList();
+      document.getElementById('statusObj').textContent=selCount()?`${selCount()}개 선택`:'';
+      return;
+    }
+    if(dragging){
+      dragging=false;HC.style.cursor='default';saveH();renderAll();refreshObjList();
+      return;
+    }
+    if(drawing){onUp();return;}
+  }
+  HC.addEventListener('touchend',finishTouch,{passive:false});
+  HC.addEventListener('touchcancel',finishTouch,{passive:false});
+})();
 
 document.addEventListener('mousemove',e=>{
   if(svgR){const r=HC.getBoundingClientRect();doSvgResize((e.clientX-r.left)/zoom,(e.clientY-r.top)/zoom);}
@@ -4118,7 +4211,7 @@ function normalizeFontFamily(f){
 }
 
 // ════════════ 버전 정보 & 업데이트 확인 ════════════
-const APP_VERSION='0.8.0';
+const APP_VERSION='0.8.1';
 // 실제 배포용 GitHub 저장소를 만들면 'owner/repo' 형태로 채워주세요. (예: 'limfrog75/pdf-markly')
 // 비워두면 업데이트 확인을 시도하지 않습니다.
 const UPDATE_CHECK_REPO='limfrog/pdf_markly';
