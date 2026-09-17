@@ -1,5 +1,5 @@
-const CACHE_NAME = 'pdf-markly-v8';
-const CDN_CACHE = 'pdf-markly-cdn-v8';
+const CACHE_NAME = 'pdf-markly-v9';
+const CDN_CACHE = 'pdf-markly-cdn-v9';
 const ASSETS = ['./', './index.html', './manifest.json',
   './favicon.png', './icon-192.png', './icon-512.png'];
 

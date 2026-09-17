@@ -134,39 +134,39 @@ canvas{display:block;}
   padding:14px 26px;border-radius:10px;box-shadow:0 6px 24px rgba(0,0,0,.3);}
 .canvas-area.dragover{outline:none;}
 
-/* ═══ 레이어 / 객체 목록 패널 ═══ */
-.obj-panel{width:220px;background:var(--bar);border-left:1px solid var(--border);
+/* ═══ 캔버스 레이어 패널 ═══ */
+.obj-panel{width:240px;background:var(--bar);border-left:1px solid var(--border);
   display:flex;flex-direction:column;flex-shrink:0;overflow:hidden;}
-.obj-panel-header{padding:0 8px;height:32px;border-bottom:1px solid var(--border);
+.obj-panel-header{padding:0 8px;height:34px;border-bottom:1px solid var(--border);
   font-size:11px;font-weight:600;color:var(--muted);display:flex;
   align-items:center;justify-content:space-between;background:var(--ribbon);flex-shrink:0;}
 .obj-panel-title{display:flex;align-items:center;gap:5px;font-size:11px!important;color:var(--text);}
 .layer-btns{display:flex;gap:2px;align-items:center;}
-.layer-btn{width:24px;height:24px;border:1px solid var(--borderl);border-radius:4px;
-  background:transparent;color:var(--text);cursor:pointer;font-size:12px;display:flex;
+.layer-btn{width:25px;height:25px;border:1px solid var(--borderl);border-radius:4px;
+  background:transparent;color:var(--text);cursor:pointer;font-size:13px;display:flex;
   align-items:center;justify-content:center;padding:0;line-height:1;}
 .layer-btn:hover{background:var(--hover);border-color:var(--border);}
 .layer-btn.danger{color:#c00;}
-.layer-hint{height:22px;padding:0 8px;border-bottom:1px solid var(--borderl);display:flex;
-  align-items:center;justify-content:space-between;font-size:9px;color:var(--muted);
-  background:var(--bar);flex-shrink:0;}
+.layer-hint{min-height:28px;padding:4px 8px;border-bottom:1px solid var(--borderl);display:flex;
+  align-items:center;justify-content:space-between;gap:6px;font-size:9px;color:var(--muted);
+  background:var(--bar);flex-shrink:0;line-height:1.3;}
 #objList{flex:1;overflow-y:auto;padding:0;touch-action:pan-y;}
-.obj-item{display:flex;align-items:center;gap:5px;padding:5px 7px;min-height:30px;
+.layer-item{display:flex;align-items:center;gap:5px;padding:5px 6px;min-height:36px;
   cursor:pointer;font-size:11px;border-bottom:1px solid var(--borderl);border-left:3px solid transparent;}
-.obj-item:hover{background:var(--hover);}
-.obj-item.selected{background:var(--active);border-left-color:var(--accent);color:var(--accent);font-weight:500;}
-.obj-layer-index{width:18px;flex-shrink:0;text-align:center;font-size:9px;color:var(--muted);font-variant-numeric:tabular-nums;}
-.obj-icon{font-size:12px;flex-shrink:0;width:16px;text-align:center;}
-.obj-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px;}
-.obj-lock{width:24px;height:24px;border:1px solid transparent;border-radius:4px;background:transparent;
-  display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:12px;line-height:1;
-  color:var(--muted);flex-shrink:0;padding:0;}
-.obj-lock:hover{background:var(--hover);border-color:var(--border);}
-.obj-lock.locked{color:var(--accent);background:var(--active);border-color:var(--accent);}
-.obj-item.locked .obj-name{color:var(--muted);}
-.obj-del{width:22px;height:22px;display:flex;align-items:center;justify-content:center;background:transparent;border:1px solid transparent;color:var(--muted);
-  cursor:pointer;font-size:11px;padding:0;border-radius:4px;flex-shrink:0;}
-.obj-del:hover{color:#c00;background:var(--hover);border-color:var(--border);}
+.layer-item:hover{background:var(--hover);}
+.layer-item.active{background:var(--active);border-left-color:var(--accent);color:var(--accent);font-weight:600;}
+.layer-item.hidden-layer .layer-name{opacity:.45;text-decoration:line-through;}
+.layer-item.locked-layer .layer-name::after{content:'  🔒';font-size:9px;}
+.layer-eye,.layer-lock,.layer-move-objects{width:26px;height:26px;border:1px solid transparent;border-radius:4px;background:transparent;
+  display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:13px;line-height:1;color:var(--muted);flex-shrink:0;padding:0;}
+.layer-eye:hover,.layer-lock:hover,.layer-move-objects:hover{background:var(--hover);border-color:var(--border);}
+.layer-eye.off{opacity:.45;}
+.layer-lock.on{color:var(--accent);background:var(--active);border-color:var(--accent);}
+.layer-move-objects{font-size:12px;color:var(--accent);}
+.layer-move-objects:disabled{opacity:.25;cursor:default;background:transparent;border-color:transparent;}
+.layer-info{min-width:0;flex:1;display:flex;flex-direction:column;gap:2px;}
+.layer-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10.5px;color:inherit;}
+.layer-meta{font-size:8.5px;color:var(--muted);font-weight:400;}
 [data-theme="dark"] .layer-btn{background:transparent;color:var(--text);border-color:var(--borderl);}
 [data-theme="dark"] .layer-btn:hover{background:var(--hover);}
 
@@ -750,21 +750,21 @@ canvas{display:block;}
     </div>
   </div>
 
-  <!-- 레이어 / 객체 목록 패널 -->
+  <!-- 캔버스 레이어 패널: 각 PDF 페이지(캔버스)마다 독립적으로 관리 -->
   <div class="obj-panel" id="objPanel">
     <div class="obj-panel-header">
       <span class="obj-panel-title">▱ 레이어</span>
       <div style="display:flex;align-items:center;gap:6px">
         <div class="layer-btns">
-          <button class="layer-btn" onclick="moveLayerUp()" title="한 단계 위 레이어로 (Ctrl+])" aria-label="위 레이어로">↑</button>
-          <button class="layer-btn" onclick="moveLayerDown()" title="한 단계 아래 레이어로 (Ctrl+[)" aria-label="아래 레이어로">↓</button>
-          <button class="layer-btn" onclick="duplicateSelected()" title="선택 객체 복제 (Ctrl+D)" aria-label="복제">⧉</button>
-          <button class="layer-btn danger" onclick="deleteSelected()" title="선택 객체 삭제 (Delete)" aria-label="삭제">✕</button>
+          <button class="layer-btn" onclick="addCanvasLayer()" title="새 레이어 추가" aria-label="새 레이어 추가">＋</button>
+          <button class="layer-btn danger" onclick="deleteActiveLayer()" title="현재 레이어 삭제" aria-label="현재 레이어 삭제">−</button>
+          <button class="layer-btn" onclick="moveActiveLayerUp()" title="현재 레이어를 위로" aria-label="레이어 위로">↑</button>
+          <button class="layer-btn" onclick="moveActiveLayerDown()" title="현재 레이어를 아래로" aria-label="레이어 아래로">↓</button>
         </div>
         <button class="mobile-panel-close" onclick="closeMobilePanels()" aria-label="닫기">✕</button>
       </div>
     </div>
-    <div class="layer-hint"><span>위쪽 = 앞 레이어</span><span id="layerCount">0개</span></div>
+    <div class="layer-hint"><span>레이어 선택 = 새 객체 입력 위치<br>⇥ = 선택 객체를 해당 레이어로 이동</span><span id="layerCount">0</span></div>
     <div id="objList"></div>
   </div>
 </div>
@@ -985,8 +985,8 @@ canvas{display:block;}
   <div class="ctx-item" onclick="ctxAction('paste')">붙여넣기 <span class="ctx-key">Ctrl+V</span></div>
   <div class="ctx-item" onclick="ctxAction('duplicate')">복제 <span class="ctx-key">Ctrl+D</span></div>
   <div class="ctx-sep"></div>
-  <div class="ctx-item" onclick="ctxAction('bringUp')">위 레이어 <span class="ctx-key">Ctrl+]</span></div>
-  <div class="ctx-item" onclick="ctxAction('sendDown')">아래 레이어 <span class="ctx-key">Ctrl+[</span></div>
+  <div class="ctx-item" onclick="ctxAction('bringUp')">선택 객체를 위 레이어로 <span class="ctx-key">Ctrl+]</span></div>
+  <div class="ctx-item" onclick="ctxAction('sendDown')">선택 객체를 아래 레이어로 <span class="ctx-key">Ctrl+[</span></div>
   <div class="ctx-sep"></div>
   <div class="ctx-item" onclick="ctxAction('undo')">실행 취소 <span class="ctx-key">Ctrl+Z</span></div>
   <div class="ctx-item" onclick="ctxAction('redo')">다시 실행 <span class="ctx-key">Ctrl+Y</span></div>
@@ -1001,7 +1001,8 @@ const A4_W=794, A4_H=1123; // 96dpi 기준 A4 (210×297mm)
 const DPR=Math.min(window.devicePixelRatio||1,2);
 
 // ════════════ 상태 ════════════
-// 페이지 구조: pages = [{bg:ImageData, objs:[], undoSt:[], redoSt:[], width, height}, ...]
+// 페이지 구조: pages = [{bg, objs:[], layers:[], activeLayerId, undoSt:[], redoSt:[], width, height}, ...]
+// 레이어는 객체별 UI가 아니라 페이지(캔버스) 단위로 관리하며, 각 객체는 layerId로 소속 레이어만 참조한다.
 let pages=[];
 let curPageIdx=0;
 let isDirty=false;
@@ -1019,6 +1020,47 @@ let objs=[]; // 현재 페이지의 objs에 대한 참조 (항상 syncObjs() 후
 
 function syncObjs(){
   objs=pages[curPageIdx]?.objs||[];
+}
+
+// ════════════ 캔버스 레이어 데이터 모델 ════════════
+let layerSeq=0;
+function makeLayerId(){return 'lyr_'+Date.now().toString(36)+'_'+(++layerSeq).toString(36);}
+function makeLayer(name){return {id:makeLayerId(),name:name||'레이어',visible:true,locked:false};}
+function ensurePageLayers(pg){
+  if(!pg)return null;
+  if(!Array.isArray(pg.layers)||!pg.layers.length){
+    const base=makeLayer('레이어 1');pg.layers=[base];pg.activeLayerId=base.id;
+  }
+  // 예전 파일/버전에서 넘어온 객체는 현재 활성 레이어로 이관하고, 객체별 잠금은 폐기한다.
+  if(!pg.layers.some(l=>l.id===pg.activeLayerId))pg.activeLayerId=pg.layers[pg.layers.length-1].id;
+  const valid=new Set(pg.layers.map(l=>l.id));
+  for(const o of (pg.objs||[])){
+    if(!valid.has(o.layerId))o.layerId=pg.activeLayerId;
+    if(Object.prototype.hasOwnProperty.call(o,'locked'))delete o.locked;
+  }
+  return pg;
+}
+function activeLayer(pg=page()){pg=ensurePageLayers(pg);return pg?.layers.find(l=>l.id===pg.activeLayerId)||null;}
+function layerById(id,pg=page()){pg=ensurePageLayers(pg);return pg?.layers.find(l=>l.id===id)||null;}
+function layerOfObj(o,pg=page()){pg=ensurePageLayers(pg);return o?layerById(o.layerId,pg):null;}
+function isObjVisible(o,pg=page()){const l=layerOfObj(o,pg);return !!l&&l.visible!==false;}
+function isObjEditable(o,pg=page()){const l=layerOfObj(o,pg);return !!l&&l.visible!==false&&!l.locked;}
+function orderedObjs(pg=page(),visibleOnly=false){
+  pg=ensurePageLayers(pg);if(!pg)return[];
+  const out=[];
+  for(const l of pg.layers){
+    if(visibleOnly&&l.visible===false)continue;
+    for(const o of pg.objs)if(o.layerId===l.id)out.push(o);
+  }
+  return out;
+}
+function visibleObjs(pg=page()){return orderedObjs(pg,true);}
+function canCreateOnActiveLayer(){const l=activeLayer();return !!l&&l.visible!==false&&!l.locked;}
+function layerBlockedMessage(){
+  const l=activeLayer();
+  const msg=!l?'레이어가 없습니다.':l.visible===false?'현재 레이어가 숨겨져 있습니다.':l.locked?'현재 레이어가 잠겨 있습니다.':'';
+  if(msg)document.getElementById('statusObj').textContent=msg;
+  return !!msg;
 }
 
 // ════════════ 객체/캔버스 변수 ════════════
@@ -1091,7 +1133,7 @@ function insertMusicSymbolAt(x,y){
   // 도형을 넣은 뒤에도 일반 텍스트의 폰트/크기 상태가 바뀌지 않도록 한다.
   const fsi=document.getElementById('fontSizeInput');
   const fontSize=Math.max(6,parseInt(fsi?.value,10)||fSz||16);
-  const no={id:mkId(),type:'text',x,y,text:txt,fontFamily,fontSize,bold:false,italic:false,underline:false,boxed:false,
+  const no={id:mkId(),type:'text',x,y,text:txt,fontFamily,fontSize,layerId:activeLayer()?.id,bold:false,italic:false,underline:false,boxed:false,
     color:fgH,alpha:fgA,_edW:Math.max(80,fontSize*Math.max([...txt].length,1)*0.95),_edH:Math.max(28,fontSize*1.25),
     musicSymbol:true,symbolKey:def.key,symbolLabel:def.label};
   get_objs().push(no);setSelection([no.id]);saveH();renderAll();refreshObjList();
@@ -1265,11 +1307,14 @@ function addBlankPage(doRender=true){
     bg:null, // 배경 이미지 (PDF 페이지 래스터)
     bgImg:null, // Image 객체
     objs:[],
-    undoSt:[[]],redoSt:[], // 빈 상태를 히스토리 시작점으로 기록 (첫 조작을 한 번의 undo로 취소 가능하도록)
+    layers:[],activeLayerId:null,
+    undoSt:[],redoSt:[],
     width:A4_W, height:A4_H,
     srcDocId:null, // 원본 PDF 없음
     srcPdfPage:null // 원본 PDF 없음 → 저장 시 래스터 처리
   };
+  ensurePageLayers(pg);
+  pg.undoSt=[snapPageState(pg)];
   pages.push(pg);
   if(doRender){
     goToPage(pages.length-1);
@@ -1298,6 +1343,7 @@ function goToPage(idx){
   if(idx<0||idx>=pages.length)return;
   curPageIdx=idx;
   syncObjs();
+  ensurePageLayers(page());
   selId=null;
   CW=pages[curPageIdx].width||A4_W;
   CH=pages[curPageIdx].height||A4_H;
@@ -1651,7 +1697,7 @@ function clearSel(){SV.innerHTML='';selId=null;selIds=[];}
 function selObj(id){
   setSelection(id==null?[]:[id]);
   const o=id!=null?get_objs().find(x=>x.id===id):null;
-  document.getElementById('statusObj').textContent=o?`선택: ${o.type==='text'&&o.musicSymbol?'도형':o.type==='text'?'텍스트':o.type==='shape'?'도형':o.type==='stroke'?'획':'이미지'} #${id}${o.locked?' · 🔒 위치 잠금':''}`:'';
+  document.getElementById('statusObj').textContent=o?`선택: ${o.type==='text'&&o.musicSymbol?'도형':o.type==='text'?'텍스트':o.type==='shape'?'도형':o.type==='stroke'?'획':'이미지'} #${id} · ${layerOfObj(o)?.name||'레이어'}`:'';
   refreshObjList();
   renderAll();
 }
@@ -1666,9 +1712,10 @@ function getPos(e){
 }
 
 function hitTest(xi,yi){
-  const os=get_objs();
+  const os=orderedObjs(page(),true);
   for(let i=os.length-1;i>=0;i--){
     const o=os[i];
+    if(!isObjEditable(o))continue; // 숨김/잠김 레이어의 객체는 캔버스에서 선택·편집하지 않음
     const b=getBounds(o);
     if(!b)continue;
     if(xi>=b.x&&xi<=b.x+b.w&&yi>=b.y&&yi<=b.y+b.h)return o;
@@ -1680,7 +1727,8 @@ function hitTest(xi,yi){
 function objsInRect(rx,ry,rw,rh){
   const rx2=rx+rw, ry2=ry+rh;
   const res=[];
-  for(const o of get_objs()){
+  for(const o of orderedObjs(page(),true)){
+    if(!isObjEditable(o))continue;
     const b=getBounds(o);if(!b)continue;
     // 바운딩 박스가 마퀴와 겹치면 선택
     if(b.x<rx2 && b.x+b.w>rx && b.y<ry2 && b.y+b.h>ry)res.push(o.id);
@@ -1688,56 +1736,99 @@ function objsInRect(rx,ry,rw,rh){
   return res;
 }
 
-// ════════════ 객체 목록 ════════════
+// ════════════ 캔버스 레이어 UI / 관리 ════════════
 function refreshObjList(){
   updateUndoRedoUI();
-  const list=document.getElementById('objList');
+  const pg=ensurePageLayers(page());
+  const list=document.getElementById('objList');if(!list)return;
   list.innerHTML='';
-  const os=get_objs();
-  const lc=document.getElementById('layerCount');if(lc)lc.textContent=os.length+'개';
-  const icons={stroke:'✏️',shape:'⬡',image:'🖼️',text:'T'};
-  const names={stroke:'획',shape:'도형',image:'이미지',text:'텍스트'};
-  [...os].reverse().forEach((o,layerIdx)=>{
+  if(!pg)return;
+  const lc=document.getElementById('layerCount');if(lc)lc.textContent=pg.layers.length+'개';
+  [...pg.layers].reverse().forEach((l,revIdx)=>{
     const div=document.createElement('div');
-    div.className='obj-item'+(isSel(o.id)?' selected':'')+(o.locked?' locked':'');
-    const layerNo=document.createElement('span');layerNo.className='obj-layer-index';layerNo.textContent=String(layerIdx+1);layerNo.title='앞에서 '+(layerIdx+1)+'번째 레이어';
-    const icon=document.createElement('span');icon.className='obj-icon';
-    icon.textContent=(o.type==='text'&&o.musicSymbol)?'♪':(icons[o.type]||'•');
-    const name=document.createElement('span');name.className='obj-name';
-    let lbl='';
-    if(o.type==='text'&&o.musicSymbol)lbl=`${o.symbolLabel||'도형'} ${o.text||''}`.trim();
-    else if(o.type==='text')lbl='"'+(o.text||'').slice(0,12)+'"';
-    else if(o.type==='shape')lbl=o.shape==='staff'?'오선':(o.shape||'');
-    else if(o.type==='stroke')lbl=o.eraser?'지우개':o.highlight?'형광펜':(o.strokeWidth||2)+'px';
-    name.textContent=(o.type==='text'&&o.musicSymbol)?`도형 ${lbl}`:`${names[o.type]||o.type} ${lbl}`;
-    const lock=document.createElement('button');lock.className='obj-lock'+(o.locked?' locked':'');
-    lock.textContent=o.locked?'🔒':'🔓';
-    lock.title=o.locked?'위치 잠금 해제':'위치 잠금';
-    lock.setAttribute('aria-label',lock.title);
-    lock.onclick=e=>toggleObjLock(o.id,e);
-    const del=document.createElement('button');del.className='obj-del';
-    del.textContent='✕';
-    del.onclick=e=>{e.stopPropagation();removeObj(o.id);};
-    div.appendChild(layerNo);div.appendChild(icon);div.appendChild(name);div.appendChild(lock);div.appendChild(del);
-    div.onclick=e=>{
-      if(e.shiftKey||e.ctrlKey||e.metaKey){addToSelection(o.id);refreshObjList();renderAll();}
-      else selObj(o.id);
-    };
-    if(o.type==='text')div.ondblclick=e=>{e.stopPropagation();selObj(o.id);openTed(o.x,o.y,o);};
+    div.className='layer-item'+(l.id===pg.activeLayerId?' active':'')+(l.visible===false?' hidden-layer':'')+(l.locked?' locked-layer':'');
+    div.title='클릭: 활성 레이어 · 더블클릭: 이름 변경';
+
+    const eye=document.createElement('button');eye.className='layer-eye'+(l.visible===false?' off':'');
+    eye.textContent=l.visible===false?'○':'◉';eye.title=l.visible===false?'레이어 보기':'레이어 숨기기';
+    eye.onclick=e=>toggleLayerVisible(l.id,e);
+
+    const info=document.createElement('div');info.className='layer-info';
+    const nm=document.createElement('div');nm.className='layer-name';nm.textContent=l.name||'레이어';
+    const count=pg.objs.filter(o=>o.layerId===l.id).length;
+    const meta=document.createElement('div');meta.className='layer-meta';meta.textContent=`${count}개 객체 · ${revIdx===0?'맨 위':'위에서 '+(revIdx+1)+'번째'}`;
+    info.append(nm,meta);
+
+    const move=document.createElement('button');move.className='layer-move-objects';move.textContent='⇥';
+    move.title='선택 객체를 이 레이어로 이동';move.disabled=!selIds.length||l.locked||l.visible===false;
+    move.onclick=e=>moveSelectedToLayer(l.id,e);
+
+    const lock=document.createElement('button');lock.className='layer-lock'+(l.locked?' on':'');
+    lock.textContent=l.locked?'🔒':'🔓';lock.title=l.locked?'레이어 잠금 해제':'레이어 잠금';
+    lock.onclick=e=>toggleLayerLock(l.id,e);
+
+    div.append(eye,info,move,lock);
+    div.onclick=()=>setActiveLayer(l.id);
+    div.ondblclick=e=>{if(e.target.closest('button'))return;e.stopPropagation();renameLayer(l.id);};
     list.appendChild(div);
   });
 }
-
-function toggleObjLock(id,e){
-  e&&e.stopPropagation();
-  const o=get_objs().find(x=>x.id===id);
-  if(!o)return;
-  o.locked=!o.locked;
-  if(o.locked&&isSel(id)&&dragging){dragging=false;HC.style.cursor='default';}
+function setActiveLayer(id){
+  const pg=ensurePageLayers(page());if(!pg||!pg.layers.some(l=>l.id===id))return;
+  pg.activeLayerId=id;refreshObjList();
+  document.getElementById('statusObj').textContent='활성 레이어: '+(layerById(id,pg)?.name||'레이어');
+}
+function addCanvasLayer(){
+  const pg=ensurePageLayers(page());if(!pg)return;
+  const n=makeLayer('레이어 '+(pg.layers.length+1));pg.layers.push(n);pg.activeLayerId=n.id;
   saveH();renderAll();refreshObjList();
-  if(selId===id){
-    document.getElementById('statusObj').textContent=`선택: ${o.type==='text'&&o.musicSymbol?'도형':o.type==='text'?'텍스트':o.type==='shape'?'도형':o.type==='stroke'?'획':'이미지'} #${id}${o.locked?' · 🔒 위치 잠금':''}`;
-  }
+}
+function deleteActiveLayer(){
+  const pg=ensurePageLayers(page());if(!pg||pg.layers.length<=1){alert('최소 1개의 레이어는 필요합니다.');return;}
+  const i=pg.layers.findIndex(l=>l.id===pg.activeLayerId);if(i<0)return;
+  const target=pg.layers[i>0?i-1:i+1];
+  const cnt=pg.objs.filter(o=>o.layerId===pg.activeLayerId).length;
+  if(cnt&& !confirm(`현재 레이어의 ${cnt}개 객체를 “${target.name}” 레이어로 이동한 뒤 레이어를 삭제할까요?`))return;
+  pg.objs.forEach(o=>{if(o.layerId===pg.activeLayerId)o.layerId=target.id;});
+  pg.layers.splice(i,1);pg.activeLayerId=target.id;clearSel();saveH();renderAll();refreshObjList();
+}
+function moveActiveLayerUp(){
+  const pg=ensurePageLayers(page());if(!pg)return;const i=pg.layers.findIndex(l=>l.id===pg.activeLayerId);
+  if(i>=0&&i<pg.layers.length-1){[pg.layers[i],pg.layers[i+1]]=[pg.layers[i+1],pg.layers[i]];saveH();renderAll();refreshObjList();}
+}
+function moveActiveLayerDown(){
+  const pg=ensurePageLayers(page());if(!pg)return;const i=pg.layers.findIndex(l=>l.id===pg.activeLayerId);
+  if(i>0){[pg.layers[i],pg.layers[i-1]]=[pg.layers[i-1],pg.layers[i]];saveH();renderAll();refreshObjList();}
+}
+function toggleLayerVisible(id,e){
+  e&&e.stopPropagation();const pg=ensurePageLayers(page()),l=layerById(id,pg);if(!l)return;
+  l.visible=l.visible===false?true:false;
+  if(l.visible===false){setSelection(selIds.filter(oid=>{const o=pg.objs.find(x=>x.id===oid);return o&&o.layerId!==id;}));}
+  saveH();renderAll();refreshObjList();
+}
+function toggleLayerLock(id,e){
+  e&&e.stopPropagation();const pg=ensurePageLayers(page()),l=layerById(id,pg);if(!l)return;
+  l.locked=!l.locked;
+  if(l.locked){setSelection(selIds.filter(oid=>{const o=pg.objs.find(x=>x.id===oid);return o&&o.layerId!==id;}));dragging=false;}
+  saveH();renderAll();refreshObjList();
+}
+function renameLayer(id){
+  const pg=ensurePageLayers(page()),l=layerById(id,pg);if(!l)return;
+  const v=prompt('레이어 이름',l.name||'레이어');if(v==null)return;const t=v.trim();if(!t)return;
+  l.name=t;saveH();refreshObjList();
+}
+function moveSelectedToLayer(id,e){
+  e&&e.stopPropagation();const pg=ensurePageLayers(page()),target=layerById(id,pg);if(!target||target.locked||target.visible===false||!selIds.length)return;
+  let moved=0;
+  for(const oid of selIds){const o=pg.objs.find(x=>x.id===oid);if(o&&isObjEditable(o,pg)&&o.layerId!==id){o.layerId=id;moved++;}}
+  if(moved){pg.activeLayerId=id;saveH();renderAll();refreshObjList();document.getElementById('statusObj').textContent=`${moved}개 객체 → ${target.name}`;}
+}
+function moveSelectedToAdjacentLayer(dir){
+  const pg=ensurePageLayers(page());if(!pg||!selIds.length)return;
+  const first=pg.objs.find(o=>o.id===selId)||pg.objs.find(o=>selIds.includes(o.id));if(!first)return;
+  const i=pg.layers.findIndex(l=>l.id===first.layerId);const ni=i+(dir>0?1:-1);if(ni<0||ni>=pg.layers.length)return;
+  const target=pg.layers[ni];if(target.locked||target.visible===false)return;
+  moveSelectedToLayer(target.id);
 }
 
 function removeObj(id){
@@ -1750,72 +1841,46 @@ function removeObj(id){
 }
 
 // ════════════ 실행 취소/다시 실행 ════════════
-function snapObjs(){
-  return get_objs().map(o=>{
-    const c=Object.assign({},o);
-    if(o.type==='stroke')c.points=[...o.points];
-    return c;
-  });
+function cloneHistObj(o){
+  const c=Object.assign({},o);if(o.type==='stroke')c.points=(o.points||[]).map(p=>({...p}));return c;
 }
-
-function restoreObjs(snap){
-  pages[curPageIdx].objs=snap.map(o=>{
-    if(o.type==='image'&&o._imgRef){const c=Object.assign({},o);c.img=o._imgRef;return c;}
-    return Object.assign({},o);
-  });
+function snapPageState(pg=page()){
+  pg=ensurePageLayers(pg);if(!pg)return null;
+  return {objs:pg.objs.map(cloneHistObj),layers:pg.layers.map(l=>({...l})),activeLayerId:pg.activeLayerId};
+}
+function restorePageState(snap,pg=page()){
+  if(!pg||!snap)return;
+  // 0.7.x 히스토리(객체 배열)도 현재 세션에서 안전하게 복원
+  if(Array.isArray(snap)){pg.objs=snap.map(cloneHistObj);ensurePageLayers(pg);}
+  else{pg.objs=(snap.objs||[]).map(cloneHistObj);pg.layers=(snap.layers||[]).map(l=>({...l}));pg.activeLayerId=snap.activeLayerId;ensurePageLayers(pg);}
   syncObjs();
 }
-
 function saveH(){
-  const pg=pages[curPageIdx];if(!pg)return;
-  pg.undoSt.push(snapObjs());
-  if(pg.undoSt.length>50)pg.undoSt.shift();
-  pg.redoSt=[];
-  markDirty();
-  refreshObjList();
+  const pg=ensurePageLayers(page());if(!pg)return;
+  pg.undoSt=Array.isArray(pg.undoSt)?pg.undoSt:[];
+  pg.undoSt.push(snapPageState(pg));if(pg.undoSt.length>50)pg.undoSt.shift();
+  pg.redoSt=[];markDirty();refreshObjList();
 }
-
-// 실행 취소/다시 실행 버튼의 활성·비활성 상태를 현재 페이지의 히스토리에 맞춰 갱신
 function updateUndoRedoUI(){
-  const pg=pages[curPageIdx];
-  const undoBtn=document.getElementById('btn-undo');
-  const redoBtn=document.getElementById('btn-redo');
-  if(undoBtn)undoBtn.disabled=!pg||pg.undoSt.length<2;
-  if(redoBtn)redoBtn.disabled=!pg||!pg.redoSt.length;
+  const pg=page();const undoBtn=document.getElementById('btn-undo'),redoBtn=document.getElementById('btn-redo');
+  if(undoBtn)undoBtn.disabled=!pg||!Array.isArray(pg.undoSt)||pg.undoSt.length<2;
+  if(redoBtn)redoBtn.disabled=!pg||!Array.isArray(pg.redoSt)||!pg.redoSt.length;
 }
-
 function undo(){
-  const pg=pages[curPageIdx];
-  // undoSt의 마지막 항목은 항상 "현재 화면 상태"와 같음(saveH가 조작 직후에 기록하므로).
-  // 따라서 실제 이전 상태로 가려면 그 중복 항목을 먼저 버리고, 그 아래 있는 진짜 이전 상태로 복원해야 함.
-  if(!pg||pg.undoSt.length<2)return;
-  const current=pg.undoSt.pop(); // 현재 상태(중복 기록) 제거
-  pg.redoSt.push(current);
-  restoreObjs(pg.undoSt[pg.undoSt.length-1]); // 이제 마지막이 된 진짜 이전 상태로 복원
-  selId=null;clearSel();renderAll();refreshObjList();
+  const pg=page();if(!pg||!pg.undoSt||pg.undoSt.length<2)return;
+  const current=pg.undoSt.pop();pg.redoSt.push(current);restorePageState(pg.undoSt[pg.undoSt.length-1],pg);
+  clearSel();renderAll();refreshObjList();
 }
-
 function redo(){
-  const pg=pages[curPageIdx];if(!pg||!pg.redoSt.length)return;
-  const next=pg.redoSt.pop();
-  pg.undoSt.push(next);
-  restoreObjs(next);
-  selId=null;clearSel();renderAll();refreshObjList();
+  const pg=page();if(!pg||!pg.redoSt||!pg.redoSt.length)return;
+  const next=pg.redoSt.pop();pg.undoSt.push(next);restorePageState(next,pg);
+  clearSel();renderAll();refreshObjList();
 }
 
-// ════════════ 레이어 ════════════
-function moveLayerUp(){
-  if(!selId)return;
-  const os=get_objs();
-  const i=os.findIndex(o=>o.id===selId);
-  if(i<os.length-1){[os[i],os[i+1]]=[os[i+1],os[i]];saveH();renderAll();refreshObjList();}
-}
-function moveLayerDown(){
-  if(!selId)return;
-  const os=get_objs();
-  const i=os.findIndex(o=>o.id===selId);
-  if(i>0){[os[i],os[i-1]]=[os[i-1],os[i]];saveH();renderAll();refreshObjList();}
-}
+// ════════════ 객체 레이어 이동 / 복제 ════════════
+
+function moveLayerUp(){moveSelectedToAdjacentLayer(1);}
+function moveLayerDown(){moveSelectedToAdjacentLayer(-1);}
 function offsetClone(o,d=15){
   const c=cloneObj(o);
   if(c.type==='stroke')c.points=c.points.map(p=>({x:p.x+d,y:p.y+d}));
@@ -1836,6 +1901,7 @@ function deleteSelected(){
   const pg=pages[curPageIdx];if(!pg)return;
   pg.objs=pg.objs.filter(o=>!ids.has(o.id));
   syncObjs();
+  ensurePageLayers(page());
   clearSel();
   saveH();renderAll();refreshObjList();
   document.getElementById('statusObj').textContent='';
@@ -2016,7 +2082,7 @@ function commitT(){
     const ins=ed._savedIdx!=null?Math.min(ed._savedIdx,get_objs().length):get_objs().length;
     get_objs().splice(ins,0,o);setSelection([o.id]);
   } else {
-    const no=Object.assign({id:mkId(),type:'text',x:ed._x,y:ed._y,text:val},props);
+    const no=Object.assign({id:mkId(),type:'text',x:ed._x,y:ed._y,text:val,layerId:activeLayer()?.id},props);
     get_objs().push(no);setSelection([no.id]);
   }
 
@@ -2050,7 +2116,7 @@ document.addEventListener('mouseup',()=>{
 function moveSelectedObjsBy(dx,dy){
   let moved=0;
   selectedObjs().forEach(o=>{
-    if(o.locked)return; // 위치 잠금 객체는 다중 선택 안에서도 제자리에 유지
+    if(!isObjEditable(o))return; // 잠김/숨김 레이어의 객체는 편집 불가
     if(o.type==='stroke')o.points=o.points.map(p=>({x:p.x+dx,y:p.y+dy}));
     else if(o.type==='shape'){o.x1+=dx;o.y1+=dy;o.x2+=dx;o.y2+=dy;}
     else if(o.type==='image'){o.x+=dx;o.y+=dy;}
@@ -2064,6 +2130,8 @@ function onDown(e){
   if(isPinching)return; // 핀치 줌 도중에는 그리기/선택 동작을 시작하지 않음
   const{x,y}=getPos(e);const xi=Math.round(x),yi=Math.round(y);
   if(actTed){commitT();return;}
+
+  if(tool!=='select2'&&['text','musicSymbol','pencil','eraser','highlight','line','rect','ellipse','arrow','staff'].includes(tool) && !canCreateOnActiveLayer()){layerBlockedMessage();return;}
 
   if(tool==='text'){
     openTed(xi,yi);return;
@@ -2081,15 +2149,8 @@ function onDown(e){
         // 곧바로 드래그로 이어지지 않게 해 오선택/의도치 않은 이동을 방지한다.
         addToSelection(hit.id);
         refreshObjList();renderAll();
-        HC.style.cursor=hit.locked?'not-allowed':'move';
+        HC.style.cursor='move';
         return;
-      }
-      // 위치 잠금 객체는 선택은 가능하지만 Ctrl/Cmd+드래그 복제나 이동을 시작하지 않는다.
-      // (복제를 먼저 실행하면 잠긴 원본을 Ctrl+드래그했을 때 복제본이 생기는 문제가 있음)
-      if(hit.locked){
-        if(!isSel(hit.id))setSelection([hit.id]);
-        document.getElementById('statusObj').textContent=`선택: ${hit.type==='text'&&hit.musicSymbol?'도형':hit.type==='text'?'텍스트':hit.type==='shape'?'도형':hit.type==='stroke'?'획':'이미지'} #${hit.id} · 🔒 위치 잠금`;
-        refreshObjList();renderAll();HC.style.cursor='not-allowed';return;
       }
       if((e.ctrlKey||e.metaKey)){
         // Ctrl/Cmd+드래그: 원본은 그대로 두고 복제본을 이동 (다중 선택이면 전체 복제)
@@ -2112,13 +2173,13 @@ function onDown(e){
   // 그리기 도구
   drawing=true;dSX=xi;dSY=yi;
   if(tool==='pencil'||tool==='eraser'||tool==='highlight'){
-    const s={id:mkId(),type:'stroke',points:[{x:xi,y:yi}],
+    const s={id:mkId(),type:'stroke',points:[{x:xi,y:yi}],layerId:activeLayer()?.id,
       color:tool==='highlight'?bgH:fgH,strokeWidth:tool==='highlight'?20:strokeW,
       alpha:tool==='highlight'?bgA:fgA,
       eraser:tool==='eraser',highlight:tool==='highlight'};
     get_objs().push(s);actStroke=s;
   } else if(['line','rect','ellipse','arrow','staff'].includes(tool)){
-    const s={id:mkId(),type:'shape',shape:tool,x1:xi,y1:yi,x2:xi,y2:yi,
+    const s={id:mkId(),type:'shape',shape:tool,x1:xi,y1:yi,x2:xi,y2:yi,layerId:activeLayer()?.id,
       color:fgH,strokeWidth:tool==='staff'?Math.max(0.5,strokeW/2):strokeW,alpha:fgA,fill:shapeFill,
       bgColor:bgH,bgAlpha:bgA};
     get_objs().push(s);actShape=s;
@@ -2184,7 +2245,7 @@ function onMove(e){
 
   if(tool==='select2'){
     const h=hitTest(xi,yi);
-    HC.style.cursor=h?(h.locked?'not-allowed':'move'):'default';
+    HC.style.cursor=h?'move':'default';
   }
 }
 
@@ -2803,11 +2864,12 @@ async function loadPDFFromFile(file, append=false, insertAt=null){
         console.warn('페이지 '+p+' 주석을 읽는 중 오류:',err);
       }
 
-      const pageObj={bg:null,bgImg,bgDataUrl:bgImg.src,objs:importedObjs,
-        undoSt:[importedObjs.map(o=>o.type==='stroke'?{...o,points:[...o.points]}:{...o})],redoSt:[],
+      const pageObj={bg:null,bgImg,bgDataUrl:bgImg.src,objs:importedObjs,layers:[],activeLayerId:null,
+        undoSt:[],redoSt:[],
         width:pw,height:ph,
         srcDocId:docId,      // 이 페이지가 어느 원본 PDF에서 왔는지
         srcPdfPage:p-1};     // 그 원본에서의 0-based 페이지 인덱스
+      ensurePageLayers(pageObj);pageObj.undoSt=[snapPageState(pageObj)];
       if(insertAt!=null){
         pages.splice(nextInsertIdx,0,pageObj);
         nextInsertIdx++;
@@ -2863,7 +2925,7 @@ function renderPageIndex(){
     // 객체 썸네일 렌더
     const scaleX=THUMB_W/pg.width, scaleY=THUMB_H/pg.height;
     tc.save();tc.scale(scaleX,scaleY);
-    pg.objs.forEach(o=>drawO(tc,o));
+    visibleObjs(pg).forEach(o=>drawO(tc,o));
     tc.restore();
 
     const label=document.createElement('div');
@@ -2891,7 +2953,7 @@ function updatePageThumb(idx){
   tc.fillStyle='#fff';tc.fillRect(0,0,THUMB_W,THUMB_H);
   if(pg.bgImg)tc.drawImage(pg.bgImg,0,0,THUMB_W,THUMB_H);
   const sx=THUMB_W/pg.width,sy=THUMB_H/pg.height;
-  tc.save();tc.scale(sx,sy);pg.objs.forEach(o=>drawO(tc,o));tc.restore();
+  tc.save();tc.scale(sx,sy);visibleObjs(pg).forEach(o=>drawO(tc,o));tc.restore();
 }
 
 // 화면 렌더 + 인덱스 썸네일 갱신
@@ -2900,7 +2962,7 @@ function renderAll(){
   drawBG();
   const pg=pages[curPageIdx];
   if(!pg)return;
-  pg.objs.forEach(o=>drawO(ctx,o));
+  visibleObjs(pg).forEach(o=>drawO(ctx,o));
   drawSel();
   // 썸네일 비동기 갱신
   setTimeout(()=>updatePageThumb(curPageIdx),50);
@@ -2927,7 +2989,7 @@ const loadJsPDF=()=>loadScriptOnce(JSPDF_CDN,()=>!!window.jspdf);
 // 페이지의 "주석만" 투명 캔버스에 렌더 → dataURL (없으면 null)
 function renderAnnotationsPNG(pg){
   // 실제로 그릴 주석이 있는지 확인 (지우개만 있고 지울 대상이 없으면 사실상 빈 오버레이)
-  const hasNonEraser=(pg.objs||[]).some(o=>!(o.type==='stroke'&&o.eraser));
+  const hasNonEraser=visibleObjs(pg).some(o=>!(o.type==='stroke'&&o.eraser));
   if(!hasNonEraser)return null;
   const tmp=document.createElement('canvas');
   tmp.width=pg.width;tmp.height=pg.height;
@@ -2936,7 +2998,7 @@ function renderAnnotationsPNG(pg){
   // 지우개도 함께 그려서 화면에서 지운 효과가 저장된 PDF에도 그대로 반영되게 함.
   // 이 오버레이는 원본 PDF 페이지와 완전히 분리된 투명 레이어이므로, 지우개가
   // 여기서 다른 주석 객체를 지워도 원본 PDF의 실제 벡터 내용은 전혀 영향받지 않는다.
-  (pg.objs||[]).forEach(o=>drawO(tc,o,false,true));
+  visibleObjs(pg).forEach(o=>drawO(tc,o,false,true));
   editingId=prevEditing;
   return tmp.toDataURL('image/png');
 }
@@ -2952,7 +3014,7 @@ function renderFullPNG(pg,scale=1,format='image/png',quality){
   if(scale!==1)tc.scale(scale,scale);
   if(pg.bgImg)tc.drawImage(pg.bgImg,0,0,pg.width,pg.height);
   const prevEditing=editingId; editingId=null;
-  pg.objs.forEach(o=>drawO(tc,o));
+  visibleObjs(pg).forEach(o=>drawO(tc,o));
   editingId=prevEditing;
   return quality!=null?tmp.toDataURL(format,quality):tmp.toDataURL(format);
 }
@@ -3136,7 +3198,7 @@ async function saveStandardAnnotatedPDF(){
         // 페이지만 만들고 주석 변환은 건너뜀 (이 페이지의 객체 수만큼 스킵 카운트)
         outPage=outDoc.addPage([pg.width,pg.height]);
         skippedPageCount++;
-        skippedObjCount+=pg.objs.length;
+        skippedObjCount+=visibleObjs(pg).length;
         continue;
       }
 
@@ -3145,7 +3207,7 @@ async function saveStandardAnnotatedPDF(){
       const scaleAvg=((pdfW/pg.width)+(pdfH/pg.height))/2;
 
       const refs=[];
-      for(const o of pg.objs){
+      for(const o of visibleObjs(pg)){
         if(o.type==='stroke'&&o.eraser)continue; // 지우개는 벡터로 표현할 원본이 없어 제외
         if((o.type==='shape'&&(o.fill&&o.fill!=='none'||o.shape==='arrow'||o.shape==='staff'))||
            (o.type==='text'&&o.boxed)){
@@ -3412,7 +3474,7 @@ function savePNG(){
   const tc=tmp.getContext('2d');
   tc.fillStyle='#fff';tc.fillRect(0,0,pg.width,pg.height);
   if(pg.bgImg)tc.drawImage(pg.bgImg,0,0,pg.width,pg.height);
-  pg.objs.forEach(o=>drawO(tc,o));
+  visibleObjs(pg).forEach(o=>drawO(tc,o));
   const a=document.createElement('a');
   const name=(curFile||'untitled').replace(/\.[^.]+$/,'')||'untitled';
   a.download=name+'_'+(curPageIdx+1)+'.png';
@@ -3443,6 +3505,8 @@ function savePMF(){
     width:pg.width,height:pg.height,
     srcDocId:pg.srcDocId!=null?pg.srcDocId:null,
     srcPdfPage:pg.srcPdfPage!=null?pg.srcPdfPage:null,
+    layers:ensurePageLayers(pg).layers.map(l=>({...l})),
+    activeLayerId:pg.activeLayerId,
     objs:pg.objs.map(o=>{
       if(o.type==='image'){
         const c=Object.assign({},o);
@@ -3462,7 +3526,7 @@ function savePMF(){
   let origPdfB64=null;
   if(!Object.keys(origPdfs).length && origPdfBytes)origPdfB64=u8ToB64(origPdfBytes);
 
-  const project={version:3,appName:'PDF Markly',
+  const project={version:4,appName:'PDF Markly',
     origPdfs,            // { docId: base64 } (신규)
     origPdf:origPdfB64,  // 단일 원본 (레거시 호환)
     pages:savePages,meta:{title:curFile||'untitled',savedAt:new Date().toISOString()}};
@@ -3525,7 +3589,7 @@ function insertImageFromFile(file){
       const sc=Math.min(1,maxW/w,maxH/h);
       w=Math.round(w*sc);h=Math.round(h*sc);
       const x=Math.round((pg.width-w)/2), y=Math.round((pg.height-h)/2);
-      const obj={id:mkId(),type:'image',x,y,w,h,img,alpha:1};
+      const obj={id:mkId(),type:'image',x,y,w,h,img,alpha:1,layerId:activeLayer(pg)?.id};
       pg.objs.push(obj);
       if(typeof syncObjs==='function')syncObjs();
       setSelection([obj.id]);
@@ -3639,8 +3703,9 @@ function insertImageAsPage(file,insertAt){
         const w=img.naturalWidth||img.width||A4_W, h=img.naturalHeight||img.height||A4_H;
         const scale=Math.min(A4_W/w,A4_H/h);
         const pw=Math.round(w*scale), ph=Math.round(h*scale);
-        const newPage={bg:null,bgImg:img,bgDataUrl:img.src,objs:[],
-          undoSt:[[]],redoSt:[],width:pw,height:ph,srcDocId:null,srcPdfPage:null};
+        const newPage={bg:null,bgImg:img,bgDataUrl:img.src,objs:[],layers:[],activeLayerId:null,
+          undoSt:[],redoSt:[],width:pw,height:ph,srcDocId:null,srcPdfPage:null};
+        ensurePageLayers(newPage);newPage.undoSt=[snapPageState(newPage)];
         pages.splice(Math.max(0,Math.min(pages.length,insertAt)),0,newPage);
         resolve();
       };
@@ -3749,12 +3814,14 @@ async function loadPMFProject(project,fileName){
     // srcDocId: 신규 데이터는 그대로, 레거시는 단일 원본 id로 매핑
     let srcDocId=sp.srcDocId!=null?sp.srcDocId:null;
     if(srcDocId==null && sp.srcPdfPage!=null && project._legacyDocId)srcDocId=project._legacyDocId;
-    pages.push({bg:null,bgImg,bgDataUrl:sp.bgDataUrl||null,
+    const np={bg:null,bgImg,bgDataUrl:sp.bgDataUrl||null,
       objs:loadedObjs,
-      undoSt:[loadedObjs.map(o=>o.type==='stroke'?{...o,points:[...o.points]}:{...o})],redoSt:[],
+      layers:Array.isArray(sp.layers)?sp.layers.map(l=>({...l})):[],activeLayerId:sp.activeLayerId||null,
+      undoSt:[],redoSt:[],
       width:sp.width||A4_W,height:sp.height||A4_H,
       srcDocId,
-      srcPdfPage:sp.srcPdfPage!=null?sp.srcPdfPage:null});
+      srcPdfPage:sp.srcPdfPage!=null?sp.srcPdfPage:null};
+    ensurePageLayers(np);np.undoSt=[snapPageState(np)];pages.push(np);
   }
   resyncOidSeq();
   curFile=project.meta?.title||fileName;
@@ -4051,7 +4118,7 @@ function normalizeFontFamily(f){
 }
 
 // ════════════ 버전 정보 & 업데이트 확인 ════════════
-const APP_VERSION='0.7.2';
+const APP_VERSION='0.8.0';
 // 실제 배포용 GitHub 저장소를 만들면 'owner/repo' 형태로 채워주세요. (예: 'limfrog75/pdf-markly')
 // 비워두면 업데이트 확인을 시도하지 않습니다.
 const UPDATE_CHECK_REPO='limfrog/pdf_markly';
