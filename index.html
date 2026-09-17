@@ -134,33 +134,41 @@ canvas{display:block;}
   padding:14px 26px;border-radius:10px;box-shadow:0 6px 24px rgba(0,0,0,.3);}
 .canvas-area.dragover{outline:none;}
 
-/* ═══ 객체 목록 패널 ═══ */
-.obj-panel{width:200px;background:var(--bar);border-left:1px solid var(--border);
-  display:flex;flex-direction:column;flex-shrink:0;}
-.obj-panel-header{padding:6px 10px;border-bottom:1px solid var(--border);
+/* ═══ 레이어 / 객체 목록 패널 ═══ */
+.obj-panel{width:220px;background:var(--bar);border-left:1px solid var(--border);
+  display:flex;flex-direction:column;flex-shrink:0;overflow:hidden;}
+.obj-panel-header{padding:0 8px;height:32px;border-bottom:1px solid var(--border);
   font-size:11px;font-weight:600;color:var(--muted);display:flex;
-  align-items:center;justify-content:space-between;}
-.obj-panel-header span{font-size:10px;}
-.obj-panel-btns{display:flex;gap:2px;}
-.op-btn{background:transparent;border:none;cursor:pointer;
-  color:var(--muted);padding:2px 4px;border-radius:3px;font-size:12px;}
-.op-btn:hover{background:var(--hover);color:var(--text);}
-#objList{flex:1;overflow-y:auto;padding:4px;}
-.obj-item{display:flex;align-items:center;gap:6px;padding:5px 6px;
-  border-radius:5px;cursor:pointer;font-size:11px;border:1px solid transparent;}
+  align-items:center;justify-content:space-between;background:var(--ribbon);flex-shrink:0;}
+.obj-panel-title{display:flex;align-items:center;gap:5px;font-size:11px!important;color:var(--text);}
+.layer-btns{display:flex;gap:2px;align-items:center;}
+.layer-btn{width:24px;height:24px;border:1px solid var(--borderl);border-radius:4px;
+  background:transparent;color:var(--text);cursor:pointer;font-size:12px;display:flex;
+  align-items:center;justify-content:center;padding:0;line-height:1;}
+.layer-btn:hover{background:var(--hover);border-color:var(--border);}
+.layer-btn.danger{color:#c00;}
+.layer-hint{height:22px;padding:0 8px;border-bottom:1px solid var(--borderl);display:flex;
+  align-items:center;justify-content:space-between;font-size:9px;color:var(--muted);
+  background:var(--bar);flex-shrink:0;}
+#objList{flex:1;overflow-y:auto;padding:0;touch-action:pan-y;}
+.obj-item{display:flex;align-items:center;gap:5px;padding:5px 7px;min-height:30px;
+  cursor:pointer;font-size:11px;border-bottom:1px solid var(--borderl);border-left:3px solid transparent;}
 .obj-item:hover{background:var(--hover);}
-.obj-item.selected{background:var(--active);border-color:var(--accent);color:var(--accent);}
-.obj-icon{font-size:12px;flex-shrink:0;}
-.obj-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.obj-item.selected{background:var(--active);border-left-color:var(--accent);color:var(--accent);font-weight:500;}
+.obj-layer-index{width:18px;flex-shrink:0;text-align:center;font-size:9px;color:var(--muted);font-variant-numeric:tabular-nums;}
+.obj-icon{font-size:12px;flex-shrink:0;width:16px;text-align:center;}
+.obj-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px;}
 .obj-lock{width:24px;height:24px;border:1px solid transparent;border-radius:4px;background:transparent;
   display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:12px;line-height:1;
   color:var(--muted);flex-shrink:0;padding:0;}
 .obj-lock:hover{background:var(--hover);border-color:var(--border);}
 .obj-lock.locked{color:var(--accent);background:var(--active);border-color:var(--accent);}
 .obj-item.locked .obj-name{color:var(--muted);}
-.obj-del{background:transparent;border:none;color:var(--muted);
-  cursor:pointer;font-size:12px;padding:0 2px;border-radius:2px;flex-shrink:0;}
-.obj-del:hover{color:#c00;}
+.obj-del{width:22px;height:22px;display:flex;align-items:center;justify-content:center;background:transparent;border:1px solid transparent;color:var(--muted);
+  cursor:pointer;font-size:11px;padding:0;border-radius:4px;flex-shrink:0;}
+.obj-del:hover{color:#c00;background:var(--hover);border-color:var(--border);}
+[data-theme="dark"] .layer-btn{background:transparent;color:var(--text);border-color:var(--borderl);}
+[data-theme="dark"] .layer-btn:hover{background:var(--hover);}
 
 /* ═══ 상태바 ═══ */
 .status-bar{height:22px;background:var(--bar);border-top:1px solid var(--border);
@@ -742,20 +750,21 @@ canvas{display:block;}
     </div>
   </div>
 
-  <!-- 객체 목록 패널 -->
+  <!-- 레이어 / 객체 목록 패널 -->
   <div class="obj-panel" id="objPanel">
     <div class="obj-panel-header">
-      <span>객체 목록</span>
+      <span class="obj-panel-title">▱ 레이어</span>
       <div style="display:flex;align-items:center;gap:6px">
-        <div class="obj-panel-btns">
-          <button class="op-btn" onclick="moveLayerUp()" title="위로">↑</button>
-          <button class="op-btn" onclick="moveLayerDown()" title="아래로">↓</button>
-          <button class="op-btn" onclick="duplicateSelected()" title="복제">⧉</button>
-          <button class="op-btn" onclick="deleteSelected()" title="삭제">✕</button>
+        <div class="layer-btns">
+          <button class="layer-btn" onclick="moveLayerUp()" title="한 단계 위 레이어로 (Ctrl+])" aria-label="위 레이어로">↑</button>
+          <button class="layer-btn" onclick="moveLayerDown()" title="한 단계 아래 레이어로 (Ctrl+[)" aria-label="아래 레이어로">↓</button>
+          <button class="layer-btn" onclick="duplicateSelected()" title="선택 객체 복제 (Ctrl+D)" aria-label="복제">⧉</button>
+          <button class="layer-btn danger" onclick="deleteSelected()" title="선택 객체 삭제 (Delete)" aria-label="삭제">✕</button>
         </div>
         <button class="mobile-panel-close" onclick="closeMobilePanels()" aria-label="닫기">✕</button>
       </div>
     </div>
+    <div class="layer-hint"><span>위쪽 = 앞 레이어</span><span id="layerCount">0개</span></div>
     <div id="objList"></div>
   </div>
 </div>
@@ -1685,11 +1694,13 @@ function refreshObjList(){
   const list=document.getElementById('objList');
   list.innerHTML='';
   const os=get_objs();
+  const lc=document.getElementById('layerCount');if(lc)lc.textContent=os.length+'개';
   const icons={stroke:'✏️',shape:'⬡',image:'🖼️',text:'T'};
   const names={stroke:'획',shape:'도형',image:'이미지',text:'텍스트'};
-  [...os].reverse().forEach(o=>{
+  [...os].reverse().forEach((o,layerIdx)=>{
     const div=document.createElement('div');
     div.className='obj-item'+(isSel(o.id)?' selected':'')+(o.locked?' locked':'');
+    const layerNo=document.createElement('span');layerNo.className='obj-layer-index';layerNo.textContent=String(layerIdx+1);layerNo.title='앞에서 '+(layerIdx+1)+'번째 레이어';
     const icon=document.createElement('span');icon.className='obj-icon';
     icon.textContent=(o.type==='text'&&o.musicSymbol)?'♪':(icons[o.type]||'•');
     const name=document.createElement('span');name.className='obj-name';
@@ -1707,7 +1718,7 @@ function refreshObjList(){
     const del=document.createElement('button');del.className='obj-del';
     del.textContent='✕';
     del.onclick=e=>{e.stopPropagation();removeObj(o.id);};
-    div.appendChild(icon);div.appendChild(name);div.appendChild(lock);div.appendChild(del);
+    div.appendChild(layerNo);div.appendChild(icon);div.appendChild(name);div.appendChild(lock);div.appendChild(del);
     div.onclick=e=>{
       if(e.shiftKey||e.ctrlKey||e.metaKey){addToSelection(o.id);refreshObjList();renderAll();}
       else selObj(o.id);
@@ -4040,7 +4051,7 @@ function normalizeFontFamily(f){
 }
 
 // ════════════ 버전 정보 & 업데이트 확인 ════════════
-const APP_VERSION='0.7.1';
+const APP_VERSION='0.7.2';
 // 실제 배포용 GitHub 저장소를 만들면 'owner/repo' 형태로 채워주세요. (예: 'limfrog75/pdf-markly')
 // 비워두면 업데이트 확인을 시도하지 않습니다.
 const UPDATE_CHECK_REPO='limfrog/pdf_markly';
