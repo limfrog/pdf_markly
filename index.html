@@ -176,6 +176,13 @@ canvas{display:block;}
 .layer-object-icon{width:16px;text-align:center;flex-shrink:0;font-size:11px;}
 .layer-object-name{min-width:0;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .layer-object-target{font-size:8px;color:var(--muted);flex-shrink:0;}
+.layer-object-actions{display:flex;align-items:center;gap:2px;flex-shrink:0;}
+.layer-object-btn{width:22px;height:22px;border:1px solid transparent;border-radius:4px;background:transparent;color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:11px;line-height:1;padding:0;}
+.layer-object-btn:hover{background:var(--hover);border-color:var(--border);color:var(--text);}
+.layer-object-btn:disabled{opacity:.25;cursor:default;background:transparent;border-color:transparent;}
+.layer-object-btn.delete{color:#c8202e;}
+.layer-object-btn.delete:hover{background:rgba(200,32,46,.08);border-color:rgba(200,32,46,.3);}
+@media (pointer:coarse){.layer-object-btn{width:28px;height:28px;font-size:13px;}}
 .layer-block{border-bottom:1px solid var(--borderl);}
 .layer-block>.layer-item{border-bottom:none;}
 [data-theme="dark"] .layer-btn{background:transparent;color:var(--text);border-color:var(--borderl);}
@@ -1820,13 +1827,50 @@ function refreshObjList(){
       const ic=document.createElement('span');ic.className='layer-object-icon';ic.textContent=getLayerObjIcon(o);
       const name=document.createElement('span');name.className='layer-object-name';name.textContent=getLayerObjName(o);
       const tag=document.createElement('span');tag.className='layer-object-target';tag.textContent='#'+o.id;
-      row.append(ic,name,tag);
-      row.onclick=e=>selectLayerObject(o.id,e);
+      const actions=document.createElement('span');actions.className='layer-object-actions';
+      const sameLayer=layerObjs;
+      const pos=sameLayer.findIndex(x=>x.id===o.id);
+      const up=document.createElement('button');up.className='layer-object-btn';up.textContent='↑';up.title='레이어 내부에서 한 단계 위로';up.disabled=pos===sameLayer.length-1||l.locked||l.visible===false;
+      up.onclick=e=>moveObjectWithinLayer(o.id,1,e);
+      const down=document.createElement('button');down.className='layer-object-btn';down.textContent='↓';down.title='레이어 내부에서 한 단계 아래로';down.disabled=pos===0||l.locked||l.visible===false;
+      down.onclick=e=>moveObjectWithinLayer(o.id,-1,e);
+      const del=document.createElement('button');del.className='layer-object-btn delete';del.textContent='✕';del.title='객체 삭제';del.disabled=l.locked;
+      del.onclick=e=>deleteLayerObject(o.id,e);
+      actions.append(up,down,del);
+      row.append(ic,name,tag,actions);
+      row.onclick=e=>{if(e.target.closest('button'))return;selectLayerObject(o.id,e);};
       objWrap.appendChild(row);
     });
     if(layerObjs.length)block.appendChild(objWrap);
     list.appendChild(block);
   });
+}
+function deleteLayerObject(id,e){
+  e&&e.stopPropagation();
+  const pg=ensurePageLayers(page());if(!pg)return;
+  const o=pg.objs.find(x=>x.id===id);if(!o)return;
+  const l=layerOfObj(o,pg);if(l?.locked)return;
+  pg.objs=pg.objs.filter(x=>x.id!==id);
+  syncObjs();
+  if(selIds.includes(id)){setSelection(selIds.filter(x=>x!==id));}
+  saveH();renderAll();refreshObjList();
+}
+function moveObjectWithinLayer(id,dir,e){
+  e&&e.stopPropagation();
+  const pg=ensurePageLayers(page());if(!pg)return;
+  const o=pg.objs.find(x=>x.id===id);if(!o)return;
+  const l=layerOfObj(o,pg);if(!l||l.locked||l.visible===false)return;
+  const same=pg.objs.filter(x=>x.layerId===o.layerId);
+  const pos=same.findIndex(x=>x.id===id);
+  const next=pos+(dir>0?1:-1);
+  if(pos<0||next<0||next>=same.length)return;
+  const other=same[next];
+  const i=pg.objs.findIndex(x=>x.id===o.id),j=pg.objs.findIndex(x=>x.id===other.id);
+  if(i<0||j<0)return;
+  [pg.objs[i],pg.objs[j]]=[pg.objs[j],pg.objs[i]];
+  syncObjs();
+  setSelection([id]);
+  saveH();renderAll();refreshObjList();
 }
 function setActiveLayer(id){
   const pg=ensurePageLayers(page());if(!pg||!pg.layers.some(l=>l.id===id))return;
@@ -4211,7 +4255,7 @@ function normalizeFontFamily(f){
 }
 
 // ════════════ 버전 정보 & 업데이트 확인 ════════════
-const APP_VERSION='0.8.1';
+const APP_VERSION='0.8.2';
 // 실제 배포용 GitHub 저장소를 만들면 'owner/repo' 형태로 채워주세요. (예: 'limfrog75/pdf-markly')
 // 비워두면 업데이트 확인을 시도하지 않습니다.
 const UPDATE_CHECK_REPO='limfrog/pdf_markly';
