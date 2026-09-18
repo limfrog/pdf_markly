@@ -249,6 +249,37 @@ canvas{display:block;}
   border-radius:6px;padding:6px 14px;font-size:12px;cursor:pointer;}
 .btn-cancel:hover{background:var(--hover);}
 
+/* ═══ 사용설명서 ═══ */
+.user-guide-modal{width:min(900px,95vw);height:min(780px,92dvh);}
+.user-guide-body{padding:0;display:grid;grid-template-columns:190px minmax(0,1fr);overflow:hidden;min-height:0;flex:1;}
+.guide-nav{background:var(--ribbon);border-right:1px solid var(--borderl);padding:12px 10px;overflow-y:auto;display:flex;flex-direction:column;gap:5px;}
+.guide-nav button{border:1px solid transparent;background:transparent;color:var(--text);text-align:left;border-radius:6px;padding:8px 9px;font-size:11px;cursor:pointer;white-space:nowrap;}
+.guide-nav button:hover{background:var(--hover);border-color:var(--borderl);}
+.guide-content{overflow-y:auto;padding:18px 20px 28px;scroll-behavior:smooth;color:var(--text);}
+.guide-intro{font-size:12px;line-height:1.7;color:var(--muted);background:var(--ribbon);border:1px solid var(--borderl);border-radius:9px;padding:12px 14px;margin-bottom:16px;}
+.guide-section{scroll-margin-top:10px;margin:0 0 22px;}
+.guide-section h3{font-size:15px;margin:0 0 10px;color:var(--text);display:flex;align-items:center;gap:6px;}
+.guide-section h4{font-size:12px;margin:12px 0 6px;color:var(--text);}
+.guide-section p,.guide-section li{font-size:11.5px;line-height:1.75;color:var(--text);}
+.guide-section ul,.guide-section ol{margin:6px 0 8px;padding-left:20px;}
+.guide-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;}
+.guide-card{border:1px solid var(--borderl);background:var(--bar);border-radius:8px;padding:10px 12px;}
+.guide-card b{display:block;font-size:11.5px;margin-bottom:4px;}
+.guide-card span{display:block;font-size:10.5px;color:var(--muted);line-height:1.55;}
+.guide-note{border-left:3px solid var(--accent);background:var(--active);padding:8px 10px;border-radius:0 6px 6px 0;font-size:10.5px;line-height:1.65;color:var(--text);margin:8px 0;}
+.guide-shortcuts{width:100%;border-collapse:collapse;font-size:11px;}
+.guide-shortcuts th,.guide-shortcuts td{border-bottom:1px solid var(--borderl);padding:7px 6px;text-align:left;vertical-align:top;}
+.guide-shortcuts th{font-size:10px;color:var(--muted);font-weight:600;background:var(--ribbon);}
+.guide-shortcuts kbd{display:inline-block;padding:2px 5px;border:1px solid var(--border);border-bottom-width:2px;border-radius:4px;background:var(--bar);font:10px ui-monospace,SFMono-Regular,Menlo,monospace;white-space:nowrap;}
+@media (max-width:700px){
+  .user-guide-modal{width:96vw;height:92dvh;}
+  .user-guide-body{display:flex;flex-direction:column;}
+  .guide-nav{flex-direction:row;overflow-x:auto;overflow-y:hidden;border-right:0;border-bottom:1px solid var(--borderl);padding:8px;flex-shrink:0;}
+  .guide-nav button{flex:0 0 auto;padding:7px 9px;}
+  .guide-content{padding:14px 14px 24px;}
+  .guide-grid{grid-template-columns:1fr;}
+}
+
 /* ═══ 저장 확인 다이얼로그 ═══ */
 .save-confirm-foot{display:flex;gap:8px;justify-content:flex-end;}
 .sc-btn{border:none;border-radius:6px;padding:6px 14px;font-size:12px;cursor:pointer;}
@@ -734,6 +765,9 @@ canvas{display:block;}
 <div class="ribbon-panel" id="tab-help">
   <div class="rs">
     <div class="rs-body">
+      <button class="ib" data-tip="PDF Markly 사용설명서" onclick="openUserGuide()">
+        <svg width="22" height="22" viewBox="0 0 22 22"><path d="M3 4.5c3.2-.8 5.6-.4 8 1.2v13c-2.4-1.6-4.8-2-8-1.2z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M19 4.5c-3.2-.8-5.6-.4-8 1.2v13c2.4-1.6 4.8-2 8-1.2z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><line x1="11" y1="5.7" x2="11" y2="18.7" stroke="currentColor" stroke-width="1.2"/></svg>사용설명서
+      </button>
       <button class="ib" data-tip="프로그램 정보" onclick="showAbout()" style="position:relative">
         <svg width="22" height="22" viewBox="0 0 22 22"><circle cx="11" cy="11" r="9" fill="none" stroke="currentColor" stroke-width="1.6"/><text x="11" y="15" text-anchor="middle" font-size="11" fill="currentColor" font-weight="bold">i</text></svg>프로그램 정보
         <span id="updateBadgeBtn" class="update-badge-dot" style="display:none;top:2px;right:2px"></span>
@@ -865,6 +899,139 @@ canvas{display:block;}
     </div>
     <div class="modal-foot">
       <button class="btn-ok" onclick="closeFontSizeModal()" style="width:100%">확인</button>
+    </div>
+  </div>
+</div>
+
+<!-- 사용설명서 -->
+<div class="modal-overlay hidden" id="userGuideModal">
+  <div class="modal user-guide-modal">
+    <div class="modal-head">📘 PDF Markly 사용설명서
+      <button class="modal-xbtn" onclick="closeUserGuide()">✕</button>
+    </div>
+    <div class="user-guide-body">
+      <div class="guide-nav">
+        <button onclick="guideJump('guide-start')">🚀 빠른 시작</button>
+        <button onclick="guideJump('guide-screen')">🖥️ 화면 구성</button>
+        <button onclick="guideJump('guide-edit')">🖱️ 선택·편집</button>
+        <button onclick="guideJump('guide-draw')">✏️ 그리기 도구</button>
+        <button onclick="guideJump('guide-layer')">▱ 레이어</button>
+        <button onclick="guideJump('guide-file')">💾 저장·페이지</button>
+        <button onclick="guideJump('guide-mobile')">📱 모바일</button>
+        <button onclick="guideJump('guide-shortcut')">⌨️ 단축키</button>
+      </div>
+      <div class="guide-content" id="userGuideContent">
+        <div class="guide-intro">
+          PDF Markly는 PDF 페이지 위에 텍스트, 음악 기호, 도형, 필기와 형광펜을 추가하고 레이어 단위로 관리한 뒤 PDF·PNG·PMF로 저장하는 편집 도구입니다. 아래 순서대로 보면 처음 사용하는 경우에도 바로 작업할 수 있습니다.
+        </div>
+
+        <section class="guide-section" id="guide-start">
+          <h3>🚀 빠른 시작</h3>
+          <ol>
+            <li><b>파일 → PDF 열기</b>에서 편집할 PDF를 엽니다. 이전 작업을 계속하려면 <b>PMF 열기</b>를 사용합니다.</li>
+            <li>오른쪽 <b>레이어</b> 패널에서 작업할 레이어를 선택합니다. 선택된 레이어가 새 객체가 들어갈 위치입니다.</li>
+            <li><b>그리기</b> 탭에서 텍스트, 도형, 연필, 형광펜 등을 선택해 페이지에 입력합니다.</li>
+            <li><b>선택</b> 도구로 객체를 누른 뒤 드래그해 이동하고, 주변 핸들을 드래그해 크기를 조절합니다.</li>
+            <li>편집을 계속할 파일은 <b>PMF 저장</b>, 최종 배포본은 <b>PDF 저장</b>을 권장합니다.</li>
+          </ol>
+          <div class="guide-note"><b>권장 작업 방식</b> — 중요한 문서는 중간중간 PMF로 저장해 두면 레이어, 객체 위치, 편집 상태를 그대로 다시 열 수 있습니다.</div>
+        </section>
+
+        <section class="guide-section" id="guide-screen">
+          <h3>🖥️ 화면 구성</h3>
+          <div class="guide-grid">
+            <div class="guide-card"><b>왼쪽 · 페이지 목록</b><span>PDF의 각 페이지를 썸네일로 표시합니다. 원하는 페이지를 눌러 이동합니다.</span></div>
+            <div class="guide-card"><b>가운데 · 캔버스</b><span>실제 PDF 페이지를 편집하는 영역입니다. 입력·선택·이동·크기 조절을 여기서 합니다.</span></div>
+            <div class="guide-card"><b>오른쪽 · 레이어</b><span>현재 페이지의 레이어와 각 레이어 안의 객체를 관리합니다.</span></div>
+            <div class="guide-card"><b>상단 · 리본 메뉴</b><span>파일, 그리기, 보기, 도움말 기능을 탭별로 제공합니다.</span></div>
+          </div>
+        </section>
+
+        <section class="guide-section" id="guide-edit">
+          <h3>🖱️ 선택·이동·크기 조절</h3>
+          <ul>
+            <li><b>선택 도구(V)</b>로 객체를 누르면 파란 선택 테두리와 8개의 크기 조절 핸들이 나타납니다.</li>
+            <li>선택한 객체를 드래그하면 이동합니다. 방향키는 1px, <b>Shift + 방향키</b>는 10px씩 이동합니다.</li>
+            <li><b>Shift + 클릭</b> 또는 빈 공간을 드래그하는 방식으로 여러 객체를 함께 선택할 수 있습니다.</li>
+            <li>핸들을 드래그하면 사각형·원·선·이미지·텍스트 등 선택한 객체의 크기를 조절할 수 있습니다.</li>
+            <li><b>Ctrl/Cmd + C, V, D</b>로 복사·붙여넣기·복제가 가능합니다.</li>
+            <li>잠긴 레이어의 객체나 숨긴 레이어의 객체는 캔버스에서 편집되지 않습니다.</li>
+          </ul>
+        </section>
+
+        <section class="guide-section" id="guide-draw">
+          <h3>✏️ 그리기 도구</h3>
+          <div class="guide-grid">
+            <div class="guide-card"><b>텍스트 (T)</b><span>페이지를 눌러 글자를 입력합니다. 글꼴, 크기, 굵게·기울임·밑줄, 박스 텍스트 옵션을 사용할 수 있습니다.</span></div>
+            <div class="guide-card"><b>도형 / 음악 기호 (M)</b><span>높은음자리표·낮은음자리표·조표·음표·쉼표·반복기호와 붙임줄, Shuffle 1·2 등을 삽입합니다.</span></div>
+            <div class="guide-card"><b>선 · 사각형 · 원 · 화살표</b><span>클릭 후 드래그해 그립니다. 전경색은 선/테두리, 배경색은 채우기에 사용할 수 있습니다.</span></div>
+            <div class="guide-card"><b>오선</b><span>드래그한 폭에 맞춰 5선 오선을 만듭니다. 선 두께 설정도 함께 적용됩니다.</span></div>
+            <div class="guide-card"><b>연필 · 지우개 · 형광펜</b><span>자유 필기, 지우기, 반투명 형광 표시를 합니다. 형광펜은 배경색과 배경 투명도를 사용합니다.</span></div>
+            <div class="guide-card"><b>색상 · 투명도</b><span>전경색은 선·글자·테두리, 배경색은 형광펜·도형 채우기 등에 사용합니다.</span></div>
+          </div>
+          <h4>마디줄 기능</h4>
+          <p><b>선</b> 또는 <b>오선</b> 도구를 선택하면 <b>마디줄</b> 체크가 나타납니다. 체크한 상태로 새 선/오선을 그리면 길이의 1/4, 2/4, 3/4, 끝점에 마디줄 4개가 함께 생성됩니다. 직선은 주 선에 직각으로, 오선은 5선을 가로질러 표시됩니다.</p>
+          <h4>붙임줄 / Shuffle</h4>
+          <p>도형 목록의 <b>붙임줄 위·아래</b>, <b>Shuffle 1·2</b>는 이미지형 도형으로 삽입됩니다. 삽입 후에는 일반 객체처럼 이동, 크기 조절, 복제, 레이어 이동이 가능합니다.</p>
+        </section>
+
+        <section class="guide-section" id="guide-layer">
+          <h3>▱ 레이어 사용법</h3>
+          <ul>
+            <li>레이어는 <b>페이지(캔버스)마다 독립적으로</b> 관리됩니다.</li>
+            <li>상단 <b>＋ / −</b>로 레이어를 추가·삭제하고, <b>↑ / ↓</b>로 레이어 순서를 변경합니다.</li>
+            <li><b>◉ / ○</b> 버튼으로 레이어를 보이기/숨기기 할 수 있습니다. 숨긴 레이어는 화면과 PDF·PNG 출력에서 제외됩니다.</li>
+            <li><b>🔓 / 🔒</b> 버튼으로 레이어를 잠그거나 해제합니다. 잠긴 레이어의 객체는 이동·삭제·크기 조절할 수 없습니다.</li>
+            <li>레이어 이름을 <b>더블클릭</b>하면 이름을 변경할 수 있습니다.</li>
+            <li>각 레이어 아래에는 포함된 객체 목록이 표시됩니다. 객체 행의 <b>↑ / ↓</b>는 같은 레이어 안의 앞뒤 순서, <b>✕</b>는 삭제입니다.</li>
+            <li>객체를 선택한 뒤 대상 레이어의 <b>⇥</b> 버튼을 누르면 선택 객체를 그 레이어로 이동합니다.</li>
+          </ul>
+          <div class="guide-note">레이어 목록에서 위쪽에 있는 레이어일수록 화면에서도 앞쪽에 표시됩니다.</div>
+        </section>
+
+        <section class="guide-section" id="guide-file">
+          <h3>💾 저장 형식과 페이지 관리</h3>
+          <div class="guide-grid">
+            <div class="guide-card"><b>PDF 저장</b><span>일반적으로 공유하거나 인쇄할 최종 PDF를 만듭니다. 저장 시 용량 옵션을 선택할 수 있습니다.</span></div>
+            <div class="guide-card"><b>표준 주석 PDF</b><span>가능한 주석을 PDF 표준 주석 형태로 저장해 다른 PDF 프로그램에서도 주석으로 인식·수정할 수 있도록 합니다.</span></div>
+            <div class="guide-card"><b>PNG 저장</b><span>현재 페이지만 하나의 PNG 이미지로 저장합니다.</span></div>
+            <div class="guide-card"><b>PMF 저장</b><span>레이어, 객체, 편집 상태와 원본 PDF 정보를 보존하는 PDF Markly 프로젝트 형식입니다.</span></div>
+          </div>
+          <h4>페이지</h4>
+          <p><b>페이지 추가</b>로 빈 페이지를 추가하고, <b>페이지 삭제</b>로 현재 페이지를 제거합니다. 왼쪽 페이지 목록을 눌러 페이지를 전환합니다.</p>
+        </section>
+
+        <section class="guide-section" id="guide-mobile">
+          <h3>📱 모바일 사용법</h3>
+          <ul>
+            <li>화면 상단의 <b>페이지 버튼</b>과 <b>레이어 버튼</b>으로 좌우 패널을 열고 닫습니다.</li>
+            <li><b>한 손가락</b>은 선택·이동·그리기·핸들 크기 조절에 사용합니다.</li>
+            <li><b>두 손가락</b> 핀치는 확대/축소, 두 손가락 드래그는 확대된 캔버스 이동에 사용합니다.</li>
+            <li>도형을 선택한 뒤 파란 핸들을 손가락으로 잡아 드래그하면 크기를 조절할 수 있습니다. 실제 터치 판정 영역은 보이는 핸들보다 크게 설정되어 있습니다.</li>
+            <li>레이어 패널의 객체별 ↑ / ↓ / ✕ 버튼도 모바일에서 누르기 쉽도록 큰 터치 영역을 사용합니다.</li>
+          </ul>
+        </section>
+
+        <section class="guide-section" id="guide-shortcut">
+          <h3>⌨️ 주요 단축키</h3>
+          <table class="guide-shortcuts">
+            <thead><tr><th>기능</th><th>단축키</th><th>설명</th></tr></thead>
+            <tbody>
+              <tr><td>실행 취소 / 다시 실행</td><td><kbd>Ctrl/Cmd+Z</kbd><br><kbd>Ctrl/Cmd+Shift+Z</kbd> 또는 <kbd>Ctrl/Cmd+Y</kbd></td><td>현재 페이지의 편집 및 레이어 변경을 되돌립니다.</td></tr>
+              <tr><td>PDF / PMF 저장</td><td><kbd>Ctrl/Cmd+S</kbd><br><kbd>Ctrl/Cmd+E</kbd></td><td>PDF 또는 편집 가능한 PMF 프로젝트를 저장합니다.</td></tr>
+              <tr><td>복사 / 붙여넣기 / 복제</td><td><kbd>Ctrl/Cmd+C</kbd> <kbd>Ctrl/Cmd+V</kbd> <kbd>Ctrl/Cmd+D</kbd></td><td>선택 객체를 복사, 붙여넣기, 복제합니다.</td></tr>
+              <tr><td>전체 선택</td><td><kbd>Ctrl/Cmd+A</kbd></td><td>현재 페이지의 객체 전체를 선택합니다.</td></tr>
+              <tr><td>인접 레이어로 이동</td><td><kbd>Ctrl/Cmd+]</kbd> / <kbd>Ctrl/Cmd+[</kbd></td><td>선택 객체를 위/아래 인접 레이어로 이동합니다.</td></tr>
+              <tr><td>미세 이동</td><td><kbd>방향키</kbd> / <kbd>Shift+방향키</kbd></td><td>1px / 10px 단위로 이동합니다.</td></tr>
+              <tr><td>도구 선택</td><td><kbd>V</kbd> 선택 · <kbd>T</kbd> 텍스트 · <kbd>M</kbd> 도형 · <kbd>P</kbd> 연필 · <kbd>E</kbd> 지우개 · <kbd>H</kbd> 형광펜 · <kbd>L</kbd> 선 · <kbd>R</kbd> 사각형 · <kbd>O</kbd> 원 · <kbd>A</kbd> 화살표 · <kbd>S</kbd> 오선</td><td>키보드로 도구를 바로 전환합니다.</td></tr>
+              <tr><td>선택 해제</td><td><kbd>Esc</kbd></td><td>선택을 해제하고 모바일 패널도 닫습니다.</td></tr>
+            </tbody>
+          </table>
+        </section>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-ok" onclick="closeUserGuide()">닫기</button>
     </div>
   </div>
 </div>
@@ -4235,6 +4402,24 @@ function setTheme(t){
   document.getElementById('theme-dark').classList.toggle('active',t==='dark');
 }
 
+// ════════════ 사용설명서 ════════════
+function openUserGuide(){
+  const m=document.getElementById('userGuideModal');
+  const c=document.getElementById('userGuideContent');
+  if(c)c.scrollTop=0;
+  if(m)m.classList.remove('hidden');
+}
+function closeUserGuide(){
+  document.getElementById('userGuideModal')?.classList.add('hidden');
+}
+function guideJump(id){
+  const el=document.getElementById(id);
+  if(el)el.scrollIntoView({behavior:'smooth',block:'start'});
+}
+document.getElementById('userGuideModal')?.addEventListener('click',e=>{
+  if(e.target===e.currentTarget)closeUserGuide();
+});
+
 // ════════════ 프로그램 정보 ════════════
 function showAbout(){
   document.getElementById('aboutModal').classList.remove('hidden');
@@ -4295,6 +4480,9 @@ function pasteClip(){
 // ════════════ 키보드 단축키 ════════════
 let arrowMoveActive=false; // 방향키를 누르고 있는 동안 매 프레임 saveH하지 않고, 뗄 때 한 번만 기록하기 위한 상태
 document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'&&!document.getElementById('userGuideModal')?.classList.contains('hidden')){
+    e.preventDefault();closeUserGuide();return;
+  }
   if(actTed){
     // 텍스트 편집 중엔 다른 단축키를 막되, Escape만은 안전망으로 여기서도 확정 처리
     // (textarea 자체의 keydown 리스너가 정상 동작하는 게 우선 경로)
@@ -4437,7 +4625,7 @@ function normalizeFontFamily(f){
 }
 
 // ════════════ 버전 정보 & 업데이트 확인 ════════════
-const APP_VERSION='0.8.5';
+const APP_VERSION='0.8.6';
 // 실제 배포용 GitHub 저장소를 만들면 'owner/repo' 형태로 채워주세요. (예: 'limfrog75/pdf-markly')
 // 비워두면 업데이트 확인을 시도하지 않습니다.
 const UPDATE_CHECK_REPO='limfrog/pdf_markly';
