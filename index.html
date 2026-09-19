@@ -752,6 +752,30 @@ canvas{display:block;}
     </div>
     <span class="rs-label">확대/축소</span>
   </div>
+  <div class="rs" id="pdfContentControls">
+    <div class="rs-body" style="gap:5px;align-items:center">
+      <button class="ib" id="pdfContentEditBtn" data-tip="PDF 내용 영역을 직접 이동·크기 조절" onclick="togglePdfContentEdit()">
+        <svg width="22" height="22" viewBox="0 0 22 22"><rect x="4" y="4" width="14" height="14" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-dasharray="3 2"/><path d="M2.5 7V2.5H7M15 2.5h4.5V7M19.5 15v4.5H15M7 19.5H2.5V15" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>내용 조절
+      </button>
+      <div style="display:flex;flex-direction:column;gap:3px;align-items:center">
+        <div class="btn-row">
+          <button class="layer-btn" title="PDF 내용 5% 축소" onclick="adjustPdfContentScale(-5)">−</button>
+          <input id="pdfContentScaleInput" type="number" min="20" max="300" step="1" value="100" style="width:48px;height:23px;border:1px solid var(--border);border-radius:4px;background:var(--bar);color:var(--text);text-align:center;font-size:10px" onchange="setPdfContentScalePercent(this.value)">
+          <span style="font-size:9px;color:var(--muted)">%</span>
+          <button class="layer-btn" title="PDF 내용 5% 확대" onclick="adjustPdfContentScale(5)">＋</button>
+        </div>
+        <div class="btn-row">
+          <button class="layer-btn" style="width:auto;padding:0 6px;font-size:9px" title="PDF 내용을 캔버스에 맞는 초기 크기와 중앙 위치로 복원" onclick="fitPdfContent()">맞춤</button>
+          <button class="layer-btn" style="width:auto;padding:0 6px;font-size:9px" title="현재 크기를 유지하고 PDF 내용을 캔버스 중앙으로 이동" onclick="centerPdfContent()">가운데</button>
+          <button class="layer-btn" title="왼쪽으로 5px" onclick="nudgePdfContent(-5,0)">←</button>
+          <button class="layer-btn" title="위로 5px" onclick="nudgePdfContent(0,-5)">↑</button>
+          <button class="layer-btn" title="아래로 5px" onclick="nudgePdfContent(0,5)">↓</button>
+          <button class="layer-btn" title="오른쪽으로 5px" onclick="nudgePdfContent(5,0)">→</button>
+        </div>
+      </div>
+    </div>
+    <span class="rs-label">PDF 내용</span>
+  </div>
   <div class="rs">
     <div class="rs-body">
       <button class="ib" id="theme-light" data-tip="라이트 테마" onclick="setTheme('light')">☀️ 라이트</button>
@@ -913,6 +937,7 @@ canvas{display:block;}
       <div class="guide-nav">
         <button onclick="guideJump('guide-start')">🚀 빠른 시작</button>
         <button onclick="guideJump('guide-screen')">🖥️ 화면 구성</button>
+        <button onclick="guideJump('guide-pdfcontent')">📄 PDF 내용</button>
         <button onclick="guideJump('guide-edit')">🖱️ 선택·편집</button>
         <button onclick="guideJump('guide-draw')">✏️ 그리기 도구</button>
         <button onclick="guideJump('guide-layer')">▱ 레이어</button>
@@ -941,10 +966,23 @@ canvas{display:block;}
           <h3>🖥️ 화면 구성</h3>
           <div class="guide-grid">
             <div class="guide-card"><b>왼쪽 · 페이지 목록</b><span>PDF의 각 페이지를 썸네일로 표시합니다. 원하는 페이지를 눌러 이동합니다.</span></div>
-            <div class="guide-card"><b>가운데 · 캔버스</b><span>실제 PDF 페이지를 편집하는 영역입니다. 입력·선택·이동·크기 조절을 여기서 합니다.</span></div>
+            <div class="guide-card"><b>가운데 · 캔버스</b><span>A4 편집 캔버스입니다. PDF 원본 내용과 Markly 객체를 분리해 편집합니다.</span></div>
             <div class="guide-card"><b>오른쪽 · 레이어</b><span>현재 페이지의 레이어와 각 레이어 안의 객체를 관리합니다.</span></div>
             <div class="guide-card"><b>상단 · 리본 메뉴</b><span>파일, 그리기, 보기, 도움말 기능을 탭별로 제공합니다.</span></div>
           </div>
+        </section>
+
+        <section class="guide-section" id="guide-pdfcontent">
+          <h3>📄 PDF 내용 크기·위치 조절</h3>
+          <p>PDF를 열면 편집 캔버스는 A4 크기로 유지되고, 원본 PDF 내용은 캔버스 안의 별도 영역으로 배치됩니다. <b>보기 → PDF 내용</b>에서 원본 내용만 확대·축소하거나 이동할 수 있습니다.</p>
+          <ul>
+            <li><b>내용 조절</b>을 누르면 PDF 내용 테두리와 모서리 핸들이 나타납니다. 테두리를 드래그하면 이동하고, 모서리 핸들을 드래그하면 비율을 유지한 채 크기를 조절합니다.</li>
+            <li><b>− / ＋</b> 또는 퍼센트 입력으로 최초 맞춤 크기를 기준으로 20~300%까지 조절할 수 있습니다.</li>
+            <li><b>맞춤</b>은 처음 불러왔을 때의 크기와 중앙 위치로 복원하고, <b>가운데</b>는 현재 크기를 유지한 채 중앙 정렬합니다.</li>
+            <li>화살표 버튼은 PDF 내용만 5px씩 이동합니다. Markly에서 새로 만든 텍스트·도형·필기는 그대로 유지됩니다.</li>
+            <li>PDF 원본에서 가져온 주석은 원본 내용과 함께 이동·확대·축소됩니다.</li>
+          </ul>
+          <div class="guide-note">편집 화면의 PDF 배경은 이전보다 높은 해상도로 렌더링됩니다. 일반 PDF 저장 시에는 화면용 이미지가 아니라 원본 PDF 페이지를 벡터로 다시 배치하므로 원본 품질을 유지합니다.</div>
         </section>
 
         <section class="guide-section" id="guide-edit">
@@ -1188,7 +1226,12 @@ canvas{display:block;}
 'use strict';
 // ════════════ 상수 ════════════
 const A4_W=794, A4_H=1123; // 96dpi 기준 A4 (210×297mm)
+const PDF_A4_W=595.28, PDF_A4_H=841.89; // PDF point 기준 실제 A4
 const DPR=Math.min(window.devicePixelRatio||1,2);
+// 실제 편집 캔버스는 논리 좌표(794×1123)는 그대로 두고 backing store만 더 크게 사용한다.
+// 일반 1x 화면도 1.5배, Retina/고밀도 화면은 최대 2배로 렌더해 확대 시 선명도를 높인다.
+const EDIT_RENDER_SCALE=Math.min(2,Math.max(1.5,DPR));
+const PDF_PREVIEW_MAX_DENSITY=2; // 편집 화면 PDF 배경을 최대 2배 해상도로 렌더
 
 // ════════════ 상태 ════════════
 // 페이지 구조: pages = [{bg, objs:[], layers:[], activeLayerId, undoSt:[], redoSt:[], width, height}, ...]
@@ -1251,6 +1294,114 @@ function layerBlockedMessage(){
   const msg=!l?'레이어가 없습니다.':l.visible===false?'현재 레이어가 숨겨져 있습니다.':l.locked?'현재 레이어가 잠겨 있습니다.':'';
   if(msg)document.getElementById('statusObj').textContent=msg;
   return !!msg;
+}
+
+// ════════════ PDF 원본 내용 배치 모델 ════════════
+// 캔버스는 고정하고, PDF 원본 페이지만 pdfContent 사각형 안에서 독립적으로 배치한다.
+// x/y/width/height는 캔버스 좌표이며 baseWidth/baseHeight는 최초 "맞춤" 크기다.
+let pdfContentEditMode=false;
+let pdfContentGesture=null;
+function hasPdfContent(pg=page()){return !!(pg&&pg.bgImg&&pg.srcPdfPage!=null);}
+function ensurePdfContent(pg=page()){
+  if(!hasPdfContent(pg))return null;
+  if(!pg.pdfContent){
+    pg.pdfContent={x:0,y:0,width:pg.width,height:pg.height,baseWidth:pg.width,baseHeight:pg.height,sourceRotation:0};
+  }
+  const pc=pg.pdfContent;
+  pc.baseWidth=pc.baseWidth||pc.width||pg.width;pc.baseHeight=pc.baseHeight||pc.height||pg.height;
+  pc.width=pc.width||pc.baseWidth;pc.height=pc.height||pc.baseHeight;
+  pc.x=Number.isFinite(pc.x)?pc.x:0;pc.y=Number.isFinite(pc.y)?pc.y:0;
+  pc.sourceRotation=((pc.sourceRotation||0)%360+360)%360;
+  return pc;
+}
+function copyPdfRect(r){return r?{x:r.x,y:r.y,width:r.width,height:r.height,baseWidth:r.baseWidth,baseHeight:r.baseHeight,sourceRotation:r.sourceRotation||0,previewDensity:r.previewDensity||1}:null;}
+function clampPdfRect(pg,r){
+  const minW=40, minVisible=20;
+  const aspect=(r.baseWidth||r.width)/(r.baseHeight||r.height||1);
+  let w=Math.max(minW,Number(r.width)||minW),h=Math.max(minW/aspect,Number(r.height)||minW/aspect);
+  // 비율은 항상 최초 PDF 비율로 유지
+  if(Math.abs(w/h-aspect)>.001)h=w/aspect;
+  let x=Number(r.x)||0,y=Number(r.y)||0;
+  x=Math.min(pg.width-minVisible,Math.max(minVisible-w,x));
+  y=Math.min(pg.height-minVisible,Math.max(minVisible-h,y));
+  return {...r,x,y,width:w,height:h};
+}
+function transformObjBetweenRects(target,orig,fromRect,toRect){
+  if(!target||!orig||!fromRect||!toRect)return;
+  const sx=toRect.width/fromRect.width,sy=toRect.height/fromRect.height;
+  const tx=x=>toRect.x+(x-fromRect.x)*sx, ty=y=>toRect.y+(y-fromRect.y)*sy;
+  if(orig.type==='stroke'){target.points=(orig.points||[]).map(p=>({x:tx(p.x),y:ty(p.y)}));target.strokeWidth=Math.max(.5,(orig.strokeWidth||1)*(sx+sy)/2);}
+  else if(orig.type==='shape'){target.x1=tx(orig.x1);target.y1=ty(orig.y1);target.x2=tx(orig.x2);target.y2=ty(orig.y2);target.strokeWidth=Math.max(.5,(orig.strokeWidth||1)*(sx+sy)/2);}
+  else if(orig.type==='image'){target.x=tx(orig.x);target.y=ty(orig.y);target.w=(orig.w||1)*sx;target.h=(orig.h||1)*sy;}
+  else if(orig.type==='text'){
+    target.x=tx(orig.x);target.y=ty(orig.y);const sc=(sx+sy)/2;target.fontSize=Math.max(6,(orig.fontSize||16)*sc);
+    if(orig._edW)target._edW=orig._edW*sx;if(orig._edH)target._edH=orig._edH*sy;
+    if(orig.boxPad!=null)target.boxPad=orig.boxPad*sc;if(orig.boxStrokeWidth!=null)target.boxStrokeWidth=orig.boxStrokeWidth*sc;
+  }
+}
+function applyPdfContentRect(pg,newRect,baseRect=null,baseObjs=null){
+  const pc=ensurePdfContent(pg);if(!pc)return;
+  const from=baseRect||copyPdfRect(pc);
+  const nr=clampPdfRect(pg,{...pc,...newRect});
+  const follow=(pg.objs||[]).filter(o=>o.followPdfContent||o.importedFrom==='pdf');
+  if(baseObjs){
+    for(const bo of baseObjs){const t=pg.objs.find(o=>o.id===bo.id);if(t)transformObjBetweenRects(t,bo,from,nr);}
+  }else{
+    for(const o of follow){const orig=cloneHistObj(o);transformObjBetweenRects(o,orig,from,nr);}
+  }
+  Object.assign(pc,nr);
+}
+function pdfContentScalePercent(pg=page()){const pc=ensurePdfContent(pg);return pc?Math.round(pc.width/(pc.baseWidth||pc.width)*100):100;}
+function syncPdfContentUI(){
+  const pg=page(),pc=ensurePdfContent(pg);
+  const grp=document.getElementById('pdfContentControls'),inp=document.getElementById('pdfContentScaleInput'),btn=document.getElementById('pdfContentEditBtn');
+  const enabled=!!pc;if(grp)grp.style.opacity=enabled?'1':'.45';
+  if(inp){inp.disabled=!enabled;if(enabled)inp.value=pdfContentScalePercent(pg);}
+  if(btn){btn.disabled=!enabled;btn.classList.toggle('active',enabled&&pdfContentEditMode);}
+}
+function setPdfContentScalePercent(v){
+  const pg=page(),pc=ensurePdfContent(pg);if(!pc)return;
+  const pct=Math.max(20,Math.min(300,parseFloat(v)||100))/100;
+  const nw=pc.baseWidth*pct,nh=pc.baseHeight*pct,cx=pc.x+pc.width/2,cy=pc.y+pc.height/2;
+  applyPdfContentRect(pg,{x:cx-nw/2,y:cy-nh/2,width:nw,height:nh});
+  saveH();renderAll();syncPdfContentUI();
+}
+function adjustPdfContentScale(delta){setPdfContentScalePercent(pdfContentScalePercent()+delta);}
+function centerPdfContent(){
+  const pg=page(),pc=ensurePdfContent(pg);if(!pc)return;
+  applyPdfContentRect(pg,{x:(pg.width-pc.width)/2,y:(pg.height-pc.height)/2,width:pc.width,height:pc.height});
+  saveH();renderAll();syncPdfContentUI();
+}
+function fitPdfContent(){
+  const pg=page(),pc=ensurePdfContent(pg);if(!pc)return;
+  applyPdfContentRect(pg,{x:(pg.width-pc.baseWidth)/2,y:(pg.height-pc.baseHeight)/2,width:pc.baseWidth,height:pc.baseHeight});
+  saveH();renderAll();syncPdfContentUI();
+}
+function nudgePdfContent(dx,dy){
+  const pg=page(),pc=ensurePdfContent(pg);if(!pc)return;
+  applyPdfContentRect(pg,{x:pc.x+dx,y:pc.y+dy,width:pc.width,height:pc.height});
+  saveH();renderAll();syncPdfContentUI();
+}
+function togglePdfContentEdit(){
+  if(!ensurePdfContent(page())){document.getElementById('statusObj').textContent='현재 페이지에는 조절할 PDF 원본이 없습니다.';return;}
+  pdfContentEditMode=!pdfContentEditMode;clearSel();
+  document.getElementById('statusObj').textContent=pdfContentEditMode?'PDF 내용 조절: 테두리를 드래그해 이동하고 모서리 핸들로 크기를 조절하세요.':'';
+  renderAll();syncPdfContentUI();
+}
+function drawPageBackground(c,pg){
+  if(!pg?.bgImg)return;
+  const pc=ensurePdfContent(pg);
+  if(pc)c.drawImage(pg.bgImg,pc.x,pc.y,pc.width,pc.height);
+  else c.drawImage(pg.bgImg,0,0,pg.width,pg.height);
+}
+function translateImportedPdfObjs(objs,dx,dy){
+  for(const o of objs){
+    o.followPdfContent=true;
+    if(o.type==='stroke')o.points=(o.points||[]).map(p=>({x:p.x+dx,y:p.y+dy}));
+    else if(o.type==='shape'){o.x1+=dx;o.y1+=dy;o.x2+=dx;o.y2+=dy;}
+    else if(o.type==='image'){o.x+=dx;o.y+=dy;}
+    else if(o.type==='text'){o.x+=dx;o.y+=dy;}
+  }
 }
 
 // ════════════ 객체/캔버스 변수 ════════════
@@ -1511,10 +1662,13 @@ function initPages(){
   addBlankPage(false);
   curPageIdx=0;
   syncObjs();
+  CW=pages[0]?.width||A4_W;CH=pages[0]?.height||A4_H;
+  resizeCanvases(); // 시작 화면부터 고밀도 편집 backing store 적용
   renderAll();
   renderPageIndex();
   updatePageStatus();
   refreshObjList();
+  syncPdfContentUI();
 }
 
 // 파일 닫기 — 문서를 초기 빈 상태로 되돌림
@@ -1549,6 +1703,7 @@ function addBlankPage(doRender=true){
   const pg={
     bg:null, // 배경 이미지 (PDF 페이지 래스터)
     bgImg:null, // Image 객체
+    pdfContent:null, // PDF 원본 내용 배치 정보 (빈 페이지는 없음)
     objs:[],
     layers:[],activeLayerId:null,
     undoSt:[],redoSt:[],
@@ -1592,8 +1747,10 @@ function goToPage(idx){
   CH=pages[curPageIdx].height||A4_H;
   resizeCanvases();
   clearSel();
+  if(!hasPdfContent(page()))pdfContentEditMode=false;
   renderAll();
   refreshObjList();
+  syncPdfContentUI();
   updatePageStatus();
   // 인덱스 패널 활성 항목 갱신
   document.querySelectorAll('.page-thumb-item').forEach((el,i)=>{
@@ -1609,8 +1766,20 @@ function updatePageStatus(){
 
 // ════════════ 캔버스 크기 조절 ════════════
 function resizeCanvases(){
-  [bgC,mainC,HC].forEach(c=>{c.width=CW;c.height=CH;});
+  // 화면 좌표계는 CW×CH 그대로 유지하되, 표시용 두 캔버스의 실제 픽셀 수만 늘린다.
+  // 이렇게 하면 기존 객체 좌표·터치 hit-test·레이어 로직을 바꾸지 않고도 Retina/확대 화면에서 선명해진다.
+  [bgC,mainC].forEach(c=>{
+    c.width=Math.max(1,Math.round(CW*EDIT_RENDER_SCALE));
+    c.height=Math.max(1,Math.round(CH*EDIT_RENDER_SCALE));
+    c.style.width=CW+'px';c.style.height=CH+'px';
+  });
+  // hitCanvas는 실제 그림을 표시하지 않고 포인터 좌표만 받으므로 논리 해상도를 유지한다.
+  HC.width=CW;HC.height=CH;HC.style.width=CW+'px';HC.style.height=CH+'px';
+  // width/height 변경 시 context 상태가 초기화되므로 논리 좌표→고해상도 backing store 변환을 다시 건다.
+  bgCtx.setTransform(EDIT_RENDER_SCALE,0,0,EDIT_RENDER_SCALE,0,0);
+  ctx.setTransform(EDIT_RENDER_SCALE,0,0,EDIT_RENDER_SCALE,0,0);
   SV.setAttribute('width',CW);SV.setAttribute('height',CH);
+  SV.setAttribute('viewBox',`0 0 ${CW} ${CH}`);
   document.getElementById('canvasWrapper').style.width=CW+'px';
   document.getElementById('canvasWrapper').style.height=CH+'px';
   applyZoom();
@@ -1683,14 +1852,10 @@ let isPinching=false; // 핀치·팬 도중 마우스 이벤트 기반 그리기
 // ════════════ 렌더링 ════════════
 function drawBG(){
   bgCtx.clearRect(0,0,CW,CH);
-  // 흰 배경
+  // 캔버스(종이)는 항상 그대로 유지하고 PDF 원본 내용만 별도 사각형에 배치
   bgCtx.fillStyle='#ffffff';
   bgCtx.fillRect(0,0,CW,CH);
-  // PDF 배경 이미지 (래스터)
-  const pg=pages[curPageIdx];
-  if(pg?.bgImg){
-    bgCtx.drawImage(pg.bgImg,0,0,CW,CH);
-  }
+  drawPageBackground(bgCtx,pages[curPageIdx]);
 }
 
 function drawQuarterBarlines(c,o,fgAlpha=1,hit=false){
@@ -1859,6 +2024,7 @@ let editingId=null;
 const _HANDLE_CURSORS=['nwse-resize','ns-resize','nesw-resize','ew-resize','ew-resize','nesw-resize','ns-resize','nwse-resize'];
 function drawSel(){
   SV.innerHTML='';
+  if(pdfContentEditMode&&ensurePdfContent(page())){drawPdfContentSelection();return;}
   // 영역 선택 마퀴 표시
   if(marquee){
     const ns='http://www.w3.org/2000/svg';
@@ -1958,6 +2124,76 @@ function drawSel(){
     },{passive:false});
     g.appendChild(hit);
     SV.appendChild(g);
+  });
+}
+
+function clientToCanvas(clientX,clientY){
+  const r=HC.getBoundingClientRect();
+  return {x:(clientX-r.left)/zoom,y:(clientY-r.top)/zoom};
+}
+function beginPdfContentGesture(kind,handle,clientX,clientY){
+  const pg=page(),pc=ensurePdfContent(pg);if(!pc)return;
+  const pt=clientToCanvas(clientX,clientY);
+  pdfContentGesture={kind,handle,startX:pt.x,startY:pt.y,rect:copyPdfRect(pc),
+    objs:(pg.objs||[]).filter(o=>o.followPdfContent||o.importedFrom==='pdf').map(cloneHistObj)};
+}
+function updatePdfContentSelectionGeometry(){
+  const pc=ensurePdfContent(page());if(!pc)return;
+  const fr=document.getElementById('pdfContentFrame');if(fr){fr.setAttribute('x',pc.x);fr.setAttribute('y',pc.y);fr.setAttribute('width',pc.width);fr.setAttribute('height',pc.height);}
+  const pts=[[pc.x,pc.y],[pc.x+pc.width,pc.y],[pc.x,pc.y+pc.height],[pc.x+pc.width,pc.y+pc.height]];
+  pts.forEach(([x,y],i)=>{const h=document.getElementById('pdfContentHandle'+i);if(h){const sz=Number(h.dataset.size)||12;h.setAttribute('x',x-sz/2);h.setAttribute('y',y-sz/2);}});
+  const lb=document.getElementById('pdfContentLabel');if(lb){lb.setAttribute('x',pc.x+6);lb.setAttribute('y',Math.max(14,pc.y+16));lb.textContent='PDF '+pdfContentScalePercent()+'%';}
+}
+function renderSceneOnly(){
+  ctx.clearRect(0,0,CW,CH);drawBG();const pg=page();if(pg)visibleObjs(pg).forEach(o=>drawO(ctx,o));
+  setTimeout(()=>updatePageThumb(curPageIdx),50);
+}
+function movePdfContentGesture(clientX,clientY){
+  const g=pdfContentGesture,pg=page();if(!g||!pg)return;
+  const pt=clientToCanvas(clientX,clientY),dx=pt.x-g.startX,dy=pt.y-g.startY,br=g.rect;
+  let nr;
+  if(g.kind==='move'){nr={...br,x:br.x+dx,y:br.y+dy};}
+  else{
+    const aspect=br.width/br.height;
+    const left=g.handle===0||g.handle===2, top=g.handle===0||g.handle===1;
+    const anchorX=left?br.x+br.width:br.x,anchorY=top?br.y+br.height:br.y;
+    const sx=left?(anchorX-pt.x)/br.width:(pt.x-anchorX)/br.width;
+    const sy=top?(anchorY-pt.y)/br.height:(pt.y-anchorY)/br.height;
+    const sc=Math.max(.2,Math.min(3,(sx+sy)/2));
+    const nw=br.width*sc,nh=nw/aspect;
+    nr={...br,width:nw,height:nh,x:left?anchorX-nw:anchorX,y:top?anchorY-nh:anchorY};
+  }
+  applyPdfContentRect(pg,nr,g.rect,g.objs);renderSceneOnly();updatePdfContentSelectionGeometry();syncPdfContentUI();
+}
+function endPdfContentGesture(commit=true){
+  if(!pdfContentGesture)return;
+  const g=pdfContentGesture,pg=page();
+  pdfContentGesture=null;
+  if(commit){saveH();}
+  else if(pg){
+    // OS 제스처 전환 등으로 touchcancel이 발생하면 조작 시작 상태로 되돌린다.
+    applyPdfContentRect(pg,g.rect,g.rect,g.objs);
+    Object.assign(ensurePdfContent(pg),g.rect);
+  }
+  renderAll();syncPdfContentUI();
+}
+function drawPdfContentSelection(){
+  const pc=ensurePdfContent(page());if(!pc)return;
+  const ns='http://www.w3.org/2000/svg';
+  const frame=document.createElementNS(ns,'rect');frame.id='pdfContentFrame';
+  frame.setAttribute('x',pc.x);frame.setAttribute('y',pc.y);frame.setAttribute('width',pc.width);frame.setAttribute('height',pc.height);
+  frame.setAttribute('fill','rgba(200,32,46,.035)');frame.setAttribute('stroke','var(--accent)');frame.setAttribute('stroke-width','2');frame.setAttribute('stroke-dasharray','7 4');
+  frame.style.pointerEvents='all';frame.style.cursor='move';frame.style.touchAction='none';
+  frame.addEventListener('mousedown',e=>{e.preventDefault();e.stopPropagation();beginPdfContentGesture('move',-1,e.clientX,e.clientY);});
+  frame.addEventListener('touchstart',e=>{if(e.touches.length!==1)return;e.preventDefault();e.stopPropagation();const t=e.touches[0];beginPdfContentGesture('move',-1,t.clientX,t.clientY);},{passive:false});
+  SV.appendChild(frame);
+  const label=document.createElementNS(ns,'text');label.id='pdfContentLabel';label.setAttribute('x',pc.x+6);label.setAttribute('y',Math.max(14,pc.y+16));label.setAttribute('fill','var(--accent)');label.setAttribute('font-size','11');label.setAttribute('font-weight','700');label.style.pointerEvents='none';label.textContent='PDF '+pdfContentScalePercent()+'%';SV.appendChild(label);
+  const coarse=window.matchMedia('(pointer: coarse)').matches,sz=coarse?34:18;
+  [[pc.x,pc.y],[pc.x+pc.width,pc.y],[pc.x,pc.y+pc.height],[pc.x+pc.width,pc.y+pc.height]].forEach(([x,y],i)=>{
+    const h=document.createElementNS(ns,'rect');h.id='pdfContentHandle'+i;h.dataset.size=sz;h.setAttribute('x',x-sz/2);h.setAttribute('y',y-sz/2);h.setAttribute('width',sz);h.setAttribute('height',sz);h.setAttribute('rx',3);h.setAttribute('fill','rgba(255,255,255,.9)');h.setAttribute('stroke','var(--accent)');h.setAttribute('stroke-width','2');h.style.pointerEvents='all';h.style.touchAction='none';h.style.cursor=(i===0||i===3)?'nwse-resize':'nesw-resize';
+    h.addEventListener('mousedown',e=>{e.preventDefault();e.stopPropagation();beginPdfContentGesture('resize',i,e.clientX,e.clientY);});
+    h.addEventListener('touchstart',e=>{if(e.touches.length!==1)return;e.preventDefault();e.stopPropagation();const t=e.touches[0];beginPdfContentGesture('resize',i,t.clientX,t.clientY);},{passive:false});
+    SV.appendChild(h);
   });
 }
 
@@ -2230,13 +2466,13 @@ function cloneHistObj(o){
 }
 function snapPageState(pg=page()){
   pg=ensurePageLayers(pg);if(!pg)return null;
-  return {objs:pg.objs.map(cloneHistObj),layers:pg.layers.map(l=>({...l})),activeLayerId:pg.activeLayerId};
+  return {objs:pg.objs.map(cloneHistObj),layers:pg.layers.map(l=>({...l})),activeLayerId:pg.activeLayerId,pdfContent:copyPdfRect(pg.pdfContent)};
 }
 function restorePageState(snap,pg=page()){
   if(!pg||!snap)return;
   // 0.7.x 히스토리(객체 배열)도 현재 세션에서 안전하게 복원
   if(Array.isArray(snap)){pg.objs=snap.map(cloneHistObj);ensurePageLayers(pg);}
-  else{pg.objs=(snap.objs||[]).map(cloneHistObj);pg.layers=(snap.layers||[]).map(l=>({...l}));pg.activeLayerId=snap.activeLayerId;ensurePageLayers(pg);}
+  else{pg.objs=(snap.objs||[]).map(cloneHistObj);pg.layers=(snap.layers||[]).map(l=>({...l}));pg.activeLayerId=snap.activeLayerId;pg.pdfContent=Object.prototype.hasOwnProperty.call(snap,'pdfContent')?(snap.pdfContent?copyPdfRect(snap.pdfContent):null):pg.pdfContent;ensurePageLayers(pg);}
   syncObjs();
 }
 function saveH(){
@@ -2539,26 +2775,31 @@ HC.addEventListener('dblclick',onDbl);
 })();
 
 document.addEventListener('mousemove',e=>{
+  if(pdfContentGesture){movePdfContentGesture(e.clientX,e.clientY);return;}
   if(svgR){const r=HC.getBoundingClientRect();doSvgResize((e.clientX-r.left)/zoom,(e.clientY-r.top)/zoom);}
 });
 // SVG 리사이즈 핸들은 hitCanvas 위에 있으므로 모바일에서는 별도의 touchmove/end가 필요하다.
 document.addEventListener('touchmove',e=>{
+  if(pdfContentGesture&&e.touches.length===1){e.preventDefault();const t=e.touches[0];movePdfContentGesture(t.clientX,t.clientY);return;}
   if(!svgR||e.touches.length!==1)return;
   e.preventDefault();
   const t=e.touches[0],r=HC.getBoundingClientRect();
   doSvgResize((t.clientX-r.left)/zoom,(t.clientY-r.top)/zoom);
 },{passive:false});
 document.addEventListener('touchend',e=>{
+  if(pdfContentGesture){e.preventDefault();endPdfContentGesture(true);return;}
   if(!svgR)return;
   e.preventDefault();
   svgR=false;svgTouchR=false;saveH();renderAll();refreshObjList();
 },{passive:false});
 document.addEventListener('touchcancel',e=>{
+  if(pdfContentGesture){e.preventDefault();endPdfContentGesture(false);return;}
   if(!svgR)return;
   e.preventDefault();
   svgR=false;svgTouchR=false;renderAll();refreshObjList();
 },{passive:false});
 document.addEventListener('mouseup',()=>{
+  if(pdfContentGesture){endPdfContentGesture(true);return;}
   if(svgR){svgR=false;svgTouchR=false;saveH();renderAll();return;}
   if(marquee){marquee=null;renderAll();refreshObjList();
     document.getElementById('statusObj').textContent=selCount()?`${selCount()}개 선택`:'';return;}
@@ -2747,6 +2988,7 @@ function duplicateSelectionInPlace(){
 
 // ════════════ 도구 전환 ════════════
 function setTool(t){
+  if(pdfContentEditMode){pdfContentEditMode=false;pdfContentGesture=null;syncPdfContentUI();}
   const prevTool=tool; // commitT()가 내부적으로 tool을 바꾸므로, 실제 전환 여부 판단을 위해 미리 기억
   const wasEditingText=!!actTed;
   if(actTed)commitT(); // 텍스트 편집 중 다른 도구로 전환하면 먼저 확정
@@ -3293,37 +3535,44 @@ async function loadPDFFromFile(file, append=false, insertAt=null){
       const pdfPage=await pdfDoc.getPage(p);
       const vp=pdfPage.getViewport({scale:1.0});
 
-      // A4 비율에 맞게 스케일 계산 (96dpi 기준)
-      const scale=Math.min(A4_W/vp.width, A4_H/vp.height);
-      const pw=Math.round(vp.width*scale),ph=Math.round(vp.height*scale);
-      const scaledVp=pdfPage.getViewport({scale});
+      // 편집 캔버스는 A4로 고정하고 PDF 원본 내용만 그 안에 맞춰 배치한다.
+      const fitScale=Math.min(A4_W/vp.width, A4_H/vp.height);
+      const contentW=Math.round(vp.width*fitScale),contentH=Math.round(vp.height*fitScale);
+      const contentX=Math.round((A4_W-contentW)/2),contentY=Math.round((A4_H-contentH)/2);
+      const scaledVp=pdfPage.getViewport({scale:fitScale}); // 주석 좌표 변환용 논리 해상도
 
+      // 편집화면용 PDF 배경은 1배 대신 최대 2배 해상도로 렌더링한다.
+      // 긴 문서는 메모리 사용량을 억제하도록 밀도를 완만하게 낮춘다.
+      const previewDensity=Math.min(PDF_PREVIEW_MAX_DENSITY,totalPages>60?1.35:totalPages>20?1.6:2);
+      const previewVp=pdfPage.getViewport({scale:fitScale*previewDensity});
       const tmpC=document.createElement('canvas');
-      tmpC.width=pw;tmpC.height=ph;
+      tmpC.width=Math.max(1,Math.round(previewVp.width));tmpC.height=Math.max(1,Math.round(previewVp.height));
       const tc=tmpC.getContext('2d');
-      tc.fillStyle='#ffffff';tc.fillRect(0,0,pw,ph);
-      // annotationMode: DISABLE — 주석을 배경 래스터에 굽지 않음.
-      // 대신 아래에서 getAnnotations()로 읽어 편집 가능한 객체로 변환해 얹는다.
-      await pdfPage.render({canvasContext:tc,viewport:scaledVp,
+      tc.fillStyle='#ffffff';tc.fillRect(0,0,tmpC.width,tmpC.height);
+      await pdfPage.render({canvasContext:tc,viewport:previewVp,
         annotationMode:pdfjs.AnnotationMode?pdfjs.AnnotationMode.DISABLE:0}).promise;
 
-      // 이미지로 변환해서 저장
       const bgImg=new Image();
-      bgImg.src=tmpC.toDataURL('image/jpeg',0.92);
+      bgImg.src=tmpC.toDataURL('image/jpeg',0.94);
       await new Promise(r=>{bgImg.onload=r;});
 
-      // 다른 프로그램에서 만든 주석을 이 앱의 편집 가능한 객체로 가져오기
+      // 외부 PDF 주석은 PDF 내용과 함께 움직이도록 콘텐츠 좌표로 가져온 뒤 offset한다.
       let importedObjs=[];
       try{
         const annots=await pdfPage.getAnnotations({intent:'display'});
-        if(annots&&annots.length)importedObjs=convertPdfAnnotationsToObjs(annots,scaledVp);
+        if(annots&&annots.length){
+          importedObjs=convertPdfAnnotationsToObjs(annots,scaledVp);
+          translateImportedPdfObjs(importedObjs,contentX,contentY);
+        }
       }catch(err){
         console.warn('페이지 '+p+' 주석을 읽는 중 오류:',err);
       }
 
-      const pageObj={bg:null,bgImg,bgDataUrl:bgImg.src,objs:importedObjs,layers:[],activeLayerId:null,
+      const pdfContent={x:contentX,y:contentY,width:contentW,height:contentH,
+        baseWidth:contentW,baseHeight:contentH,sourceRotation:vp.rotation||0,previewDensity};
+      const pageObj={bg:null,bgImg,bgDataUrl:bgImg.src,pdfContent,objs:importedObjs,layers:[],activeLayerId:null,
         undoSt:[],redoSt:[],
-        width:pw,height:ph,
+        width:A4_W,height:A4_H,
         srcDocId:docId,      // 이 페이지가 어느 원본 PDF에서 왔는지
         srcPdfPage:p-1};     // 그 원본에서의 0-based 페이지 인덱스
       ensurePageLayers(pageObj);pageObj.undoSt=[snapPageState(pageObj)];
@@ -3375,13 +3624,10 @@ function renderPageIndex(){
     const tc=thumb.getContext('2d');
     tc.fillStyle='#fff';tc.fillRect(0,0,THUMB_W,THUMB_H);
 
-    // 배경 이미지 그리기
-    if(pg.bgImg){
-      tc.drawImage(pg.bgImg,0,0,THUMB_W,THUMB_H);
-    }
-    // 객체 썸네일 렌더
+    // 배경 PDF와 객체를 같은 캔버스 좌표계로 축소해서 표시
     const scaleX=THUMB_W/pg.width, scaleY=THUMB_H/pg.height;
     tc.save();tc.scale(scaleX,scaleY);
+    drawPageBackground(tc,pg);
     visibleObjs(pg).forEach(o=>drawO(tc,o));
     tc.restore();
 
@@ -3408,9 +3654,8 @@ function updatePageThumb(idx){
   const THUMB_W=130,THUMB_H=parseInt(thumb.style.height)||183;
   tc.clearRect(0,0,THUMB_W,THUMB_H);
   tc.fillStyle='#fff';tc.fillRect(0,0,THUMB_W,THUMB_H);
-  if(pg.bgImg)tc.drawImage(pg.bgImg,0,0,THUMB_W,THUMB_H);
   const sx=THUMB_W/pg.width,sy=THUMB_H/pg.height;
-  tc.save();tc.scale(sx,sy);visibleObjs(pg).forEach(o=>drawO(tc,o));tc.restore();
+  tc.save();tc.scale(sx,sy);drawPageBackground(tc,pg);visibleObjs(pg).forEach(o=>drawO(tc,o));tc.restore();
 }
 
 // 화면 렌더 + 인덱스 썸네일 갱신
@@ -3469,7 +3714,7 @@ function renderFullPNG(pg,scale=1,format='image/png',quality){
   const tc=tmp.getContext('2d');
   tc.fillStyle='#fff';tc.fillRect(0,0,w,h);
   if(scale!==1)tc.scale(scale,scale);
-  if(pg.bgImg)tc.drawImage(pg.bgImg,0,0,pg.width,pg.height);
+  drawPageBackground(tc,pg);
   const prevEditing=editingId; editingId=null;
   visibleObjs(pg).forEach(o=>drawO(tc,o));
   editingId=prevEditing;
@@ -3485,6 +3730,27 @@ function dataUrlToUint8(dataUrl){
 }
 
 // PDF 저장 — 원본이 있으면 벡터 유지 + 주석 오버레이 (다중 원본 지원)
+function outputPdfSizeForPage(pg){
+  // 새 PDF 편집 페이지는 논리 캔버스 794×1123을 실제 A4 point 크기로 출력한다.
+  if(pg&&Math.abs(pg.width-A4_W)<2&&Math.abs(pg.height-A4_H)<2)return [PDF_A4_W,PDF_A4_H];
+  return [pg.width,pg.height];
+}
+async function drawEmbeddedSourcePage(outDoc,outPage,srcDoc,pg,degrees){
+  if(!srcDoc||pg.srcPdfPage==null||pg.srcPdfPage>=srcDoc.getPageCount())return false;
+  const srcPage=srcDoc.getPage(pg.srcPdfPage);
+  const embedded=await outDoc.embedPage(srcPage);
+  const pc=ensurePdfContent(pg)||{x:0,y:0,width:pg.width,height:pg.height,sourceRotation:0};
+  const {width:ow,height:oh}=outPage.getSize(),sx=ow/pg.width,sy=oh/pg.height;
+  const x=pc.x*sx,y=oh-(pc.y+pc.height)*sy,w=pc.width*sx,h=pc.height*sy;
+  const rot=((pc.sourceRotation||0)%360+360)%360;
+  // PDF.js 미리보기와 같은 방향이 되도록 원본 페이지의 Rotation을 배치 변환에 반영
+  if(rot===90)outPage.drawPage(embedded,{x,y:y+h,width:h,height:w,rotate:degrees(-90)});
+  else if(rot===180)outPage.drawPage(embedded,{x:x+w,y:y+h,width:w,height:h,rotate:degrees(180)});
+  else if(rot===270)outPage.drawPage(embedded,{x:x+w,y,width:h,height:w,rotate:degrees(90)});
+  else outPage.drawPage(embedded,{x,y,width:w,height:h});
+  return true;
+}
+
 // ════════════ 표준 PDF 주석으로 저장 ════════════
 // 이 앱의 객체를 진짜 PDF Annotation 딕셔너리로 변환해 페이지에 등록.
 // savePDF()의 "그림으로 합치기" 방식과 달리, 다른 PDF 프로그램에서도
@@ -3618,7 +3884,7 @@ async function saveStandardAnnotatedPDF(){
   msgEl.textContent='PDF 라이브러리 로딩 중...';progEl.style.width='10%';
   try{
     await loadPdfLib();
-    const {PDFDocument,PDFName,PDFString,PDFHexString}=window.PDFLib;
+    const {PDFDocument,PDFName,PDFString,PDFHexString,degrees}=window.PDFLib;
 
     msgEl.textContent='원본 PDF 로딩 중...';progEl.style.width='20%';
     const outDoc=await PDFDocument.create();
@@ -3649,15 +3915,12 @@ async function saveStandardAnnotatedPDF(){
 
       let outPage;
       if(srcDoc && pg.srcPdfPage!=null && pg.srcPdfPage<srcDoc.getPageCount()){
-        const [copied]=await outDoc.copyPages(srcDoc,[pg.srcPdfPage]);
-        outPage=outDoc.addPage(copied);
+        const [ow,oh]=outputPdfSizeForPage(pg);outPage=outDoc.addPage([ow,oh]);
+        await drawEmbeddedSourcePage(outDoc,outPage,srcDoc,pg,degrees);
       } else {
-        // 원본이 없는 페이지(빈 페이지·이미지 등)는 주석을 얹을 벡터 기반이 없으므로
-        // 페이지만 만들고 주석 변환은 건너뜀 (이 페이지의 객체 수만큼 스킵 카운트)
-        outPage=outDoc.addPage([pg.width,pg.height]);
-        skippedPageCount++;
-        skippedObjCount+=visibleObjs(pg).length;
-        continue;
+        // 원본이 없는 페이지는 표준 주석의 기반이 없으므로 빈 페이지만 만들고 건너뜀
+        const [ow,oh]=outputPdfSizeForPage(pg);outPage=outDoc.addPage([ow,oh]);
+        skippedPageCount++;skippedObjCount+=visibleObjs(pg).length;continue;
       }
 
       const {width:pdfW,height:pdfH}=outPage.getSize();
@@ -3806,8 +4069,9 @@ async function savePDFCompressed(scale,quality){
       const dataUrl=renderFullPNG(pg,scale,'image/jpeg',quality);
       const jpgBytes=dataUrlToUint8(dataUrl);
       const img=await outDoc.embedJpg(jpgBytes);
-      const outPage=outDoc.addPage([pg.width,pg.height]); // 페이지 크기(포인트)는 원래 크기 유지, 내부 이미지 해상도만 낮춤
-      outPage.drawImage(img,{x:0,y:0,width:pg.width,height:pg.height});
+      const [ow,oh]=outputPdfSizeForPage(pg);
+      const outPage=outDoc.addPage([ow,oh]); // 논리 A4 캔버스는 실제 A4 point 크기로 출력
+      outPage.drawImage(img,{x:0,y:0,width:ow,height:oh});
     }
 
     msgEl.textContent='파일 생성 중...';progEl.style.width='95%';
@@ -3875,31 +4139,23 @@ async function savePDF(){
 
       let outPage;
       if(srcDoc && pg.srcPdfPage!=null && pg.srcPdfPage<srcDoc.getPageCount()){
-        // 원본 벡터 페이지를 그대로 복사
-        const [copied]=await outDoc.copyPages(srcDoc,[pg.srcPdfPage]);
-        outPage=outDoc.addPage(copied);
-        // 주석만 투명 PNG로 얹기
+        // 고정 캔버스 크기의 새 페이지에 원본 PDF 페이지를 벡터 XObject로 배치한다.
+        // 따라서 화면에서 조정한 PDF 내용 크기/위치가 저장 결과에도 그대로 유지된다.
+        const [ow,oh]=outputPdfSizeForPage(pg);outPage=outDoc.addPage([ow,oh]);
+        await drawEmbeddedSourcePage(outDoc,outPage,srcDoc,pg,degrees);
+        // Markly 객체는 캔버스 전체 기준 투명 오버레이로 얹는다.
         const annPng=renderAnnotationsPNG(pg);
         if(annPng){
           const png=await outDoc.embedPng(annPng);
-          const {width:pw,height:ph}=outPage.getSize();
-          const rot=(outPage.getRotation().angle%360+360)%360;
-          if(rot===90){
-            outPage.drawImage(png,{x:pw,y:0,width:ph,height:pw,rotate:degrees(90)});
-          }else if(rot===180){
-            outPage.drawImage(png,{x:pw,y:ph,width:pw,height:ph,rotate:degrees(180)});
-          }else if(rot===270){
-            outPage.drawImage(png,{x:0,y:ph,width:ph,height:pw,rotate:degrees(270)});
-          }else{
-            outPage.drawImage(png,{x:0,y:0,width:pw,height:ph});
-          }
+          outPage.drawImage(png,{x:0,y:0,width:ow,height:oh});
         }
       } else {
         // 원본이 없는 페이지(빈 페이지·이미지 등) → 전체 래스터 embed
         const fullPng=renderFullPNG(pg);
         const png=await outDoc.embedPng(fullPng);
-        outPage=outDoc.addPage([pg.width,pg.height]);
-        outPage.drawImage(png,{x:0,y:0,width:pg.width,height:pg.height});
+        const [ow,oh]=outputPdfSizeForPage(pg);
+        outPage=outDoc.addPage([ow,oh]);
+        outPage.drawImage(png,{x:0,y:0,width:ow,height:oh});
       }
     }
 
@@ -3955,16 +4211,10 @@ async function savePDFRaster(name){
 // PNG 저장 (현재 페이지)
 function savePNG(){
   const pg=pages[curPageIdx];if(!pg)return;
-  const tmp=document.createElement('canvas');
-  tmp.width=pg.width;tmp.height=pg.height;
-  const tc=tmp.getContext('2d');
-  tc.fillStyle='#fff';tc.fillRect(0,0,pg.width,pg.height);
-  if(pg.bgImg)tc.drawImage(pg.bgImg,0,0,pg.width,pg.height);
-  visibleObjs(pg).forEach(o=>drawO(tc,o));
   const a=document.createElement('a');
   const name=(curFile||'untitled').replace(/\.[^.]+$/,'')||'untitled';
   a.download=name+'_'+(curPageIdx+1)+'.png';
-  a.href=tmp.toDataURL('image/png');
+  a.href=renderFullPNG(pg);
   a.click();
 }
 
@@ -3991,6 +4241,7 @@ function savePMF(){
     width:pg.width,height:pg.height,
     srcDocId:pg.srcDocId!=null?pg.srcDocId:null,
     srcPdfPage:pg.srcPdfPage!=null?pg.srcPdfPage:null,
+    pdfContent:pg.pdfContent?copyPdfRect(pg.pdfContent):null,
     layers:ensurePageLayers(pg).layers.map(l=>({...l})),
     activeLayerId:pg.activeLayerId,
     objs:pg.objs.map(o=>{
@@ -4012,7 +4263,7 @@ function savePMF(){
   let origPdfB64=null;
   if(!Object.keys(origPdfs).length && origPdfBytes)origPdfB64=u8ToB64(origPdfBytes);
 
-  const project={version:5,appName:'PDF Markly',
+  const project={version:6,appName:'PDF Markly',
     origPdfs,            // { docId: base64 } (신규)
     origPdf:origPdfB64,  // 단일 원본 (레거시 호환)
     pages:savePages,meta:{title:curFile||'untitled',savedAt:new Date().toISOString()}};
@@ -4189,7 +4440,7 @@ function insertImageAsPage(file,insertAt){
         const w=img.naturalWidth||img.width||A4_W, h=img.naturalHeight||img.height||A4_H;
         const scale=Math.min(A4_W/w,A4_H/h);
         const pw=Math.round(w*scale), ph=Math.round(h*scale);
-        const newPage={bg:null,bgImg:img,bgDataUrl:img.src,objs:[],layers:[],activeLayerId:null,
+        const newPage={bg:null,bgImg:img,bgDataUrl:img.src,pdfContent:null,objs:[],layers:[],activeLayerId:null,
           undoSt:[],redoSt:[],width:pw,height:ph,srcDocId:null,srcPdfPage:null};
         ensurePageLayers(newPage);newPage.undoSt=[snapPageState(newPage)];
         pages.splice(Math.max(0,Math.min(pages.length,insertAt)),0,newPage);
@@ -4301,13 +4552,14 @@ async function loadPMFProject(project,fileName){
     let srcDocId=sp.srcDocId!=null?sp.srcDocId:null;
     if(srcDocId==null && sp.srcPdfPage!=null && project._legacyDocId)srcDocId=project._legacyDocId;
     const np={bg:null,bgImg,bgDataUrl:sp.bgDataUrl||null,
+      pdfContent:sp.pdfContent?copyPdfRect(sp.pdfContent):null,
       objs:loadedObjs,
       layers:Array.isArray(sp.layers)?sp.layers.map(l=>({...l})):[],activeLayerId:sp.activeLayerId||null,
       undoSt:[],redoSt:[],
       width:sp.width||A4_W,height:sp.height||A4_H,
       srcDocId,
       srcPdfPage:sp.srcPdfPage!=null?sp.srcPdfPage:null};
-    ensurePageLayers(np);np.undoSt=[snapPageState(np)];pages.push(np);
+    ensurePageLayers(np);if(np.srcPdfPage!=null&&np.bgImg&&!np.pdfContent)ensurePdfContent(np);np.undoSt=[snapPageState(np)];pages.push(np);
   }
   resyncOidSeq();
   curFile=project.meta?.title||fileName;
@@ -4625,7 +4877,7 @@ function normalizeFontFamily(f){
 }
 
 // ════════════ 버전 정보 & 업데이트 확인 ════════════
-const APP_VERSION='0.8.6';
+const APP_VERSION='0.9.0';
 // 실제 배포용 GitHub 저장소를 만들면 'owner/repo' 형태로 채워주세요. (예: 'limfrog75/pdf-markly')
 // 비워두면 업데이트 확인을 시도하지 않습니다.
 const UPDATE_CHECK_REPO='limfrog/pdf_markly';
