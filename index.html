@@ -1550,6 +1550,8 @@ function insertMusicSymbolAtCenter(){
 let selId=null;      // 대표 선택 (마지막으로 선택된 객체)
 let selIds=[];       // 다중 선택 집합
 let clip=null;       // 단일/다중 클립보드 (배열)
+let clipCopiedAt=0;  // 객체 복사 시각 — 이후 캔버스 클릭이 있을 때만 그 위치에 붙여넣기
+let lastClickX=0,lastClickY=0,lastCanvasClickAt=0; // 마지막 캔버스 클릭 위치/시각 (붙여넣기 기준)
 let tool='select2';
 let CW=A4_W, CH=A4_H;
 let marquee=null;    // 영역 선택 드래그 상태 {x0,y0,x1,y1}
@@ -2510,9 +2512,15 @@ function offsetClone(o,d=15){
   return c;
 }
 function duplicateSelected(){
+  // Ctrl+D / 컨텍스트 메뉴 '복제': 선택 객체를 원본과 정확히 같은 위치에 복제한다.
   const sel=selectedObjs();if(!sel.length)return;
   const newIds=[];
-  sel.forEach(o=>{const c=offsetClone(o);get_objs().push(c);newIds.push(c.id);});
+  sel.forEach(o=>{
+    if(!isObjEditable(o))return;
+    const c=cloneObj(o);
+    get_objs().push(c);newIds.push(c.id);
+  });
+  if(!newIds.length)return;
   setSelection(newIds);
   saveH();renderAll();refreshObjList();
 }
@@ -2893,6 +2901,7 @@ function moveSelectedObjsBy(dx,dy){
 function onDown(e){
   if(isPinching)return; // 핀치 줌 도중에는 그리기/선택 동작을 시작하지 않음
   const{x,y}=getPos(e);const xi=Math.round(x),yi=Math.round(y);
+  lastClickX=xi;lastClickY=yi;lastCanvasClickAt=Date.now(); // Ctrl+V 붙여넣기 기준 위치
   if(actTed){commitT();return;}
 
   if(tool!=='select2'&&['text','musicSymbol','pencil','eraser','highlight','line','rect','ellipse','arrow','staff'].includes(tool) && !canCreateOnActiveLayer()){layerBlockedMessage();return;}
@@ -4765,6 +4774,7 @@ function showAbout(){
 // ════════════ 컨텍스트 메뉴 ════════════
 HC.addEventListener('contextmenu',e=>{
   e.preventDefault();
+  const p=getPos(e);lastClickX=Math.round(p.x);lastClickY=Math.round(p.y);lastCanvasClickAt=Date.now();
   const menu=document.getElementById('ctxMenu');
   menu.style.left=e.clientX+'px';menu.style.top=e.clientY+'px';
   menu.classList.add('show');
@@ -4783,27 +4793,53 @@ function ctxAction(a){
 }
 function copySelection(){
   const sel=selectedObjs();
-  if(!sel.length){clip=null;return;}
-  // Image 객체 참조를 별도 보관하며 직렬화
+  if(!sel.length){clip=null;clipCopiedAt=0;return;}
+  // Image 객체 참조를 별도 보관하며 나머지 속성(richLines 포함)은 깊은 복사한다.
   clip=sel.map(o=>{
     const c=JSON.parse(JSON.stringify(o));
     normalizeRichTextObject(c);
     if(o.type==='image'&&o.img)c._imgObj=o.img;
     return c;
   });
+  clipCopiedAt=Date.now();
+}
+function translateClipObject(o,dx,dy){
+  if(!o||(!dx&&!dy))return;
+  if(o.type==='stroke')o.points=(o.points||[]).map(p=>({x:p.x+dx,y:p.y+dy}));
+  else if(o.type==='shape'){o.x1+=dx;o.y1+=dy;o.x2+=dx;o.y2+=dy;}
+  else{o.x=(o.x||0)+dx;o.y=(o.y||0)+dy;}
+}
+function clipGroupBounds(items){
+  let x1=Infinity,y1=Infinity,x2=-Infinity,y2=-Infinity;
+  for(const o of items||[]){
+    const b=getBounds(o);if(!b||![b.x,b.y,b.w,b.h].every(Number.isFinite))continue;
+    x1=Math.min(x1,b.x);y1=Math.min(y1,b.y);x2=Math.max(x2,b.x+b.w);y2=Math.max(y2,b.y+b.h);
+  }
+  return Number.isFinite(x1)?{x:x1,y:y1,w:Math.max(1,x2-x1),h:Math.max(1,y2-y1)}:null;
 }
 function pasteClip(){
   if(!clip||!clip.length)return;
-  const newIds=[];
-  clip.forEach(src=>{
+  const copies=clip.map(src=>{
     const c=JSON.parse(JSON.stringify(src));c.id=mkId();normalizeRichTextObject(c);
-    if(c.type==='stroke')c.points=c.points.map(p=>({x:p.x+15,y:p.y+15}));
-    else if(c.type==='shape'){c.x1+=15;c.y1+=15;c.x2+=15;c.y2+=15;}
-    else{c.x+=15;c.y+=15;}
     if(c.type==='image'&&src._imgObj)c.img=src._imgObj;
     delete c._imgObj;
-    get_objs().push(c);newIds.push(c.id);
+    return c;
   });
+  // 복사 이후 사용자가 캔버스를 다시 클릭했다면 그 지점을 복사 묶음의 중심으로 사용한다.
+  // 새 클릭이 없으면 이전과 같은 작은 오프셋으로 붙여넣는다.
+  const useClick=!!lastCanvasClickAt && lastCanvasClickAt>clipCopiedAt;
+  let dx=15,dy=15;
+  if(useClick){
+    const b=clipGroupBounds(copies);
+    if(b){
+      let nx=lastClickX-b.w/2, ny=lastClickY-b.h/2;
+      if(b.w<=CW)nx=Math.max(0,Math.min(CW-b.w,nx));
+      if(b.h<=CH)ny=Math.max(0,Math.min(CH-b.h,ny));
+      dx=nx-b.x;dy=ny-b.y;
+    }
+  }
+  const newIds=[];
+  copies.forEach(c=>{translateClipObject(c,dx,dy);get_objs().push(c);newIds.push(c.id);});
   setSelection(newIds);
   saveH();renderAll();refreshObjList();
 }
@@ -4956,7 +4992,7 @@ function normalizeFontFamily(f){
 }
 
 // ════════════ 버전 정보 & 업데이트 확인 ════════════
-const APP_VERSION='0.9.1';
+const APP_VERSION='0.9.2';
 // 실제 배포용 GitHub 저장소를 만들면 'owner/repo' 형태로 채워주세요. (예: 'limfrog75/pdf-markly')
 // 비워두면 업데이트 확인을 시도하지 않습니다.
 const UPDATE_CHECK_REPO='limfrog/pdf_markly';
