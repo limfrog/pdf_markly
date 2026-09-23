@@ -629,6 +629,14 @@ canvas{display:block;}
         </div>
         <input type="hidden" id="fontSizeInput" value="16">
         <span style="font-size:9px;color:var(--muted)">pt</span>
+        <span style="font-size:9px;color:var(--muted)">줄간격</span>
+        <div class="fsize-ctrl fsize-ctrl-sm">
+          <button class="fsize-btn" onclick="stepLineHeight(-5)" ontouchstart="event.preventDefault();stepLineHeight(-5)">−</button>
+          <span class="fsize-display" id="textLineHeightDisplay" onclick="openNumModal('textLineHeight')">110</span>
+          <button class="fsize-btn" onclick="stepLineHeight(5)" ontouchstart="event.preventDefault();stepLineHeight(5)">＋</button>
+        </div>
+        <input type="hidden" id="textLineHeight" value="110">
+        <span style="font-size:9px;color:var(--muted)">%</span>
         <button class="style-btn" id="btn-bold" onclick="toggleBold()"><b>B</b></button>
         <button class="style-btn" id="btn-italic" onclick="toggleItalic()"><i>I</i></button>
         <button class="style-btn" id="btn-underline" onclick="toggleUnderline()"><u>U</u></button>
@@ -894,7 +902,7 @@ canvas{display:block;}
         PDF 파일을 열어 주석·텍스트·도형을 추가하고<br>
         PDF / PNG / PMF 형식으로 저장할 수 있습니다.<br><br>
         · PDF 열기 → 페이지별 편집<br>
-        · 텍스트, 도형, 연필, 형광펜 도구<br>
+        · 텍스트(줄간격 조절), 도형, 연필, 형광펜 도구<br>
         · 붙임줄 · Shuffle 1/2 · 오선 마디줄<br>
         · 다중 페이지 지원<br>
         · PDF / PNG / PMF 저장
@@ -1306,6 +1314,10 @@ function syncRibbonToSelection(){
   if(o.type==='text'){
     if(o.fontFamily)set('fontFamily',normalizeFontFamily(o.fontFamily));
     if(o.fontSize!=null)set('fontSizeInput',o.fontSize);
+    const lhPct=Math.max(70,Math.min(300,Math.round((o.lineHeight??1.1)*100)));
+    const lhEl=document.getElementById('textLineHeight');if(lhEl)lhEl.value=lhPct;
+    const lhDisp=document.getElementById('textLineHeightDisplay');if(lhDisp)lhDisp.textContent=lhPct;
+    fLineHeight=lhPct/100;
     document.getElementById('btn-bold')?.classList.toggle('active',!!o.bold);
     document.getElementById('btn-italic')?.classList.toggle('active',!!o.italic);
     document.getElementById('btn-underline')?.classList.toggle('active',!!o.underline);
@@ -1350,7 +1362,7 @@ let svgR=false,svgHi=-1,svgSX=0,svgSY=0,svgOrigO=null,svgOrigB=null,svgTouchR=fa
 let fgH='#000000', bgH='#ffffff'; // 전경: 검정, 배경: 흰색 (기본 배경색)
 let fgA=1,bgA=0.4;
 let strokeW=2;
-let fFam='Noto Sans KR', fSz=16, fBold=false, fItal=false, fUnder=false, fBoxed=false;
+let fFam='Noto Sans KR', fSz=16, fLineHeight=1.1, fBold=false, fItal=false, fUnder=false, fBoxed=false;
 const BOX_PAD_DEFAULT=8, BOX_STROKE_DEFAULT=1.5, BOX_RADIUS_DEFAULT=0;
 let fBoxPad=BOX_PAD_DEFAULT, fBoxStroke=BOX_STROKE_DEFAULT, fBoxRadius=BOX_RADIUS_DEFAULT, fBoxFill=false;
 let shapeFill='none';
@@ -1661,7 +1673,7 @@ function drawO(c,o,hit=false,overlay=false){
     if(o.italic)st.push('italic');
     c.font=`${st.join(' ')} ${o.fontSize}px ${normalizeFontFamily(o.fontFamily)}`.trim();
     const lines=(o.text||'').split('\n');
-    const lh=o.fontSize*1.1;
+    const lh=o.fontSize*(o.lineHeight??1.1);
 
     // 텍스트 블록이 실제로 차지하는 시각적 높이 측정 (첫 줄의 ascent + 마지막 줄의 descent)
     // -> 줄간격(lh) 기반 근사 대신 실측치를 써야 박스 안에서 세로 중앙 정렬이 정확해짐
@@ -1862,7 +1874,7 @@ function getBounds(o){
     c2.font=`${st.join(' ')} ${o.fontSize}px ${normalizeFontFamily(o.fontFamily)}`.trim();
     const lines=(o.text||'').split('\n');
     const maxW=Math.max(...lines.map(l=>c2.measureText(l).width),10);
-    const lh=o.fontSize*1.1;
+    const lh=o.fontSize*(o.lineHeight??1.1);
     const firstMetrics=c2.measureText(lines[0]||'');
     const lastMetrics=lines.length>1?c2.measureText(lines[lines.length-1]):firstMetrics;
     const ascent=firstMetrics.actualBoundingBoxAscent||o.fontSize*0.75;
@@ -2254,6 +2266,10 @@ function openTed(x,y,exist=null){
     if(exist._edH)ed.style.height=exist._edH+'px';
     if(exist.fontFamily){fFam=normalizeFontFamily(exist.fontFamily);document.getElementById('fontFamily').value=fFam;}
     if(exist.fontSize){fSz=exist.fontSize;document.getElementById('fontSizeInput').value=fSz;syncStepperDisplay('fontSizeInput');}
+    fLineHeight=exist.lineHeight??1.1;
+    const lhPct=Math.max(70,Math.min(300,Math.round(fLineHeight*100)));
+    document.getElementById('textLineHeight').value=lhPct;
+    document.getElementById('textLineHeightDisplay').textContent=lhPct;
     fBold=!!exist.bold;fItal=!!exist.italic;fUnder=!!exist.underline;fBoxed=!!exist.boxed;
     document.getElementById('btn-bold').classList.toggle('active',fBold);
     document.getElementById('btn-italic').classList.toggle('active',fItal);
@@ -2297,6 +2313,7 @@ function applyLiveTextEditorStyle(ed){
   const x=ed._x,y=ed._y;
   ed.style.fontFamily=normalizeFontFamily(fFam);
   ed.style.fontSize=fSz+'px';
+  ed.style.lineHeight=String(fLineHeight);
   ed.style.fontWeight=fBold?'bold':'normal';
   ed.style.fontStyle=fItal?'italic':'normal';
   ed.style.textDecoration=fUnder?'underline':'none';
@@ -2351,7 +2368,7 @@ function commitT(){
     renderAll();return;
   }
 
-  const props={fontFamily:fFam,fontSize:fSz,bold:fBold,italic:fItal,underline:fUnder,boxed:fBoxed,
+  const props={fontFamily:fFam,fontSize:fSz,lineHeight:fLineHeight,bold:fBold,italic:fItal,underline:fUnder,boxed:fBoxed,
     boxPad:fBoxPad,boxStrokeWidth:fBoxStroke,boxRadius:fBoxRadius,boxFill:fBoxFill,
     color:fgH,alpha:fgA,_edW:edW,_edH:edH};
 
@@ -2725,7 +2742,10 @@ const NUM_MODAL_CONFIG={
     setter:v=>{document.getElementById('boxStrokeInput').value=v;applyBoxStroke();}},
   boxRadiusInput:{label:'모서리 반경',min:0,max:60,step:1,unit:'px',
     getter:()=>parseInt(document.getElementById('boxRadiusInput').value)||0,
-    setter:v=>{document.getElementById('boxRadiusInput').value=v;applyBoxRadius();}}
+    setter:v=>{document.getElementById('boxRadiusInput').value=v;applyBoxRadius();}},
+  textLineHeight:{label:'줄간격',min:70,max:300,step:5,unit:'%',
+    getter:()=>parseInt(document.getElementById('textLineHeight').value)||110,
+    setter:v=>setLineHeightPct(v)}
 };
 let _numModalKey=null;
 function openNumModal(key){
@@ -2804,6 +2824,21 @@ function applyFontSize(){
   syncStepperDisplay('fontSizeInput');
   const mv=document.getElementById('fontSizeModalVal');if(mv)mv.textContent=fSz;
   const ms=document.getElementById('fontSizeSlider');if(ms)ms.value=Math.min(120,fSz);
+}
+function setLineHeightPct(v){
+  const pct=Math.max(70,Math.min(300,Math.round(Number(v)||110)));
+  const input=document.getElementById('textLineHeight');
+  const display=document.getElementById('textLineHeightDisplay');
+  if(input)input.value=pct;
+  if(display)display.textContent=pct;
+  fLineHeight=pct/100;
+  applyPropToSelection(o=>{if(o.type==='text'){o.lineHeight=fLineHeight;return true;}return false;});
+  if(actTed)applyLiveTextEditorStyle(actTed);
+}
+function stepLineHeight(d){
+  const input=document.getElementById('textLineHeight');
+  const cur=parseInt(input?.value)||110;
+  setLineHeightPct(cur+d);
 }
 function toggleBold(){
   fBold=!fBold;document.getElementById('btn-bold').classList.toggle('active',fBold);
@@ -3460,7 +3495,8 @@ function objToPdfAnnotRef(o,context,toPdf,scaleAvg,PDFString,PDFHexString){
     c2.font=`${st.join(' ')} ${o.fontSize}px ${normalizeFontFamily(o.fontFamily)}`.trim();
     const lines=(o.text||'').split('\n');
     const maxW=Math.max(...lines.map(l=>c2.measureText(l).width),10)*scaleAvg;
-    const h=lines.length*o.fontSize*1.1*scaleAvg;
+    const lineH=o.fontSize*(o.lineHeight??1.1);
+    const h=(o.fontSize+Math.max(0,lines.length-1)*lineH)*scaleAvg;
     const rect=[x1,y1-h,x1+maxW,y1];
     const fontSizePdf=Math.max(4,o.fontSize*scaleAvg);
     const [cr,cg,cb]=C;
@@ -4454,7 +4490,7 @@ function normalizeFontFamily(f){
 }
 
 // ════════════ 버전 정보 & 업데이트 확인 ════════════
-const APP_VERSION='0.8.7';
+const APP_VERSION='0.8.8';
 // 실제 배포용 GitHub 저장소를 만들면 'owner/repo' 형태로 채워주세요. (예: 'limfrog75/pdf-markly')
 // 비워두면 업데이트 확인을 시도하지 않습니다.
 const UPDATE_CHECK_REPO='limfrog/pdf_markly';
