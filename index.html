@@ -1064,7 +1064,7 @@ canvas{display:block;}
             <div class="guide-card"><b>표준 주석 PDF</b><span>가능한 주석을 PDF 표준 주석 형태로 저장해 다른 PDF 프로그램에서도 주석으로 인식·수정할 수 있도록 합니다.</span></div>
             <div class="guide-card"><b>PNG 저장</b><span>현재 페이지만 하나의 PNG 이미지로 저장합니다.</span></div>
             <div class="guide-card"><b>PMF 저장</b><span>레이어, 객체, 편집 상태와 원본 PDF 정보를 보존하는 PDF Markly 프로젝트 형식입니다.</span></div>
-            <div class="guide-card"><b>인쇄</b><span>파일 → 인쇄에서 전체 페이지 또는 현재 페이지만 선택해 Windows·macOS·모바일의 시스템 인쇄 화면으로 보냅니다. 숨긴 레이어는 제외됩니다.</span></div>
+            <div class="guide-card"><b>인쇄</b><span>파일 → 인쇄에서 전체 페이지 또는 현재 페이지만 선택해 시스템 인쇄 화면으로 보냅니다. iPhone/iPad에서는 페이지 준비 후 ‘시스템 인쇄 열기’를 한 번 더 눌러야 합니다. 숨긴 레이어는 제외됩니다.</span></div>
           </div>
           <h4>페이지</h4>
           <p><b>페이지 추가</b>로 빈 페이지를 추가하고, <b>페이지 삭제</b>로 현재 페이지를 제거합니다. 왼쪽 페이지 목록을 눌러 페이지를 전환합니다.</p>
@@ -1078,7 +1078,7 @@ canvas{display:block;}
             <li><b>두 손가락</b> 핀치는 확대/축소, 두 손가락 드래그는 확대된 캔버스 이동에 사용합니다.</li>
             <li>도형을 선택한 뒤 파란 핸들을 손가락으로 잡아 드래그하면 크기를 조절할 수 있습니다. 실제 터치 판정 영역은 보이는 핸들보다 크게 설정되어 있습니다.</li>
             <li>레이어 패널의 객체별 ↑ / ↓ / ✕ 버튼도 모바일에서 누르기 쉽도록 큰 터치 영역을 사용합니다.</li>
-            <li><b>파일 → 인쇄</b>를 누르면 iPhone/iPad·Android에서도 시스템 인쇄 화면이 열립니다. 전체 페이지와 현재 페이지 중에서 선택할 수 있습니다.</li>
+            <li><b>파일 → 인쇄</b>에서 전체 페이지와 현재 페이지 중 하나를 선택할 수 있습니다. Android는 준비 후 바로 시스템 인쇄 화면이 열리고, <b>iPhone/iPad는 준비 완료 후 ‘시스템 인쇄 열기’를 한 번 더 눌러야</b> 합니다. 이 두 번째 탭이 iOS의 사용자 동작 제한을 만족시켜 AirPrint 화면을 안정적으로 엽니다.</li>
           </ul>
         </section>
 
@@ -1230,7 +1230,7 @@ canvas{display:block;}
         <input type="radio" name="printScope" value="current">
         <div><div class="save-opt-title">현재 페이지만</div><div class="save-opt-desc">현재 편집 중인 페이지만 인쇄합니다.</div></div>
       </label>
-      <div class="print-opt-note">Windows · macOS · iPhone/iPad · Android의 브라우저/PWA에서 시스템 인쇄 화면을 엽니다. 숨긴 레이어는 인쇄되지 않으며, 페이지 수에 따라 화질과 메모리 사용량을 자동 조절합니다.</div>
+      <div class="print-opt-note">Windows · macOS · Android에서는 준비가 끝나면 시스템 인쇄 화면을 바로 엽니다. iPhone/iPad에서는 Safari/WebKit의 인쇄 제한을 피하기 위해 먼저 페이지를 준비한 뒤 <b>시스템 인쇄 열기</b> 버튼을 한 번 더 눌러 인쇄합니다. 숨긴 레이어는 인쇄되지 않으며, 페이지 수에 따라 화질과 메모리 사용량을 자동 조절합니다.</div>
       <div class="print-progress" id="printProgress"></div>
     </div>
     <div class="modal-foot">
@@ -3811,27 +3811,53 @@ function renderAll(){
 // ════════════ 인쇄 ════════════
 // 브라우저 자체 화면을 인쇄하면 리본/패널까지 함께 찍히므로, 인쇄 직전에 문서 페이지만
 // 고해상도 이미지로 렌더해 #printRoot에 구성한 뒤 시스템 인쇄 대화상자를 호출한다.
-// 원본 PDF 페이지가 있는 경우에는 PDF.js에서 인쇄 배율로 다시 렌더해 편집용 미리보기(JPEG)를
-// 단순 확대하지 않도록 한다. 이렇게 하면 데스크탑과 모바일 모두 같은 인쇄 경로를 사용한다.
+// iOS/iPadOS WebKit은 비동기 준비(await) 이후의 print() 호출을 사용자 탭과 분리해 무시하는
+// 경우가 있으므로, iPhone/iPad에서는 1차 탭으로 페이지를 준비하고 2차 탭에서 print()를
+// 동기적으로 직접 호출한다. 또한 Safari는 afterprint를 너무 일찍 발생시키는 경우가 있어
+// iOS에서는 인쇄 DOM을 즉시 정리하지 않고 다음 인쇄/닫기 때까지 유지한다.
 let printInProgress=false;
 let printCleanupTimer=null;
+let iosPrintPrepared=false;
+let printObjectUrls=[];
 
+function isIOSPrintEnvironment(){
+  const ua=navigator.userAgent||'';
+  return /iPad|iPhone|iPod/i.test(ua) || (navigator.platform==='MacIntel' && (navigator.maxTouchPoints||0)>1);
+}
+function setPrintScopeDisabled(disabled){
+  document.querySelectorAll('input[name="printScope"]').forEach(el=>{el.disabled=!!disabled;});
+}
+function resetPrintButton(){
+  const b=document.getElementById('printStartBtn');
+  if(b){b.disabled=false;b.textContent='인쇄 시작';}
+}
 function openPrintModal(){
   if(actTed)commitT();
+  // 이전 iOS 인쇄 준비물이 남아 있으면 새 작업 시작 전에 정리한다.
+  iosPrintPrepared=false;
+  clearPrintRoot();
+  setPrintScopeDisabled(false);
   const m=document.getElementById('printModal');
   const p=document.getElementById('printProgress');
-  const b=document.getElementById('printStartBtn');
   if(p)p.textContent='';
-  if(b){b.disabled=false;b.textContent='인쇄 시작';}
+  resetPrintButton();
   if(m)m.classList.remove('hidden');
 }
 function closePrintModal(){
   if(printInProgress)return;
   document.getElementById('printModal')?.classList.add('hidden');
+  iosPrintPrepared=false;
+  setPrintScopeDisabled(false);
+  clearPrintRoot();
+  resetPrintButton();
 }
 function clearPrintRoot(){
   const root=document.getElementById('printRoot');
   if(root)root.innerHTML='';
+  for(const url of printObjectUrls){
+    try{URL.revokeObjectURL(url);}catch(_){ }
+  }
+  printObjectUrls=[];
   if(printCleanupTimer){clearTimeout(printCleanupTimer);printCleanupTimer=null;}
 }
 function selectedPrintPageIndices(){
@@ -3839,15 +3865,17 @@ function selectedPrintPageIndices(){
   return mode==='current'?[curPageIdx]:pages.map((_,i)=>i);
 }
 function choosePrintRenderScale(indices){
-  // 한 장/짧은 문서는 약 288dpi(3x)까지, 긴 문서는 모바일 메모리 폭주를 막기 위해 자동 하향.
+  // iOS는 모든 페이지 이미지를 인쇄 시점까지 메모리에 유지해야 하므로 더 보수적인 예산을 사용한다.
+  const ios=isIOSPrintEnvironment();
   const coarse=window.matchMedia?.('(pointer:coarse)')?.matches||navigator.maxTouchPoints>0;
   const totalBasePixels=indices.reduce((sum,i)=>{
     const pg=pages[i];return sum+Math.max(1,(pg?.width||A4_W)*(pg?.height||A4_H));
   },0);
-  const pixelBudget=coarse?70_000_000:130_000_000;
+  const pixelBudget=ios?32_000_000:(coarse?70_000_000:130_000_000);
   const byBudget=Math.sqrt(pixelBudget/Math.max(1,totalBasePixels));
-  const maxScale=coarse?2.5:3;
-  return Math.max(1.35,Math.min(maxScale,byBudget));
+  const maxScale=ios?2.0:(coarse?2.5:3);
+  const minScale=ios?1.0:(coarse?1.15:1.35);
+  return Math.max(minScale,Math.min(maxScale,byBudget));
 }
 async function getPrintPdfDoc(pg,cache){
   if(pg?.srcPdfPage==null)return null;
@@ -3863,6 +3891,19 @@ async function getPrintPdfDoc(pg,cache){
     cache[key]=await pdfjs.getDocument({data:copy}).promise;
   }catch(err){console.warn('인쇄용 원본 PDF 로딩 실패:',err);cache[key]=null;}
   return cache[key];
+}
+function canvasToPrintURL(canvas){
+  return new Promise((resolve,reject)=>{
+    if(!canvas.toBlob){
+      try{return resolve(canvas.toDataURL('image/png'));}catch(err){return reject(err);}
+    }
+    canvas.toBlob(blob=>{
+      if(!blob){
+        try{return resolve(canvas.toDataURL('image/png'));}catch(err){return reject(err);}
+      }
+      const url=URL.createObjectURL(blob);printObjectUrls.push(url);resolve(url);
+    },'image/png');
+  });
 }
 async function renderPrintPagePNG(pg,scale,pdfCache){
   const w=Math.max(1,Math.round(pg.width*scale)),h=Math.max(1,Math.round(pg.height*scale));
@@ -3884,6 +3925,8 @@ async function renderPrintPagePNG(pg,scale,pdfCache){
       const pdfjs=await loadPDFjs();
       await srcPage.render({canvasContext:tc,viewport:vp,annotationMode:pdfjs.AnnotationMode?pdfjs.AnnotationMode.DISABLE:0}).promise;
       c.drawImage(tmp,pc.x*scale,pc.y*scale,pc.width*scale,pc.height*scale);
+      // 큰 임시 캔버스 backing store를 즉시 해제해 iPhone 메모리 압박을 줄인다.
+      tmp.width=1;tmp.height=1;
       drewSource=true;
     }catch(err){console.warn('인쇄용 PDF 페이지 렌더 실패, 미리보기로 대체:',err);}
   }
@@ -3896,9 +3939,50 @@ async function renderPrintPagePNG(pg,scale,pdfCache){
   const prevEditing=editingId;editingId=null;
   c.save();c.scale(scale,scale);visibleObjs(pg).forEach(o=>drawO(c,o));c.restore();
   editingId=prevEditing;
-  return out.toDataURL('image/png');
+  const url=await canvasToPrintURL(out);
+  // Blob 생성이 끝났으므로 원본 canvas 메모리도 즉시 줄인다.
+  out.width=1;out.height=1;
+  return url;
 }
+
+// iPhone/iPad에서는 이 함수가 반드시 실제 사용자의 두 번째 탭 안에서 동기적으로 호출된다.
+// 중간에 await/setTimeout/requestAnimationFrame을 넣지 않는다.
+function openPreparedSystemPrint(){
+  if(!iosPrintPrepared||printInProgress)return;
+  const modal=document.getElementById('printModal');
+  const progress=document.getElementById('printProgress');
+  const btn=document.getElementById('printStartBtn');
+  if(modal)modal.classList.add('hidden');
+  try{
+    window.focus();
+    window.print();
+  }catch(err){
+    console.error('시스템 인쇄 호출 실패:',err);
+    if(modal)modal.classList.remove('hidden');
+    if(progress)progress.textContent='시스템 인쇄 화면을 열지 못했습니다. 다시 시도해 주세요.';
+    return;
+  }
+  // iOS의 print()/afterprint는 비동기로 동작할 수 있다. 인쇄용 DOM은 유지하고,
+  // 사용자가 돌아왔을 때 같은 준비물로 재시도할 수 있도록 버튼을 다시 노출한다.
+  setTimeout(()=>{
+    if(!iosPrintPrepared)return;
+    if(modal)modal.classList.remove('hidden');
+    if(progress)progress.textContent='인쇄 화면을 닫았거나 열리지 않았다면 아래 버튼을 눌러 다시 시도할 수 있습니다.';
+    if(btn){btn.disabled=false;btn.textContent='시스템 인쇄 다시 열기';}
+  },1200);
+  // 무기한 메모리를 점유하지 않도록 장시간 후에만 정리한다.
+  if(printCleanupTimer)clearTimeout(printCleanupTimer);
+  printCleanupTimer=setTimeout(()=>{
+    iosPrintPrepared=false;clearPrintRoot();setPrintScopeDisabled(false);resetPrintButton();
+  },10*60*1000);
+}
+
 async function startPrint(){
+  // iOS에서 준비가 끝난 뒤의 두 번째 탭: 사용자 활성화가 살아 있는 이 동기 경로에서 즉시 print().
+  if(isIOSPrintEnvironment()&&iosPrintPrepared){
+    openPreparedSystemPrint();
+    return;
+  }
   if(printInProgress)return;
   if(!pages.length){alert('인쇄할 페이지가 없습니다.');return;}
   if(typeof window.print!=='function'){alert('이 브라우저에서는 시스템 인쇄 기능을 사용할 수 없습니다.');return;}
@@ -3909,15 +3993,19 @@ async function startPrint(){
   const root=document.getElementById('printRoot');
   const progress=document.getElementById('printProgress');
   const btn=document.getElementById('printStartBtn');
-  printInProgress=true;clearPrintRoot();
+  const ios=isIOSPrintEnvironment();
+  printInProgress=true;iosPrintPrepared=false;clearPrintRoot();setPrintScopeDisabled(true);
   if(btn){btn.disabled=true;btn.textContent='준비 중...';}
   const scale=choosePrintRenderScale(indices);
   const approxDpi=Math.round(96*scale);
   const pdfCache={};
+  let prepared=false;
   try{
     for(let n=0;n<indices.length;n++){
       const idx=indices[n],pg=pages[idx];
       if(progress)progress.textContent=`인쇄용 페이지 준비 중... ${n+1}/${indices.length} · 약 ${approxDpi}dpi`;
+      // 진행 문구가 실제 iPhone 화면에 그려질 기회를 먼저 준다.
+      await new Promise(r=>requestAnimationFrame(r));
       const url=await renderPrintPagePNG(pg,scale,pdfCache);
       const sheet=document.createElement('div');sheet.className='print-sheet';sheet.dataset.page=String(idx+1);
       const img=document.createElement('img');img.alt=`${idx+1}페이지`;img.src=url;
@@ -3925,9 +4013,21 @@ async function startPrint(){
       // 모바일 브라우저가 긴 동기 작업으로 판단하지 않도록 페이지마다 이벤트 루프를 양보한다.
       await new Promise(r=>setTimeout(r,0));
     }
-    // data URL 이미지 디코드가 끝난 뒤 print()를 호출해야 Safari/iOS에서 빈 페이지가 생기지 않는다.
+    // 이미지 디코드가 끝난 뒤에만 인쇄 가능 상태로 전환한다.
     const imgs=[...root.querySelectorAll('img')];
     await Promise.all(imgs.map(img=>img.decode?img.decode().catch(()=>{}):new Promise(r=>{if(img.complete)r();else{img.onload=img.onerror=r;}})));
+    prepared=true;
+
+    if(ios){
+      // 중요: 여기서 window.print()를 호출하지 않는다. await 이후라 iOS가 사용자 탭과 분리해
+      // 무시할 수 있으므로, 버튼을 다시 활성화하고 사용자의 두 번째 탭을 받는다.
+      iosPrintPrepared=true;
+      if(progress)progress.textContent='준비 완료. iPhone/iPad에서는 아래 ‘시스템 인쇄 열기’를 한 번 더 눌러 주세요.';
+      if(btn){btn.disabled=false;btn.textContent='시스템 인쇄 열기';}
+      printInProgress=false;
+      return;
+    }
+
     if(progress)progress.textContent='시스템 인쇄 화면을 여는 중...';
     document.getElementById('printModal')?.classList.add('hidden');
     await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
@@ -3939,12 +4039,21 @@ async function startPrint(){
     alert('인쇄 준비 중 오류가 발생했습니다: '+err.message);
     clearPrintRoot();
     document.getElementById('printModal')?.classList.remove('hidden');
+    setPrintScopeDisabled(false);
   }finally{
-    printInProgress=false;
-    if(btn){btn.disabled=false;btn.textContent='인쇄 시작';}
+    if(!(ios&&prepared&&iosPrintPrepared)){
+      printInProgress=false;
+      if(btn){btn.disabled=false;btn.textContent='인쇄 시작';}
+      if(!iosPrintPrepared)setPrintScopeDisabled(false);
+    }
   }
 }
-window.addEventListener('afterprint',()=>setTimeout(clearPrintRoot,250));
+window.addEventListener('afterprint',()=>{
+  // Safari/iOS는 인쇄 시트가 뜨자마자 afterprint를 보내는 경우가 있어 즉시 DOM을 지우면
+  // 빈 페이지가 될 수 있다. iOS는 다음 인쇄/닫기/안전 타이머에서 정리한다.
+  if(isIOSPrintEnvironment())return;
+  setTimeout(()=>{clearPrintRoot();setPrintScopeDisabled(false);resetPrintButton();},250);
+});
 document.getElementById('printModal')?.addEventListener('click',e=>{if(e.target===e.currentTarget)closePrintModal();});
 
 // ════════════ 저장 ════════════
@@ -5188,7 +5297,7 @@ function normalizeFontFamily(f){
 }
 
 // ════════════ 버전 정보 & 업데이트 확인 ════════════
-const APP_VERSION='0.9.3';
+const APP_VERSION='0.9.4';
 // 실제 배포용 GitHub 저장소를 만들면 'owner/repo' 형태로 채워주세요. (예: 'limfrog75/pdf-markly')
 // 비워두면 업데이트 확인을 시도하지 않습니다.
 const UPDATE_CHECK_REPO='limfrog/pdf_markly';
