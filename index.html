@@ -293,6 +293,24 @@ canvas{display:block;}
 .save-opt-slider-row{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--text);}
 .save-opt-slider-row input[type=range]{flex:1;accent-color:var(--accent);}
 .save-opt-val{min-width:34px;text-align:right;color:var(--muted);font-variant-numeric:tabular-nums;}
+
+/* ═══ 인쇄 ═══ */
+.print-opt-note{font-size:10.5px;line-height:1.55;color:var(--muted);padding:9px 10px;
+  border:1px solid var(--borderl);border-radius:7px;background:var(--ribbon);}
+.print-progress{font-size:11px;color:var(--muted);min-height:16px;line-height:1.45;}
+#printRoot{display:none;}
+@media print{
+  @page{size:A4 portrait;margin:0;}
+  html,body{margin:0!important;padding:0!important;width:210mm!important;height:auto!important;
+    overflow:visible!important;background:#fff!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;}
+  body>*:not(#printRoot){display:none!important;}
+  #printRoot{display:block!important;width:210mm!important;margin:0!important;padding:0!important;background:#fff!important;}
+  .print-sheet{width:210mm!important;height:297mm!important;margin:0!important;padding:0!important;
+    display:flex!important;align-items:center!important;justify-content:center!important;background:#fff!important;
+    break-after:page!important;page-break-after:always!important;overflow:hidden!important;}
+  .print-sheet:last-child{break-after:auto!important;page-break-after:auto!important;}
+  .print-sheet img{display:block!important;width:210mm!important;height:297mm!important;object-fit:contain!important;margin:0!important;padding:0!important;}
+}
 .sc-cancel:hover{background:var(--hover);}
 .sc-nosave{background:#e0e0e0;color:#333;}
 .sc-nosave:hover{background:#ccc;}
@@ -466,6 +484,10 @@ canvas{display:block;}
       <button class="ib" data-tip="PMF 프로젝트 저장" onclick="savePMF()">
         <svg width="22" height="22" viewBox="0 0 22 22"><path d="M4 3h11l4 4v12a1 1 0 01-1 1H4a1 1 0 01-1-1V4a1 1 0 011-1z" fill="none" stroke="currentColor" stroke-width="1.6"/><rect x="7" y="3" width="8" height="5" rx=".5" fill="none" stroke="currentColor" stroke-width="1.4"/><rect x="5" y="12" width="12" height="6" rx=".5" fill="none" stroke="currentColor" stroke-width="1.4"/></svg>
         PMF 저장
+      </button>
+      <button class="ib" data-tip="현재 문서를 인쇄 (Ctrl/Cmd+P)" data-key="Ctrl+P" onclick="openPrintModal()">
+        <svg width="22" height="22" viewBox="0 0 22 22"><rect x="6" y="2.5" width="10" height="6" rx="1" fill="none" stroke="currentColor" stroke-width="1.5"/><rect x="5" y="13" width="12" height="6.5" rx="1" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M5 16H3.5A1.5 1.5 0 012 14.5v-5A1.5 1.5 0 013.5 8h15A1.5 1.5 0 0120 9.5v5a1.5 1.5 0 01-1.5 1.5H17" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="17" cy="11" r=".8" fill="currentColor"/></svg>
+        인쇄
       </button>
     </div>
     <span class="rs-label">저장</span>
@@ -1042,6 +1064,7 @@ canvas{display:block;}
             <div class="guide-card"><b>표준 주석 PDF</b><span>가능한 주석을 PDF 표준 주석 형태로 저장해 다른 PDF 프로그램에서도 주석으로 인식·수정할 수 있도록 합니다.</span></div>
             <div class="guide-card"><b>PNG 저장</b><span>현재 페이지만 하나의 PNG 이미지로 저장합니다.</span></div>
             <div class="guide-card"><b>PMF 저장</b><span>레이어, 객체, 편집 상태와 원본 PDF 정보를 보존하는 PDF Markly 프로젝트 형식입니다.</span></div>
+            <div class="guide-card"><b>인쇄</b><span>파일 → 인쇄에서 전체 페이지 또는 현재 페이지만 선택해 Windows·macOS·모바일의 시스템 인쇄 화면으로 보냅니다. 숨긴 레이어는 제외됩니다.</span></div>
           </div>
           <h4>페이지</h4>
           <p><b>페이지 추가</b>로 빈 페이지를 추가하고, <b>페이지 삭제</b>로 현재 페이지를 제거합니다. 왼쪽 페이지 목록을 눌러 페이지를 전환합니다.</p>
@@ -1055,6 +1078,7 @@ canvas{display:block;}
             <li><b>두 손가락</b> 핀치는 확대/축소, 두 손가락 드래그는 확대된 캔버스 이동에 사용합니다.</li>
             <li>도형을 선택한 뒤 파란 핸들을 손가락으로 잡아 드래그하면 크기를 조절할 수 있습니다. 실제 터치 판정 영역은 보이는 핸들보다 크게 설정되어 있습니다.</li>
             <li>레이어 패널의 객체별 ↑ / ↓ / ✕ 버튼도 모바일에서 누르기 쉽도록 큰 터치 영역을 사용합니다.</li>
+            <li><b>파일 → 인쇄</b>를 누르면 iPhone/iPad·Android에서도 시스템 인쇄 화면이 열립니다. 전체 페이지와 현재 페이지 중에서 선택할 수 있습니다.</li>
           </ul>
         </section>
 
@@ -1065,6 +1089,7 @@ canvas{display:block;}
             <tbody>
               <tr><td>실행 취소 / 다시 실행</td><td><kbd>Ctrl/Cmd+Z</kbd><br><kbd>Ctrl/Cmd+Shift+Z</kbd> 또는 <kbd>Ctrl/Cmd+Y</kbd></td><td>현재 페이지의 편집 및 레이어 변경을 되돌립니다.</td></tr>
               <tr><td>PDF / PMF 저장</td><td><kbd>Ctrl/Cmd+S</kbd><br><kbd>Ctrl/Cmd+E</kbd></td><td>PDF 또는 편집 가능한 PMF 프로젝트를 저장합니다.</td></tr>
+              <tr><td>인쇄</td><td><kbd>Ctrl/Cmd+P</kbd></td><td>PDF Markly의 인쇄 옵션을 열어 전체 또는 현재 페이지를 시스템 인쇄 화면으로 보냅니다.</td></tr>
               <tr><td>복사 / 붙여넣기 / 복제</td><td><kbd>Ctrl/Cmd+C</kbd> <kbd>Ctrl/Cmd+V</kbd> <kbd>Ctrl/Cmd+D</kbd></td><td>선택 객체를 복사, 붙여넣기, 복제합니다.</td></tr>
               <tr><td>전체 선택</td><td><kbd>Ctrl/Cmd+A</kbd></td><td>현재 페이지의 객체 전체를 선택합니다.</td></tr>
               <tr><td>인접 레이어로 이동</td><td><kbd>Ctrl/Cmd+]</kbd> / <kbd>Ctrl/Cmd+[</kbd></td><td>선택 객체를 위/아래 인접 레이어로 이동합니다.</td></tr>
@@ -1190,6 +1215,31 @@ canvas{display:block;}
   </div>
 </div>
 
+<!-- 인쇄 옵션 모달 -->
+<div class="modal-overlay hidden" id="printModal">
+  <div class="modal" style="width:min(420px,94vw)">
+    <div class="modal-head">🖨️ 인쇄
+      <button class="modal-xbtn" onclick="closePrintModal()">✕</button>
+    </div>
+    <div class="modal-body" style="gap:12px">
+      <label class="save-opt-row">
+        <input type="radio" name="printScope" value="all" checked>
+        <div><div class="save-opt-title">전체 페이지</div><div class="save-opt-desc">문서의 모든 페이지를 순서대로 인쇄합니다.</div></div>
+      </label>
+      <label class="save-opt-row">
+        <input type="radio" name="printScope" value="current">
+        <div><div class="save-opt-title">현재 페이지만</div><div class="save-opt-desc">현재 편집 중인 페이지만 인쇄합니다.</div></div>
+      </label>
+      <div class="print-opt-note">Windows · macOS · iPhone/iPad · Android의 브라우저/PWA에서 시스템 인쇄 화면을 엽니다. 숨긴 레이어는 인쇄되지 않으며, 페이지 수에 따라 화질과 메모리 사용량을 자동 조절합니다.</div>
+      <div class="print-progress" id="printProgress"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-cancel" onclick="closePrintModal()">취소</button>
+      <button class="btn-ok" id="printStartBtn" onclick="startPrint()">인쇄 시작</button>
+    </div>
+  </div>
+</div>
+
 <!-- PDF 로딩 진행 모달 -->
 <div class="modal-overlay hidden" id="loadingModal">
   <div class="modal" style="width:320px">
@@ -1229,6 +1279,9 @@ canvas{display:block;}
   <div class="ctx-sep"></div>
   <div class="ctx-item" onclick="ctxAction('delete')">삭제 <span class="ctx-key">Delete</span></div>
 </div>
+
+<!-- 시스템 인쇄 전용 DOM. 화면에서는 숨기고 @media print에서만 표시한다. -->
+<div id="printRoot" aria-hidden="true"></div>
 
 <script>
 'use strict';
@@ -3755,6 +3808,145 @@ function renderAll(){
   setTimeout(()=>updatePageThumb(curPageIdx),50);
 }
 
+// ════════════ 인쇄 ════════════
+// 브라우저 자체 화면을 인쇄하면 리본/패널까지 함께 찍히므로, 인쇄 직전에 문서 페이지만
+// 고해상도 이미지로 렌더해 #printRoot에 구성한 뒤 시스템 인쇄 대화상자를 호출한다.
+// 원본 PDF 페이지가 있는 경우에는 PDF.js에서 인쇄 배율로 다시 렌더해 편집용 미리보기(JPEG)를
+// 단순 확대하지 않도록 한다. 이렇게 하면 데스크탑과 모바일 모두 같은 인쇄 경로를 사용한다.
+let printInProgress=false;
+let printCleanupTimer=null;
+
+function openPrintModal(){
+  if(actTed)commitT();
+  const m=document.getElementById('printModal');
+  const p=document.getElementById('printProgress');
+  const b=document.getElementById('printStartBtn');
+  if(p)p.textContent='';
+  if(b){b.disabled=false;b.textContent='인쇄 시작';}
+  if(m)m.classList.remove('hidden');
+}
+function closePrintModal(){
+  if(printInProgress)return;
+  document.getElementById('printModal')?.classList.add('hidden');
+}
+function clearPrintRoot(){
+  const root=document.getElementById('printRoot');
+  if(root)root.innerHTML='';
+  if(printCleanupTimer){clearTimeout(printCleanupTimer);printCleanupTimer=null;}
+}
+function selectedPrintPageIndices(){
+  const mode=document.querySelector('input[name="printScope"]:checked')?.value||'all';
+  return mode==='current'?[curPageIdx]:pages.map((_,i)=>i);
+}
+function choosePrintRenderScale(indices){
+  // 한 장/짧은 문서는 약 288dpi(3x)까지, 긴 문서는 모바일 메모리 폭주를 막기 위해 자동 하향.
+  const coarse=window.matchMedia?.('(pointer:coarse)')?.matches||navigator.maxTouchPoints>0;
+  const totalBasePixels=indices.reduce((sum,i)=>{
+    const pg=pages[i];return sum+Math.max(1,(pg?.width||A4_W)*(pg?.height||A4_H));
+  },0);
+  const pixelBudget=coarse?70_000_000:130_000_000;
+  const byBudget=Math.sqrt(pixelBudget/Math.max(1,totalBasePixels));
+  const maxScale=coarse?2.5:3;
+  return Math.max(1.35,Math.min(maxScale,byBudget));
+}
+async function getPrintPdfDoc(pg,cache){
+  if(pg?.srcPdfPage==null)return null;
+  const key=pg.srcDocId!=null?String(pg.srcDocId):'__legacy__';
+  if(Object.prototype.hasOwnProperty.call(cache,key))return cache[key];
+  let bytes=pg.srcDocId!=null?origPdfStore[pg.srcDocId]:origPdfBytes;
+  if(!bytes&&origPdfBytes)bytes=origPdfBytes;
+  if(!bytes){cache[key]=null;return null;}
+  try{
+    const pdfjs=await loadPDFjs();
+    // PDF.js가 전달된 버퍼를 transfer/detach할 수 있으므로 보관 중인 원본 바이트는 복사해서 넘긴다.
+    const copy=new Uint8Array(bytes.length);copy.set(bytes);
+    cache[key]=await pdfjs.getDocument({data:copy}).promise;
+  }catch(err){console.warn('인쇄용 원본 PDF 로딩 실패:',err);cache[key]=null;}
+  return cache[key];
+}
+async function renderPrintPagePNG(pg,scale,pdfCache){
+  const w=Math.max(1,Math.round(pg.width*scale)),h=Math.max(1,Math.round(pg.height*scale));
+  const out=document.createElement('canvas');out.width=w;out.height=h;
+  const c=out.getContext('2d');c.fillStyle='#fff';c.fillRect(0,0,w,h);
+
+  let drewSource=false;
+  const pc=pg.pdfContent?ensurePdfContent(pg):null;
+  const srcDoc=await getPrintPdfDoc(pg,pdfCache);
+  if(srcDoc&&pg.srcPdfPage!=null&&pg.srcPdfPage<srcDoc.numPages&&pc){
+    try{
+      const srcPage=await srcDoc.getPage(pg.srcPdfPage+1);
+      const unitVp=srcPage.getViewport({scale:1});
+      const targetW=Math.max(1,pc.width*scale);
+      const renderScale=Math.max(.01,targetW/Math.max(1,unitVp.width));
+      const vp=srcPage.getViewport({scale:renderScale});
+      const tmp=document.createElement('canvas');tmp.width=Math.max(1,Math.round(vp.width));tmp.height=Math.max(1,Math.round(vp.height));
+      const tc=tmp.getContext('2d');tc.fillStyle='#fff';tc.fillRect(0,0,tmp.width,tmp.height);
+      const pdfjs=await loadPDFjs();
+      await srcPage.render({canvasContext:tc,viewport:vp,annotationMode:pdfjs.AnnotationMode?pdfjs.AnnotationMode.DISABLE:0}).promise;
+      c.drawImage(tmp,pc.x*scale,pc.y*scale,pc.width*scale,pc.height*scale);
+      drewSource=true;
+    }catch(err){console.warn('인쇄용 PDF 페이지 렌더 실패, 미리보기로 대체:',err);}
+  }
+  if(!drewSource&&pg.bgImg){
+    if(pc)c.drawImage(pg.bgImg,pc.x*scale,pc.y*scale,pc.width*scale,pc.height*scale);
+    else c.drawImage(pg.bgImg,0,0,w,h);
+  }
+
+  // Markly 객체는 논리 좌표 그대로 그리되, 인쇄 배율만 context에 적용한다.
+  const prevEditing=editingId;editingId=null;
+  c.save();c.scale(scale,scale);visibleObjs(pg).forEach(o=>drawO(c,o));c.restore();
+  editingId=prevEditing;
+  return out.toDataURL('image/png');
+}
+async function startPrint(){
+  if(printInProgress)return;
+  if(!pages.length){alert('인쇄할 페이지가 없습니다.');return;}
+  if(typeof window.print!=='function'){alert('이 브라우저에서는 시스템 인쇄 기능을 사용할 수 없습니다.');return;}
+  if(actTed)commitT();
+
+  const indices=selectedPrintPageIndices();
+  if(!indices.length)return;
+  const root=document.getElementById('printRoot');
+  const progress=document.getElementById('printProgress');
+  const btn=document.getElementById('printStartBtn');
+  printInProgress=true;clearPrintRoot();
+  if(btn){btn.disabled=true;btn.textContent='준비 중...';}
+  const scale=choosePrintRenderScale(indices);
+  const approxDpi=Math.round(96*scale);
+  const pdfCache={};
+  try{
+    for(let n=0;n<indices.length;n++){
+      const idx=indices[n],pg=pages[idx];
+      if(progress)progress.textContent=`인쇄용 페이지 준비 중... ${n+1}/${indices.length} · 약 ${approxDpi}dpi`;
+      const url=await renderPrintPagePNG(pg,scale,pdfCache);
+      const sheet=document.createElement('div');sheet.className='print-sheet';sheet.dataset.page=String(idx+1);
+      const img=document.createElement('img');img.alt=`${idx+1}페이지`;img.src=url;
+      sheet.appendChild(img);root.appendChild(sheet);
+      // 모바일 브라우저가 긴 동기 작업으로 판단하지 않도록 페이지마다 이벤트 루프를 양보한다.
+      await new Promise(r=>setTimeout(r,0));
+    }
+    // data URL 이미지 디코드가 끝난 뒤 print()를 호출해야 Safari/iOS에서 빈 페이지가 생기지 않는다.
+    const imgs=[...root.querySelectorAll('img')];
+    await Promise.all(imgs.map(img=>img.decode?img.decode().catch(()=>{}):new Promise(r=>{if(img.complete)r();else{img.onload=img.onerror=r;}})));
+    if(progress)progress.textContent='시스템 인쇄 화면을 여는 중...';
+    document.getElementById('printModal')?.classList.add('hidden');
+    await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
+    window.print();
+    // afterprint를 지원하지 않는 오래된 WebView에서도 무한히 메모리를 잡지 않도록 안전 정리 타이머를 둔다.
+    printCleanupTimer=setTimeout(clearPrintRoot,5*60*1000);
+  }catch(err){
+    console.error('인쇄 준비 실패:',err);
+    alert('인쇄 준비 중 오류가 발생했습니다: '+err.message);
+    clearPrintRoot();
+    document.getElementById('printModal')?.classList.remove('hidden');
+  }finally{
+    printInProgress=false;
+    if(btn){btn.disabled=false;btn.textContent='인쇄 시작';}
+  }
+}
+window.addEventListener('afterprint',()=>setTimeout(clearPrintRoot,250));
+document.getElementById('printModal')?.addEventListener('click',e=>{if(e.target===e.currentTarget)closePrintModal();});
+
 // ════════════ 저장 ════════════
 
 // ─── 라이브러리 동적 로딩 (오프라인 캐시 대상) ───
@@ -4847,6 +5039,9 @@ function pasteClip(){
 // ════════════ 키보드 단축키 ════════════
 let arrowMoveActive=false; // 방향키를 누르고 있는 동안 매 프레임 saveH하지 않고, 뗄 때 한 번만 기록하기 위한 상태
 document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'&&!document.getElementById('printModal')?.classList.contains('hidden')){
+    e.preventDefault();closePrintModal();return;
+  }
   if(e.key==='Escape'&&!document.getElementById('userGuideModal')?.classList.contains('hidden')){
     e.preventDefault();closeUserGuide();return;
   }
@@ -4863,6 +5058,7 @@ document.addEventListener('keydown',e=>{
     if(key==='y'){e.preventDefault();redo();}
     if(key==='s'){e.preventDefault();savePDF();}
     if(key==='e'){e.preventDefault();savePMF();}
+    if(key==='p'){e.preventDefault();openPrintModal();}
     if(key==='c'){e.preventDefault();copySelection();}
     if(key==='v'){e.preventDefault();pasteClip();}
     if(key==='d'){e.preventDefault();duplicateSelected();}
@@ -4992,7 +5188,7 @@ function normalizeFontFamily(f){
 }
 
 // ════════════ 버전 정보 & 업데이트 확인 ════════════
-const APP_VERSION='0.9.2';
+const APP_VERSION='0.9.3';
 // 실제 배포용 GitHub 저장소를 만들면 'owner/repo' 형태로 채워주세요. (예: 'limfrog75/pdf-markly')
 // 비워두면 업데이트 확인을 시도하지 않습니다.
 const UPDATE_CHECK_REPO='limfrog/pdf_markly';
