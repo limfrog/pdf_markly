@@ -1078,7 +1078,7 @@ canvas{display:block;}
             <li><b>두 손가락</b> 핀치는 확대/축소, 두 손가락 드래그는 확대된 캔버스 이동에 사용합니다.</li>
             <li>도형을 선택한 뒤 파란 핸들을 손가락으로 잡아 드래그하면 크기를 조절할 수 있습니다. 실제 터치 판정 영역은 보이는 핸들보다 크게 설정되어 있습니다.</li>
             <li>레이어 패널의 객체별 ↑ / ↓ / ✕ 버튼도 모바일에서 누르기 쉽도록 큰 터치 영역을 사용합니다.</li>
-            <li><b>파일 → 인쇄</b>에서 전체 페이지와 현재 페이지 중 하나를 선택할 수 있습니다. Android는 준비 후 시스템 인쇄 화면이 열립니다. <b>iPhone/iPad는 인쇄용 PDF 준비 후 ‘공유하여 인쇄’를 누르고 iOS 공유 시트에서 ‘프린트’를 선택</b>하면 AirPrint로 이어집니다. 공유 시트에서는 파일 저장·AirDrop·메일 전송도 가능합니다.</li>
+            <li><b>파일 → 인쇄</b>에서 전체 페이지와 현재 페이지 중 하나를 선택할 수 있습니다. Android는 준비 후 시스템 인쇄 화면이 열립니다. <b>iPhone/iPad는 인쇄 창이 열린 동안 공유용 PDF를 미리 준비하며, 준비가 끝난 뒤 ‘인쇄 시작’을 누르면 iOS 공유 시트가 바로 열립니다.</b> 공유 시트에서 ‘프린트’를 선택하면 AirPrint로 이어지며, 파일 저장·AirDrop·메일 전송도 가능합니다.</li>
           </ul>
         </section>
 
@@ -1230,7 +1230,7 @@ canvas{display:block;}
         <input type="radio" name="printScope" value="current">
         <div><div class="save-opt-title">현재 페이지만</div><div class="save-opt-desc">현재 편집 중인 페이지만 인쇄합니다.</div></div>
       </label>
-      <div class="print-opt-note">Windows · macOS · Android에서는 준비가 끝나면 시스템 인쇄 화면을 엽니다. <b>iPhone/iPad에서는 인쇄용 PDF를 먼저 만든 뒤 ‘공유하여 인쇄’를 누르고, iOS 공유 시트에서 ‘프린트’를 선택</b>합니다. 숨긴 레이어는 인쇄되지 않으며, 원본 PDF 페이지는 가능한 한 벡터 품질을 유지합니다.</div>
+      <div class="print-opt-note">Windows · macOS · Android에서는 준비가 끝나면 시스템 인쇄 화면을 엽니다. <b>iPhone/iPad에서는 이 창이 열린 동안 공유용 PDF를 미리 준비하고, 준비 완료 후 ‘인쇄 시작’을 누르면 iOS 공유 시트가 바로 열립니다.</b> 공유 시트에서 ‘프린트’를 선택하세요. 숨긴 레이어는 인쇄되지 않으며, 원본 PDF 페이지는 가능한 한 벡터 품질을 유지합니다.</div>
       <div class="print-progress" id="printProgress"></div>
     </div>
     <div class="modal-foot">
@@ -3810,14 +3810,18 @@ function renderAll(){
 
 // ════════════ 인쇄 ════════════
 // 데스크탑/Android는 문서 페이지만 고해상도 이미지로 구성해 브라우저의 시스템 인쇄를 호출한다.
-// iPhone/iPad는 Safari/WebKit의 window.print() 제약을 피하기 위해 선택 페이지를 PDF 파일로 만든 뒤
-// 사용자의 두 번째 탭에서 Web Share API를 즉시 호출한다. 공유 시트에서 '프린트'를 선택하면 AirPrint로 이어진다.
+// iPhone/iPad는 Safari/WebKit의 window.print() 제약을 피하기 위해 인쇄 옵션 창이 열린 동안
+// 선택 페이지를 PDF 파일로 미리 만든다. 준비 완료 후 사용자가 '인쇄 시작'을 누르는 바로 그 탭에서
+// Web Share API를 즉시 호출해 공유 시트를 연다. 공유 시트에서 '프린트'를 선택하면 AirPrint로 이어진다.
 let printInProgress=false;
 let printCleanupTimer=null;
 let iosSharePrepared=false;
 let iosShareFile=null;
 let iosShareMode=null; // 'share' | 'open' (Web Share 미지원 폴백)
 let iosShareFallbackUrl=null;
+let iosSharePreparing=false;
+let iosShareReprepareRequested=false;
+let iosSharePrepareScopeKey='';
 let printObjectUrls=[];
 
 function isIOSPrintEnvironment(){
@@ -3840,6 +3844,7 @@ function resetIOSShareState(){
 function openPrintModal(){
   if(actTed)commitT();
   resetIOSShareState();
+  iosShareReprepareRequested=false;
   clearPrintRoot();
   setPrintScopeDisabled(false);
   const m=document.getElementById('printModal');
@@ -3847,10 +3852,14 @@ function openPrintModal(){
   if(p)p.textContent='';
   resetPrintButton();
   if(m)m.classList.remove('hidden');
+  // iOS는 Web Share API가 실제 사용자 탭에서 즉시 호출되어야 하므로,
+  // 옵션 창을 보여주는 동안 PDF를 먼저 준비한다. 준비가 끝난 뒤 '인쇄 시작' 한 번으로 공유 시트를 연다.
+  if(isIOSPrintEnvironment())prepareIOSShareForCurrentScope();
 }
 function closePrintModal(){
   if(printInProgress)return;
   document.getElementById('printModal')?.classList.add('hidden');
+  iosShareReprepareRequested=false;
   resetIOSShareState();
   setPrintScopeDisabled(false);
   clearPrintRoot();
@@ -4016,7 +4025,83 @@ function canSharePrintFile(file){
   return true;
 }
 
-// iPhone/iPad의 두 번째 실제 탭에서 즉시 호출한다. share() 앞에는 await/timer를 두지 않는다.
+function currentPrintScopeKey(){
+  const mode=document.querySelector('input[name="printScope"]:checked')?.value||'all';
+  return mode==='current'?'current:'+curPageIdx:'all';
+}
+
+// iOS용 PDF는 옵션 창이 떠 있는 동안 미리 만든다. 범위가 바뀌면 현재 준비가 끝난 뒤
+// 최신 범위로 한 번 더 준비해, 동시에 여러 대용량 PDF 생성이 겹치지 않게 한다.
+async function prepareIOSShareForCurrentScope(){
+  if(!isIOSPrintEnvironment()||!pages.length)return;
+  const modal=document.getElementById('printModal');
+  if(!modal||modal.classList.contains('hidden'))return;
+  if(iosSharePreparing){
+    iosShareReprepareRequested=true;
+    iosSharePrepared=false;
+    const btn=document.getElementById('printStartBtn');
+    if(btn){btn.disabled=true;btn.textContent='PDF 준비 중...';}
+    return;
+  }
+
+  iosSharePreparing=true;
+  iosShareReprepareRequested=false;
+  resetIOSShareState();
+  clearPrintRoot();
+  const scopeKey=currentPrintScopeKey();
+  iosSharePrepareScopeKey=scopeKey;
+  const indices=selectedPrintPageIndices();
+  const progress=document.getElementById('printProgress');
+  const btn=document.getElementById('printStartBtn');
+  if(btn){btn.disabled=true;btn.textContent='PDF 준비 중...';}
+  if(progress)progress.textContent='iPhone 공유용 PDF를 미리 준비하는 중...';
+  const scale=choosePrintRenderScale(indices);
+  const approxDpi=Math.round(96*scale);
+
+  try{
+    const file=await buildIOSSharePrintFile(indices,scale,(done,total)=>{
+      if(currentPrintScopeKey()===scopeKey&&progress){
+        progress.textContent=`공유용 PDF 준비 중... ${done}/${total} · 주석 약 ${approxDpi}dpi`;
+      }
+    });
+
+    // 준비 중 범위를 바꿨거나 창을 닫았다면 방금 결과는 사용하지 않고 최신 범위를 다시 준비한다.
+    const stillOpen=!modal.classList.contains('hidden');
+    const scopeChanged=currentPrintScopeKey()!==scopeKey;
+    if(!stillOpen){
+      iosSharePreparing=false;
+      return;
+    }
+    if(iosShareReprepareRequested||scopeChanged){
+      iosSharePreparing=false;
+      iosShareReprepareRequested=false;
+      prepareIOSShareForCurrentScope();
+      return;
+    }
+
+    iosShareFile=file;
+    const shareOk=canSharePrintFile(file);
+    iosShareMode=shareOk?'share':'open';
+    if(!shareOk){
+      iosShareFallbackUrl=URL.createObjectURL(file);
+      printObjectUrls.push(iosShareFallbackUrl);
+    }
+    iosSharePrepared=true;
+    if(progress)progress.textContent=shareOk
+      ?'준비 완료. ‘인쇄 시작’을 누르면 iOS 공유 시트가 바로 열립니다. 공유 시트에서 ‘프린트’를 선택하세요.'
+      :'준비 완료. ‘인쇄 시작’을 누르면 PDF가 열립니다. iOS 공유 버튼에서 ‘프린트’를 선택하세요.';
+    if(btn){btn.disabled=false;btn.textContent='인쇄 시작';}
+  }catch(err){
+    console.error('iOS 공유용 PDF 준비 실패:',err);
+    resetIOSShareState();
+    if(progress)progress.textContent='인쇄용 PDF를 준비하지 못했습니다. ‘인쇄 시작’을 눌러 다시 시도해 주세요.';
+    if(btn){btn.disabled=false;btn.textContent='인쇄 시작';}
+  }finally{
+    iosSharePreparing=false;
+  }
+}
+
+// iPhone/iPad에서 '인쇄 시작'을 누르는 실제 탭에서 즉시 호출한다. share() 앞에는 await/timer를 두지 않는다.
 function openPreparedIOSShare(){
   if(!iosSharePrepared||!iosShareFile||printInProgress)return;
   const modal=document.getElementById('printModal');
@@ -4050,7 +4135,7 @@ function openPreparedIOSShare(){
     iosSharePrepared=true;printInProgress=false;
     if(modal)modal.classList.remove('hidden');
     if(progress)progress.textContent='공유 시트를 열지 못했습니다. 다시 눌러 주세요.';
-    if(btn){btn.disabled=false;btn.textContent='공유하여 인쇄';}
+    if(btn){btn.disabled=false;btn.textContent='인쇄 시작';}
     return;
   }
 
@@ -4066,22 +4151,27 @@ function openPreparedIOSShare(){
     iosSharePrepared=true;
     if(modal)modal.classList.remove('hidden');
     if(progress)progress.textContent=cancelled
-      ?'공유가 취소되었습니다. 다시 ‘공유하여 인쇄’를 누를 수 있습니다.'
+      ?'공유가 취소되었습니다. 다시 ‘인쇄 시작’을 누를 수 있습니다.'
       :'공유 시트를 열지 못했습니다. 다시 시도해 주세요.';
-    if(btn){btn.disabled=false;btn.textContent='공유하여 인쇄';}
+    if(btn){btn.disabled=false;btn.textContent='인쇄 시작';}
   }).finally(()=>{printInProgress=false;});
 }
 
 async function startPrint(){
-  // iPhone/iPad에서 PDF 준비가 끝난 뒤의 두 번째 탭은 Web Share API를 즉시 연다.
-  if(isIOSPrintEnvironment()&&iosSharePrepared){
-    openPreparedIOSShare();
+  const ios=isIOSPrintEnvironment();
+  // iPhone/iPad: PDF는 옵션 창이 열려 있는 동안 이미 준비한다.
+  // 따라서 '인쇄 시작' 탭에서는 어떤 await도 거치지 않고 곧바로 Web Share API를 호출한다.
+  if(ios){
+    if(iosSharePrepared){
+      openPreparedIOSShare();
+      return;
+    }
+    if(!iosSharePreparing)prepareIOSShareForCurrentScope();
     return;
   }
   if(printInProgress)return;
   if(!pages.length){alert('인쇄할 페이지가 없습니다.');return;}
-  const ios=isIOSPrintEnvironment();
-  if(!ios&&typeof window.print!=='function'){
+  if(typeof window.print!=='function'){
     alert('이 브라우저에서는 시스템 인쇄 기능을 사용할 수 없습니다.');return;
   }
   if(actTed)commitT();
@@ -4095,35 +4185,6 @@ async function startPrint(){
   if(btn){btn.disabled=true;btn.textContent='준비 중...';}
   const scale=choosePrintRenderScale(indices);
   const approxDpi=Math.round(96*scale);
-
-  // iPhone/iPad: window.print() 대신 PDF 파일을 생성하고, 두 번째 탭에서 iOS 공유 시트를 연다.
-  if(ios){
-    try{
-      if(progress)progress.textContent='공유용 PDF를 준비하는 중...';
-      iosShareFile=await buildIOSSharePrintFile(indices,scale,(done,total)=>{
-        if(progress)progress.textContent=`공유용 PDF 준비 중... ${done}/${total} · 주석 약 ${approxDpi}dpi`;
-      });
-      const shareOk=canSharePrintFile(iosShareFile);
-      iosShareMode=shareOk?'share':'open';
-      if(!shareOk){
-        iosShareFallbackUrl=URL.createObjectURL(iosShareFile);
-        printObjectUrls.push(iosShareFallbackUrl);
-      }
-      iosSharePrepared=true;
-      printInProgress=false;
-      if(progress)progress.textContent=shareOk
-        ?'PDF 준비 완료. 아래 ‘공유하여 인쇄’를 누른 뒤 iPhone 공유 시트에서 ‘프린트’를 선택하세요.'
-        :'이 브라우저는 PDF 파일 공유를 지원하지 않습니다. ‘PDF 열기’를 누른 뒤 공유 버튼에서 ‘프린트’를 선택하세요.';
-      if(btn){btn.disabled=false;btn.textContent=shareOk?'공유하여 인쇄':'PDF 열기';}
-      return;
-    }catch(err){
-      console.error('iOS 공유용 PDF 준비 실패:',err);
-      alert('인쇄용 PDF 준비 중 오류가 발생했습니다: '+err.message);
-      resetIOSShareState();clearPrintRoot();setPrintScopeDisabled(false);
-      printInProgress=false;resetPrintButton();
-      return;
-    }
-  }
 
   // Windows / macOS / Android: 기존 시스템 인쇄 경로.
   const pdfCache={};
@@ -4163,6 +4224,11 @@ window.addEventListener('afterprint',()=>{
   setTimeout(()=>{clearPrintRoot();setPrintScopeDisabled(false);resetPrintButton();},250);
 });
 document.getElementById('printModal')?.addEventListener('click',e=>{if(e.target===e.currentTarget)closePrintModal();});
+document.querySelectorAll('input[name="printScope"]').forEach(el=>el.addEventListener('change',()=>{
+  if(!isIOSPrintEnvironment())return;
+  const modal=document.getElementById('printModal');
+  if(modal&&!modal.classList.contains('hidden'))prepareIOSShareForCurrentScope();
+}));
 
 // ════════════ 저장 ════════════
 
@@ -5405,7 +5471,7 @@ function normalizeFontFamily(f){
 }
 
 // ════════════ 버전 정보 & 업데이트 확인 ════════════
-const APP_VERSION='0.9.6';
+const APP_VERSION='0.9.7';
 // 실제 배포용 GitHub 저장소를 만들면 'owner/repo' 형태로 채워주세요. (예: 'limfrog75/pdf-markly')
 // 비워두면 업데이트 확인을 시도하지 않습니다.
 const UPDATE_CHECK_REPO='limfrog/pdf_markly';
