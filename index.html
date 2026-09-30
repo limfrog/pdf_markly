@@ -2835,8 +2835,20 @@ function openTed(x,y,exist=null){
 function applyLiveTextEditorStyle(ed){
   if(!ed)return;const x=ed._x,y=ed._y;
   ed.style.fontFamily=normalizeFontFamily(fFam);ed.style.fontSize=fSz+'px';ed.style.lineHeight=String(fLineHeight);ed.style.fontWeight=fBold?'bold':'normal';ed.style.fontStyle=fItal?'italic':'normal';ed.style.textDecoration=fUnder?'underline':'none';ed.style.color=fgH;ed.style.whiteSpace='pre-wrap';
-  if(fBoxed){ed.style.padding=fBoxPad+'px';ed.style.left=(x-fBoxPad)+'px';ed.style.top=(y-fBoxPad)+'px';ed.style.border=fBoxStroke+'px solid '+fgH;ed.style.borderRadius=fBoxRadius+'px';ed.style.boxSizing='border-box';ed.style.background=fBoxFill?bgH:'transparent';}
-  else{ed.style.left=x+'px';ed.style.top=y+'px';ed.style.padding='2px 4px';ed.style.border='1.5px dashed var(--accent)';ed.style.borderRadius='';ed.style.boxSizing='border-box';ed.style.background='transparent';}
+  // 편집 중의 DOM 텍스트 시작점과 저장 후 Canvas 텍스트의 (x,y)를 정확히 일치시킨다.
+  // border/padding이 실제 content box를 오른쪽·아래로 밀지 않도록 편집용 테두리는
+  // outline/box-shadow로만 표시한다. canvasWrapper의 zoom과 HiDPI backing scale은
+  // 두 레이어에 동일하게 적용되므로 좌표 보정에는 포함하지 않는다.
+  if(fBoxed){
+    ed.style.left=(x-fBoxPad)+'px';ed.style.top=(y-fBoxPad)+'px';
+    ed.style.padding=fBoxPad+'px';ed.style.border='none';ed.style.outline='none';
+    ed.style.boxShadow=fBoxStroke>0?`inset 0 0 0 ${fBoxStroke}px ${fgH}`:'none';
+    ed.style.borderRadius=fBoxRadius+'px';ed.style.boxSizing='border-box';ed.style.background=fBoxFill?bgH:'transparent';
+  }else{
+    ed.style.left=x+'px';ed.style.top=y+'px';ed.style.padding='0';ed.style.border='none';
+    ed.style.outline='1.5px dashed var(--accent)';ed.style.outlineOffset='3px';ed.style.boxShadow='none';
+    ed.style.borderRadius='';ed.style.boxSizing='border-box';ed.style.background='transparent';
+  }
 }
 
 document.addEventListener('mousedown',e=>{
@@ -5471,7 +5483,7 @@ function normalizeFontFamily(f){
 }
 
 // ════════════ 버전 정보 & 업데이트 확인 ════════════
-const APP_VERSION='0.9.7';
+const APP_VERSION='0.9.8';
 // 실제 배포용 GitHub 저장소를 만들면 'owner/repo' 형태로 채워주세요. (예: 'limfrog75/pdf-markly')
 // 비워두면 업데이트 확인을 시도하지 않습니다.
 const UPDATE_CHECK_REPO='limfrog/pdf_markly';
