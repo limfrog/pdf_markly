@@ -460,6 +460,10 @@ canvas{display:block;}
         <svg width="22" height="22" viewBox="0 0 22 22"><path d="M2 6a1 1 0 011-1h5l2 2h8a1 1 0 011 1v9a1 1 0 01-1 1H3a1 1 0 01-1-1V6z" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>
         PMF 열기
       </button>
+      <button class="ib" data-tip="이미지를 새 페이지로 불러오거나 현재 페이지에 삽입" onclick="openImageChoiceModal()">
+        <svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><rect x="2" y="4" width="18" height="14" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="7.5" cy="9" r="1.7" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M3 16l5.3-5 3.6 3.2 3.4-3.5 4.1 5.3" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>
+        그림 열기
+      </button>
       <button class="ib" data-tip="파일 닫기 (새 문서)" onclick="closeFile()">
         <svg width="22" height="22" viewBox="0 0 22 22"><rect x="3" y="2" width="16" height="18" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.6"/><line x1="8" y1="9" x2="14" y2="15" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><line x1="14" y1="9" x2="8" y2="15" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
         파일 닫기
@@ -895,7 +899,22 @@ canvas{display:block;}
 <!-- 숨김 파일 입력 -->
 <input type="file" id="pdfInput" accept=".pdf" multiple style="display:none">
 <input type="file" id="pmfInput" accept=".pmf" style="display:none">
-<input type="file" id="imageInput" accept="image/*" style="display:none">
+<input type="file" id="imageInput" accept="image/*" multiple style="display:none">
+<!-- 그림 열기: 새 페이지 배경 또는 현재 페이지의 객체 -->
+<div class="modal-overlay hidden" id="imageChoiceModal">
+  <div class="modal" style="width:380px;max-width:92vw">
+    <div class="modal-head"><span>그림 열기</span><button class="modal-xbtn" onclick="closeImageChoiceModal()" aria-label="닫기">✕</button></div>
+    <div class="modal-body" style="gap:12px">
+      <button type="button" class="btn-ok" onclick="chooseImageOpenMode('page')" style="width:100%;min-height:46px">그림 불러오기 — 새 페이지로 추가</button>
+      <div style="font-size:12px;color:var(--muted);line-height:1.5">선택한 그림이 새 페이지의 배경이 됩니다. 기존 페이지 뒤에 추가됩니다.</div>
+      <button type="button" class="btn-ok" onclick="chooseImageOpenMode('insert')" style="width:100%;min-height:46px">그림 삽입하기 — 현재 페이지에 추가</button>
+      <div style="font-size:12px;color:var(--muted);line-height:1.5">현재 페이지에 이동·크기 조절 가능한 그림 객체로 추가됩니다.</div>
+    </div>
+    <div class="modal-foot"><button type="button" onclick="closeImageChoiceModal()" style="padding:8px 20px">취소</button></div>
+  </div>
+</div>
+
+
 
 <!-- 프로그램 정보 모달 -->
 <!-- 숫자 값 정밀 입력 모달 (선 두께·박스 패딩/굵기/반경 공용) -->
@@ -4891,6 +4910,39 @@ function fileKind(file){
   return 'unknown';
 }
 
+// 그림 열기 메뉴 — iOS에서도 선택 버튼의 사용자 동작 내에서 파일 선택 창 열기
+let imageOpenMode='insert';
+function openImageChoiceModal(){
+  if(typeof actTed!=='undefined'&&actTed&&typeof commitT==='function')commitT();
+  document.getElementById('imageChoiceModal').classList.remove('hidden');
+}
+function closeImageChoiceModal(){
+  document.getElementById('imageChoiceModal').classList.add('hidden');
+}
+function chooseImageOpenMode(mode){
+  imageOpenMode=mode==='page'?'page':'insert';
+  closeImageChoiceModal();
+  const inp=document.getElementById('imageInput');
+  inp.value='';
+  inp.click();
+}
+document.getElementById('imageInput').addEventListener('change',async e=>{
+  const files=[...(e.target.files||[])].filter(f=>fileKind(f)==='image');
+  e.target.value='';
+  if(!files.length)return;
+  if(imageOpenMode==='page'){
+    const firstAt=pages.length;
+    for(const file of files)await insertImageAsPage(file,pages.length);
+    if(pages.length>firstAt){
+      goToPage(firstAt);
+      renderPageIndex();
+      markDirty();
+    }
+  }else{
+    for(const file of files)insertImageFromFile(file);
+  }
+});
+
 // 이미지 파일을 현재 페이지에 이미지 객체로 삽입
 function insertImageFromFile(file){
   const rd=new FileReader();
@@ -5490,7 +5542,7 @@ function normalizeFontFamily(f){
 }
 
 // ════════════ 버전 정보 & 업데이트 확인 ════════════
-const APP_VERSION='0.9.9';
+const APP_VERSION='0.9.10';
 // 실제 배포용 GitHub 저장소를 만들면 'owner/repo' 형태로 채워주세요. (예: 'limfrog75/pdf-markly')
 // 비워두면 업데이트 확인을 시도하지 않습니다.
 const UPDATE_CHECK_REPO='limfrog/pdf_markly';
