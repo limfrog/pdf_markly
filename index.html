@@ -5351,6 +5351,9 @@ async function insertFilesAtPageIndex(files,idx){
   const accepts=e=>hasPage(e)||hasFiles(e);
   let depth=0;
 
+  list.addEventListener('dragstart',()=>{depth=0;stopPageDragScroll();});
+  list.addEventListener('dragend',()=>{depth=0;finishPageDrag();});
+
   list.addEventListener('dragenter',e=>{
     if(!accepts(e))return; e.preventDefault();e.stopPropagation();depth++;
   });
@@ -5696,7 +5699,12 @@ document.addEventListener('keydown',e=>{
   }
   if(e.key==='Delete'&&e.target.closest?.('.page-thumb-item')){
     e.preventDefault();
-    if(!e.repeat&&!e.altKey)deletePage();
+    if(!e.repeat&&!e.altKey){
+      const idx=[...document.querySelectorAll('#pageIndexList .page-thumb-item')].indexOf(e.target.closest('.page-thumb-item'));
+      if(idx<0)return;
+      if(idx!==curPageIdx)goToPage(idx,{keepPanels:true});
+      deletePage();
+    }
     return;
   }
   if(e.key==='Delete'||e.key==='Backspace'){if(selIds.length){e.preventDefault();deleteSelected();}}

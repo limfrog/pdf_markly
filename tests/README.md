@@ -14,6 +14,17 @@ The suite covers Space-drag panning and cleanup, normal text input, zoom bounds,
 recent-file persistence, the 10-file limit, duplicate names, PMF/PNG reopening,
 unsaved-change confirmation, list deletion, unavailable browser storage, and
 PDF import/export using the app's actual CDN libraries and PDF.js worker.
+Page-list checks exercise native thumbnail dragging in both directions, no-op
+drops, edge autoscroll, cancellation, external image insertion, and focused
+Delete handling (confirmation, text/canvas/modal isolation, and last-page
+protection). A three-page PDF verifies that page data, layers, source links,
+PMF round trips, and exported PDF text retain the new order.
+
+The shared clipboard codec has a separate dependency-free check:
+
+```sh
+node tests/clipboard.test.cjs
+```
 
 For a managed proxy whose CA is already configured for Node but not Chromium:
 

@@ -20,7 +20,7 @@ class QuietHandler(http.server.SimpleHTTPRequestHandler):
         pass
 
 
-class BrowserTests(unittest.TestCase):
+class BrowserHarness(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         handler = functools.partial(QuietHandler, directory=str(Path(__file__).resolve().parents[1]))
@@ -60,11 +60,14 @@ class BrowserTests(unittest.TestCase):
         self.page = self.context.new_page()
         self.errors = []
         self.alerts = []
+        self.confirmations = []
         self.accept_confirm = False
         self.page.on('pageerror', lambda error: self.errors.append(str(error)))
         def handle_dialog(dialog):
             if dialog.type == 'alert':
                 self.alerts.append(dialog.message)
+            if dialog.type == 'confirm':
+                self.confirmations.append(dialog.message)
             if dialog.type == 'confirm' and self.accept_confirm:
                 dialog.accept()
             else:
@@ -109,6 +112,8 @@ class BrowserTests(unittest.TestCase):
         self.page.wait_for_function('() => !document.getElementById("recentFilesStatus").textContent.includes("불러오는 중")')
         return self.page.locator('.recent-file-name').all_text_contents()
 
+
+class BrowserTests(BrowserHarness):
     def test_space_pan_and_keyboard_cleanup(self):
         p = self.page
         self.draw_rectangle()
