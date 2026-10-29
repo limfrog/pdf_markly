@@ -1,6 +1,7 @@
-const CACHE_NAME = 'pdf-markly-v27';
-const CDN_CACHE = 'pdf-markly-cdn-v27';
+const CACHE_NAME = 'pdf-markly-v29';
+const CDN_CACHE = 'pdf-markly-cdn-v29';
 const ASSETS = ['./', './index.html', './privacy.html', './terms.html', './manifest.json',
+  './object-clipboard.js',
   './favicon.png', './icon-192.png', './icon-512.png'];
 
 // 오프라인에서도 동작해야 하는 CDN 라이브러리 (미리 캐싱 시도)
