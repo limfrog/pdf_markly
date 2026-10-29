@@ -106,9 +106,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
   box-shadow:0 0 4px var(--accent);}
 .page-thumb-item{display:flex;flex-direction:column;align-items:center;gap:4px;
   padding:6px 4px;border-radius:6px;cursor:pointer;margin-bottom:4px;
-  transition:background .1s;border:2px solid transparent;}
+  transition:background .1s;border:2px solid transparent;width:100%;background:transparent;color:var(--text);font:inherit;}
 .page-thumb-item:hover{background:var(--hover);}
 .page-thumb-item.active{border-color:var(--accent);background:var(--active);}
+.page-thumb-item:focus-visible{outline:2px solid var(--accent);outline-offset:-1px;}
+.page-thumb-item.dragging-page{opacity:.45;}
 .page-thumb-canvas{border:1px solid var(--border);border-radius:3px;
   background:#fff;display:block;max-width:100%;box-shadow:0 1px 4px rgba(0,0,0,.1);}
 .page-thumb-label{font-size:10px;color:var(--muted);}
@@ -871,7 +873,7 @@ canvas{display:block;}
     <div class="canvas-stage" id="canvasStage"><div class="canvas-wrapper" id="canvasWrapper">
       <canvas id="bgCanvas" width="794" height="1123"></canvas>
       <canvas id="mainCanvas" width="794" height="1123"></canvas>
-      <canvas id="hitCanvas" width="794" height="1123"></canvas>
+      <canvas id="hitCanvas" width="794" height="1123" tabindex="0" aria-label="편집 캔버스"></canvas>
       <svg id="svgOverlay" width="794" height="1123" xmlns="http://www.w3.org/2000/svg"></svg>
       <div id="textOverlay"></div>
     </div></div>
@@ -1112,7 +1114,7 @@ canvas{display:block;}
             <div class="guide-card"><b>인쇄</b><span>파일 → 인쇄에서 전체 페이지 또는 현재 페이지만 선택합니다. Windows·macOS·Android는 시스템 인쇄 화면을 사용하고, iPhone/iPad는 인쇄용 PDF를 만든 뒤 iOS 공유 시트에서 ‘프린트’를 선택합니다. 숨긴 레이어는 제외됩니다.</span></div>
           </div>
           <h4>페이지</h4>
-          <p><b>페이지 추가</b>로 빈 페이지를 추가하고, <b>페이지 삭제</b>로 현재 페이지를 제거합니다. 왼쪽 페이지 목록을 눌러 페이지를 전환합니다.</p>
+          <p><b>페이지 추가</b>로 빈 페이지를 추가하고, 왼쪽 페이지 목록을 눌러 페이지를 전환합니다. 썸네일을 드래그해 표시선 위치에 놓으면 페이지 순서가 바뀝니다. 목록 가장자리로 드래그하면 자동으로 스크롤됩니다. 페이지를 클릭한 뒤 <kbd>Delete</kbd>를 누르거나 <b>페이지 삭제</b>를 선택하면 확인 후 해당 페이지를 삭제합니다. 마지막 한 페이지는 삭제할 수 없습니다.</p>
         </section>
 
         <section class="guide-section" id="guide-mobile">
@@ -1139,6 +1141,7 @@ canvas{display:block;}
               <tr><td>전체 선택</td><td><kbd>Ctrl/Cmd+A</kbd></td><td>현재 페이지의 객체 전체를 선택합니다.</td></tr>
               <tr><td>인접 레이어로 이동</td><td><kbd>Ctrl/Cmd+]</kbd> / <kbd>Ctrl/Cmd+[</kbd></td><td>선택 객체를 위/아래 인접 레이어로 이동합니다.</td></tr>
               <tr><td>미세 이동</td><td><kbd>방향키</kbd> / <kbd>Shift+방향키</kbd></td><td>1px / 10px 단위로 이동합니다.</td></tr>
+              <tr><td>페이지 삭제</td><td><kbd>Delete</kbd></td><td>왼쪽 페이지 목록에서 페이지를 클릭한 뒤 누르면 확인 후 삭제합니다. 캔버스에서는 선택 객체를 삭제합니다.</td></tr>
               <tr><td>캔버스 이동</td><td><kbd>Space</kbd> + 드래그</td><td>스페이스바를 누른 채 드래그해 화면을 이동합니다. 글자 입력 중에는 공백이 입력됩니다.</td></tr>
               <tr><td>도구 선택</td><td><kbd>V</kbd> 선택 · <kbd>T</kbd> 텍스트 · <kbd>M</kbd> 도형 · <kbd>P</kbd> 연필 · <kbd>E</kbd> 지우개 · <kbd>H</kbd> 형광펜 · <kbd>L</kbd> 선 · <kbd>R</kbd> 사각형 · <kbd>O</kbd> 원 · <kbd>A</kbd> 화살표 · <kbd>S</kbd> 오선</td><td>키보드로 도구를 바로 전환합니다.</td></tr>
               <tr><td>선택 해제</td><td><kbd>Esc</kbd></td><td>선택을 해제하고 모바일 패널도 닫습니다.</td></tr>
@@ -1856,19 +1859,14 @@ function addBlankPage(doRender=true){
 function deletePage(){
   if(pages.length<=1){alert('마지막 페이지는 삭제할 수 없습니다.');return;}
   if(!confirm(`${curPageIdx+1}페이지를 삭제할까요?`))return;
+  if(actTed)commitT();
   pages.splice(curPageIdx,1);
-  if(curPageIdx>=pages.length)curPageIdx=pages.length-1;
-  syncObjs();
+  goToPage(Math.min(curPageIdx,pages.length-1),{keepPanels:true});
   markDirty();
-  CW=pages[curPageIdx].width||A4_W;
-  CH=pages[curPageIdx].height||A4_H;
-  resizeCanvases();
-  renderAll();
   renderPageIndex();
-  updatePageStatus();
 }
 
-function goToPage(idx){
+function goToPage(idx,{keepPanels=false}={}){
   if(idx<0||idx>=pages.length)return;
   curPageIdx=idx;
   syncObjs();
@@ -1886,8 +1884,9 @@ function goToPage(idx){
   // 인덱스 패널 활성 항목 갱신
   document.querySelectorAll('.page-thumb-item').forEach((el,i)=>{
     el.classList.toggle('active',i===curPageIdx);
+    if(i===curPageIdx)el.setAttribute('aria-current','page');else el.removeAttribute('aria-current');
   });
-  closeMobilePanels(); // 모바일에서 페이지를 고르면 바로 캔버스가 보이도록 드로어를 닫음
+  if(!keepPanels)closeMobilePanels(); // 드래그/삭제 중에는 목록을 유지하고, 페이지 클릭 시 드로어를 닫음
 }
 
 function updatePageStatus(){
@@ -3854,12 +3853,28 @@ async function loadPDFFromFile(file, append=false, insertAt=null){
 // ════════════ 페이지 인덱스 렌더링 ════════════
 function renderPageIndex(){
   const list=document.getElementById('pageIndexList');
+  const previousScrollTop=list.scrollTop,hadPageFocus=list.contains(document.activeElement);
   list.innerHTML='';
   document.getElementById('pageCountLabel').textContent=pages.length+'페이지';
 
   pages.forEach((pg,i)=>{
-    const item=document.createElement('div');
+    const item=document.createElement('button');item.type='button';
     item.className='page-thumb-item'+(i===curPageIdx?' active':'');
+    item.draggable=true;
+    item.setAttribute('aria-label',(i+1)+'페이지');
+    if(i===curPageIdx)item.setAttribute('aria-current','page');
+    item.title='드래그하여 순서 변경 · 클릭 후 Delete로 페이지 삭제';
+    item.ondragstart=e=>{
+      if(!e.dataTransfer)return;
+      if(actTed)commitT();
+      goToPage(pages.indexOf(pg),{keepPanels:true});
+      item.focus({preventScroll:true});
+      draggedPage=pg;
+      e.dataTransfer.effectAllowed='move';
+      e.dataTransfer.setData(PAGE_DRAG_TYPE,'page');
+      item.classList.add('dragging-page');
+    };
+    item.ondragend=finishPageDrag;
 
     const thumb=document.createElement('canvas');
     thumb.className='page-thumb-canvas';
@@ -3881,12 +3896,14 @@ function renderPageIndex(){
     label.textContent=(i+1)+'페이지';
 
     item.appendChild(thumb);item.appendChild(label);
-    item.onclick=()=>goToPage(i);
+    item.onclick=()=>{goToPage(pages.indexOf(pg));item.focus({preventScroll:true});};
     list.appendChild(item);
   });
 
   // 드롭 위치 표시선은 매번 새로 만들지 않고 재사용 — innerHTML=''로 지워졌으니 다시 붙여줌
   list.appendChild(pageDropIndicator);
+  list.scrollTop=previousScrollTop;
+  if(hadPageFocus)list.querySelectorAll('.page-thumb-item')[curPageIdx]?.focus({preventScroll:true});
 }
 
 function updatePageThumb(idx){
@@ -5212,10 +5229,45 @@ async function appendPDFs(fileList){
   window.addEventListener('drop',e=>{ if(hasFiles(e))e.preventDefault(); });
 })();
 
-// ════════════ 페이지 목록에 파일을 끌어다 놓아 그 위치에 페이지로 삽입 ════════════
+// ════════════ 페이지 목록 드래그: 기존 페이지 이동 또는 외부 파일 삽입 ════════════
 // 매번 새로 만들지 않고 재사용하는 드롭 위치 표시선 (renderPageIndex가 매번 다시 붙여줌)
 const pageDropIndicator=document.createElement('div');
 pageDropIndicator.className='page-drop-indicator';
+const PAGE_DRAG_TYPE='application/x-pdf-markly-page';
+let draggedPage=null,pageDragScrollFrame=0,pageDragClientY=null;
+function stopPageDragScroll(){
+  cancelAnimationFrame(pageDragScrollFrame);pageDragScrollFrame=0;pageDragClientY=null;
+}
+function finishPageDrag(){
+  draggedPage=null;stopPageDragScroll();hidePageDropIndicator();
+  document.querySelectorAll('.dragging-page').forEach(el=>el.classList.remove('dragging-page'));
+}
+function updatePageDragScroll(clientY){
+  pageDragClientY=clientY;
+  if(pageDragScrollFrame)return;
+  function tick(){
+    const list=document.getElementById('pageIndexList'),rect=list.getBoundingClientRect();
+    const edge=Math.min(40,rect.height/4),y=pageDragClientY;
+    const delta=y<rect.top+edge?-12:y>rect.bottom-edge?12:0;
+    const before=list.scrollTop;
+    list.scrollTop+=delta;
+    if(list.scrollTop!==before)showPageDropIndicatorAt(computePageDropIndex(y));
+    pageDragScrollFrame=requestAnimationFrame(tick);
+  }
+  pageDragScrollFrame=requestAnimationFrame(tick);
+}
+function movePage(pg,insertAt){
+  const from=pages.indexOf(pg);
+  if(from<0)return;
+  const gap=Math.max(0,Math.min(pages.length,insertAt));
+  const to=gap>from?gap-1:gap;
+  if(to===from)return;
+  const current=page();
+  pages.splice(from,1);pages.splice(to,0,pg);
+  goToPage(pages.indexOf(current),{keepPanels:true});
+  markDirty();renderPageIndex();
+}
+window.addEventListener('blur',finishPageDrag);
 
 // 드래그 중인 세로 좌표(clientY)로부터 "몇 번째 페이지 앞에 끼워 넣을지" 계산
 function computePageDropIndex(clientY){
@@ -5293,28 +5345,33 @@ async function insertFilesAtPageIndex(files,idx){
   const list=document.getElementById('pageIndexList');
   if(!list)return;
   const hasFiles=e=>e.dataTransfer&&Array.from(e.dataTransfer.types||[]).includes('Files');
+  const hasPage=e=>draggedPage&&pages.includes(draggedPage)&&Array.from(e.dataTransfer?.types||[]).includes(PAGE_DRAG_TYPE);
+  const accepts=e=>hasPage(e)||hasFiles(e);
   let depth=0;
 
   list.addEventListener('dragenter',e=>{
-    if(!hasFiles(e))return; e.preventDefault();e.stopPropagation();depth++;
+    if(!accepts(e))return; e.preventDefault();e.stopPropagation();depth++;
   });
   list.addEventListener('dragover',e=>{
-    if(!hasFiles(e))return; e.preventDefault();e.stopPropagation();
-    e.dataTransfer.dropEffect='copy';
+    if(!accepts(e))return; e.preventDefault();e.stopPropagation();
+    e.dataTransfer.dropEffect=hasPage(e)?'move':'copy';
     showPageDropIndicatorAt(computePageDropIndex(e.clientY));
+    updatePageDragScroll(e.clientY);
   });
   list.addEventListener('dragleave',e=>{
-    if(!hasFiles(e))return;
+    if(!accepts(e))return;
     depth=Math.max(0,depth-1);
-    if(depth===0)hidePageDropIndicator();
+    if(depth===0){hidePageDropIndicator();stopPageDragScroll();}
   });
   list.addEventListener('drop',e=>{
-    if(!hasFiles(e))return;
+    if(!accepts(e))return;
     e.preventDefault();e.stopPropagation();
     depth=0;
     const idx=computePageDropIndex(e.clientY);
-    hidePageDropIndicator();
-    insertFilesAtPageIndex([...(e.dataTransfer.files||[])],idx);
+    const pg=hasPage(e)?draggedPage:null;
+    finishPageDrag();
+    if(pg)movePage(pg,idx);
+    else insertFilesAtPageIndex([...(e.dataTransfer.files||[])],idx);
   });
 })();
 
@@ -5591,6 +5648,8 @@ document.addEventListener('keydown',e=>{
     if(e.key==='Escape'){e.preventDefault();commitT();}
     return;
   }
+  // 폼/대화상자에서는 Delete를 포함한 문서 편집 단축키를 실행하지 않는다.
+  if(e.target.isContentEditable||e.target.closest?.('input,textarea,select')||document.querySelector('.modal-overlay:not(.hidden)'))return;
   const mod=e.metaKey||e.ctrlKey;
   const key=e.key.toLowerCase();
   if(mod){
@@ -5608,7 +5667,12 @@ document.addEventListener('keydown',e=>{
     if(key==='['){e.preventDefault();moveLayerDown();}
     return;
   }
-  if(e.key==='Delete'||e.key==='Backspace'){if(selIds.length)deleteSelected();}
+  if(e.key==='Delete'&&e.target.closest?.('.page-thumb-item')){
+    e.preventDefault();
+    if(!e.repeat&&!e.altKey)deletePage();
+    return;
+  }
+  if(e.key==='Delete'||e.key==='Backspace'){if(selIds.length){e.preventDefault();deleteSelected();}}
   if(e.key==='Escape'){clearSel();refreshObjList();renderAll();document.getElementById('statusObj').textContent='';closeMobilePanels();}
 
   // 방향키로 선택된 객체 이동 (Shift: 10px씩 크게, 기본: 1px씩). 입력창에 포커스가 있으면
