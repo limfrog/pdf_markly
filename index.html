@@ -1309,6 +1309,7 @@ canvas{display:block;}
 <!-- 시스템 인쇄 전용 DOM. 화면에서는 숨기고 @media print에서만 표시한다. -->
 <div id="printRoot" aria-hidden="true"></div>
 
+<script src="object-clipboard.js"></script>
 <script>
 'use strict';
 // ════════════ 상수 ════════════
@@ -2007,6 +2008,7 @@ function drawO(c,o,hit=false,overlay=false){
     o.points.forEach((p,i)=>i===0?c.moveTo(p.x,p.y):c.lineTo(p.x,p.y));
     c.stroke();
   } else if(o.type==='shape'){
+    if(!hit&&o._horizonGeometry){HorizonClipboard.drawShape(c,o,'pdf-markly');c.restore();return;}
     const fgAlpha=hit?1:(o.alpha??1);
     const bgAlphaVal=hit?1:(o.fill==='bg'?(o.bgAlpha??bgA):fgAlpha);
     c.strokeStyle=hit?'#000':o.color;
@@ -5331,14 +5333,15 @@ function ctxAction(a){
   if(a==='undo')undo();
   else if(a==='redo')redo();
   else if(a==='copy')copySelection();
-  else if(a==='paste')pasteClip();
+  else if(a==='paste')smartPasteObjects();
   else if(a==='duplicate')duplicateSelected();
   else if(a==='delete')deleteSelected();
   else if(a==='bringUp')moveLayerUp();
   else if(a==='sendDown')moveLayerDown();
 }
 function copySelection(){
-  const sel=selectedObjs();
+  const selectedIds=new Set(selIds);
+  const sel=get_objs().filter(o=>selectedIds.has(o.id));
   if(!sel.length){clip=null;clipCopiedAt=0;return;}
   // Image 객체 참조를 별도 보관하며 나머지 속성(richLines 포함)은 깊은 복사한다.
   clip=sel.map(o=>{
@@ -5348,7 +5351,27 @@ function copySelection(){
     return c;
   });
   clipCopiedAt=Date.now();
+  navigator.clipboard?.writeText(HorizonClipboard.stringify(sel,'pdf-markly',clipCopiedAt)).catch(()=>{});
 }
+function acceptSharedClipboard(text){
+  const shared=HorizonClipboard.parse(text,'pdf-markly');
+  if(!shared)return false;
+  clip=shared.objects;clipCopiedAt=shared.copiedAt;pasteClip();return true;
+}
+async function smartPasteObjects(){
+  try{
+    if(navigator.clipboard?.readText){
+      const text=await navigator.clipboard.readText();
+      const shared=HorizonClipboard.parse(text,'pdf-markly');
+      if(shared&&shared.copiedAt>=clipCopiedAt&&acceptSharedClipboard(text))return;
+    }
+  }catch(_){}
+  pasteClip();
+}
+document.addEventListener('paste',e=>{
+  if(actTed||e.target.closest?.('input,textarea,select,[contenteditable="true"]'))return;
+  if(acceptSharedClipboard(e.clipboardData?.getData('text/plain')||''))e.preventDefault();
+});
 function translateClipObject(o,dx,dy){
   if(!o||(!dx&&!dy))return;
   if(o.type==='stroke')o.points=(o.points||[]).map(p=>({x:p.x+dx,y:p.y+dy}));
@@ -5363,7 +5386,7 @@ function clipGroupBounds(items){
   }
   return Number.isFinite(x1)?{x:x1,y:y1,w:Math.max(1,x2-x1),h:Math.max(1,y2-y1)}:null;
 }
-function pasteClip(){
+async function pasteClip(){
   if(!clip||!clip.length)return;
   const copies=clip.map(src=>{
     const c=JSON.parse(JSON.stringify(src));c.id=mkId();normalizeRichTextObject(c);
@@ -5385,6 +5408,9 @@ function pasteClip(){
     }
   }
   const newIds=[];
+  try{await HorizonClipboard.loadImages(copies.filter(o=>o.type==='image'&&!o.img));}
+  catch(err){alert('이미지를 불러오지 못해 붙여넣기를 완료하지 못했습니다.');return;}
+  copies.forEach(c=>{c.layerId=activeLayer()?.id;delete c.isBackground;});
   copies.forEach(c=>{translateClipObject(c,dx,dy);get_objs().push(c);newIds.push(c.id);});
   setSelection(newIds);
   saveH();renderAll();refreshObjList();
@@ -5393,6 +5419,7 @@ function pasteClip(){
 // ════════════ 키보드 단축키 ════════════
 let arrowMoveActive=false; // 방향키를 누르고 있는 동안 매 프레임 saveH하지 않고, 뗄 때 한 번만 기록하기 위한 상태
 document.addEventListener('keydown',e=>{
+  if((e.ctrlKey||e.metaKey)&&['c','v','x'].includes(e.key.toLowerCase())&&e.target.closest?.('input,textarea,select,[contenteditable="true"]'))return;
   if(e.key==='Escape'&&!document.getElementById('printModal')?.classList.contains('hidden')){
     e.preventDefault();closePrintModal();return;
   }
@@ -5414,7 +5441,7 @@ document.addEventListener('keydown',e=>{
     if(key==='e'){e.preventDefault();savePMF();}
     if(key==='p'){e.preventDefault();openPrintModal();}
     if(key==='c'){e.preventDefault();copySelection();}
-    if(key==='v'){e.preventDefault();pasteClip();}
+    if(key==='v'){e.preventDefault();smartPasteObjects();}
     if(key==='d'){e.preventDefault();duplicateSelected();}
     if(key==='a'){e.preventDefault();setSelection(get_objs().map(o=>o.id));refreshObjList();renderAll();
       document.getElementById('statusObj').textContent=selCount()?`${selCount()}개 선택`:'';}
@@ -5542,7 +5569,7 @@ function normalizeFontFamily(f){
 }
 
 // ════════════ 버전 정보 & 업데이트 확인 ════════════
-const APP_VERSION='0.9.10';
+const APP_VERSION='0.9.12';
 // 실제 배포용 GitHub 저장소를 만들면 'owner/repo' 형태로 채워주세요. (예: 'limfrog75/pdf-markly')
 // 비워두면 업데이트 확인을 시도하지 않습니다.
 const UPDATE_CHECK_REPO='limfrog/pdf_markly';
